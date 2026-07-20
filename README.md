@@ -15,11 +15,12 @@ Turn any phone, tablet, or touch device on the same WiFi into a **gamepad contro
 - **Real-time layout editor** — drag, resize, rename, re-layer every control with undo/redo
 - **Multiple pages** — create separate controller pages for different games
 - **Desktop monitor** — bundled tkinter GUI to see live input state (server status, test panel)
-- **Ultra low latency** — WebSocket transport with 16ms throttle and change-threshold filtering
-- **Edit mode** — toggle between **PLAY** (inputs active) and **EDIT** (arrange controls)
-- **Save / Load / Import / Export** — layouts persist and are shareable as JSON files
-- **PWA ready** — add to home screen for fullscreen, no chrome
-- **Black & white design** — no animations except white flash on press, no distractions
+- **Xbox 360 controller emulation** – games see a real gamepad via ViGEmBus virtual driver; no cursor interference
+- **Ultra low latency** – WebSocket transport with 16ms throttle and change-threshold filtering
+- **Edit mode** – toggle between **PLAY** (inputs active) and **EDIT** (arrange controls)
+- **Save / Load / Import / Export** – layouts persist and are shareable as JSON files
+- **PWA ready** – add to home screen for fullscreen, no chrome
+- **Black & white design** – no animations except white flash on press, no distractions
 
 ---
 
@@ -27,7 +28,7 @@ Turn any phone, tablet, or touch device on the same WiFi into a **gamepad contro
 
 ### Prerequisites
 
-- **Windows 10/11** (keyboard simulation uses `pynput`, Windows-only)
+- **Windows 10/11** (uses ViGEmBus virtual gamepad driver + SendInput)
 - **Python 3.9+**
 - Your phone/tablet and PC on the **same WiFi network**
 
@@ -41,12 +42,16 @@ cd mobile-gamepad
 # 2. Install Python dependencies
 pip install -r requirements.txt
 
-# 3. Start the server
+# 3. (First time only) Install the ViGEmBus virtual driver
+#    vgamepad will prompt you to install it automatically on first import,
+#    or download from: https://github.com/nefarius/ViGEmBus/releases
+
+# 4. Start the server
 python server.py
 
-# 4. Open on your phone
-# The server prints the URL, e.g. http://192.168.1.100:8000
-# Open this URL in Chrome/Safari on your phone
+# 5. Open on your phone
+#    The server prints the URL, e.g. http://192.168.1.100:8000
+#    Open this URL in Chrome/Safari on your phone
 ```
 
 ### Desktop Monitor (optional)
@@ -150,26 +155,31 @@ Gamepad keys are treated as virtual gamepad buttons (not keyboard keys) and are 
 ## Architecture
 
 ```
-┌──────────────────────┐      WebSocket       ┌──────────────────┐
-│   Mobile Browser     │ ──────────────────→  │   PC Server      │
-│   (index.html)       │   keydown/keyup/     │   (server.py)    │
-│                      │   analog             │                  │
-│  ┌────────────────┐  │                      │  ┌────────────┐  │
-│  │ Controller.js  │──│─────────────────────│→│  events.py  │  │
-│  │ Touch handlers │  │                      │  └─────┬──────┘  │
-│  └────────────────┘  │                      │        │         │
-│  ┌────────────────┐  │                      │  ┌─────▼──────┐  │
-│  │ Layout Editor  │  │                      │  │ keyboard.py│  │
-│  │ (editor.js)    │  │                      │  │ (pynput)   │  │
-│  └────────────────┘  │                      │  └─────┬──────┘  │
-│  ┌────────────────┐  │                      │        │         │
-│  │ Layout State   │──│──HTTP POST/GET──────│→│Windows OS│     │
-│  │ (layout.js)    │  │                      │  └──────────┘    │
-│  └────────────────┘  │                      │                  │
-│  ┌────────────────┐  │                      │  ┌────────────┐  │
-│  │ WebSocket.js   │  │                      │  │ network.py │  │
-│  └────────────────┘  │                      │  └────────────┘  │
-└──────────────────────┘                      └──────────────────┘
+┌──────────────────────┐      WebSocket       ┌──────────────────────┐
+│   Mobile Browser     │ ──────────────────→  │   PC Server          │
+│   (index.html)       │   keydown/keyup/     │   (server.py)        │
+│                      │   analog             │                      │
+│  ┌────────────────┐  │                      │  ┌────────────────┐  │
+│  │ Controller.js  │──│─────────────────────│→│  events.py      │  │
+│  │ Touch handlers │  │                      │  └───────┬────────┘  │
+│  └────────────────┘  │                      │          │           │
+│  ┌────────────────┐  │                      │  ┌───────▼────────┐  │
+│  │ Layout Editor  │  │                      │  │ keyboard.py    │  │
+│  │ (editor.js)    │  │                      │  │ (vgamepad +    │  │
+│  └────────────────┘  │                      │  │  SendInput)    │  │
+│  ┌────────────────┐  │                      │  └───────┬────────┘  │
+│  │ Layout State   │──│──HTTP POST/GET──────│──────────│────────── │
+│  │ (layout.js)    │  │                      │          │           │
+│  └────────────────┘  │                      │  ┌───────▼────────┐  │
+│  ┌────────────────┐  │                      │  │ ViGEmBus      │  │
+│  │ WebSocket.js   │  │                      │  │ (Xbox 360     │  │
+│  └────────────────┘  │                      │  │  virtual HID) │  │
+│                      │                      │  └───────┬────────┘  │
+│                      │                      │          │           │
+│                      │                      │  ┌───────▼────────┐  │
+│                      │                      │  │ network.py     │  │
+│                      │                      │  └────────────────┘  │
+└──────────────────────┘                      └──────────────────────┘
 ```
 
 ### Data Flow
@@ -180,9 +190,12 @@ Gamepad keys are treated as virtual gamepad buttons (not keyboard keys) and are 
    - `{type: "input", subtype: "keydown", key: "gamepad_a"}`
    - `{type: "input", subtype: "analog", key: "gamepad_ls", x: 0.45, y: -0.82}`
 4. `server.py` receives the message and passes it to `events.py`
-5. `events.py` routes to `keyboard.py` which simulates keyboard input via `pynput`
-6. Analog messages are broadcast (fire-and-forget) to all connected WebSocket clients, including `gui.py`
-7. `controller.py` applies EMA smoothing, power-curve shaping, and sub-pixel accumulation before simulating input
+5. `events.py` routes to `keyboard.py` which applies EMA smoothing and drives the virtual Xbox 360 controller via `vgamepad` (ViGEmBus driver)
+6. Gamepad button presses (A, B, X, Y, LB, RB, D-Pad, etc.) are sent as Xbox controller button presses
+7. Analog stick movements (LS, RS) are sent as Xbox joystick axis values
+8. Trigger drags (LT, RT) set the Xbox trigger analog value 0–1
+9. Regular keyboard keys (W, Space, etc.) use `SendInput` with virtual key codes
+10. All input messages are broadcast (fire-and-forget) to other WebSocket clients (gui.py monitor)
 
 ### Network
 
@@ -197,7 +210,7 @@ Gamepad keys are treated as virtual gamepad buttons (not keyboard keys) and are 
 ```
 Touch → elementsFromPoint → dead-zone check → throttle (16ms)
 → change-threshold → WS send → server receive → fire-and-forget broadcast
-→ EMA (α=0.35) → power curve (^0.65) → pynput simulate
+→ EMA (α=0.35) → vgamepad/SendInput → ViGEmBus driver → game
 ```
 
 ---
@@ -216,7 +229,7 @@ mobile-gamepad/
 │
 ├── controller/            # Backend modules
 │   ├── __init__.py
-│   ├── keyboard.py        # pynput keyboard simulation + analog smoothing
+│   ├── keyboard.py        # vgamepad (Xbox 360) + SendInput input simulation
 │   ├── layout.py          # Layout CRUD, undo/redo, page management
 │   ├── config.py          # Settings load/save
 │   ├── events.py          # WebSocket message routing + broadcast
@@ -309,13 +322,17 @@ uvicorn server:app --host 0.0.0.0 --port 8000 --reload
 
 | Problem | Solution |
 |---------|----------|
-| `pynput` errors on Linux/macOS | This project is designed for Windows. For Linux, swap `pynput` for `evdev` or `uinput`. |
+| `vgamepad` / ViGEmBus not working | Run as Administrator once, or install ViGEmBus from https://github.com/nefarius/ViGEmBus/releases |
 | Phone can't connect | Ensure both devices are on the **same WiFi** and Windows Firewall allows port 8000 |
 | Input lag | Use a 5 GHz WiFi network; keep the server PC wired via Ethernet |
 | Sticks not centering | Release all touches and re-engage |
 | Layout lost after refresh | Click **SAVE** before refreshing; auto-save must be enabled in settings |
 
 ---
+
+## Games Tested
+
+- Rocket League(Easy Anticheat Turned OFF)
 
 ## License
 

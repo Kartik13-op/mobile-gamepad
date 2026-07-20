@@ -1,0 +1,9 @@
+{
+  "theme": "dark",
+  "gridSize": 20,
+  "snapToGrid": true,
+  "showGrid": true,
+  "hapticFeedback": true,
+  "autoSave": true,
+  "autoSaveInterval": 5000
+}

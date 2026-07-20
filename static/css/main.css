@@ -1,0 +1,985 @@
+/* ================================================================
+   GamePad — Bold Black & White Design System
+   No outlines, no border-radius, no animations except white flash
+   ================================================================ */
+
+/* --- Google Fonts --- */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@500;700;900&display=swap');
+
+/* ================================================================
+   1. DESIGN TOKENS
+   ================================================================ */
+:root {
+  --bg-base:       #000000;
+  --bg-surface:    #0a0a0a;
+  --bg-elevated:   #111111;
+  --bg-card:       #1a1a1a;
+  --bg-card-hover: #222222;
+
+  --text-primary:  #ffffff;
+  --text-secondary:#888888;
+  --text-muted:    #444444;
+
+  --border:        #222222;
+
+  --font:          'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+
+  --grid-size:     20px;
+}
+
+/* ================================================================
+   2. RESET & BASE
+   ================================================================ */
+*, *::before, *::after {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+  border-radius: 0 !important;
+}
+
+html, body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  font-family: var(--font);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-primary);
+  background: var(--bg-base);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: none;
+  overscroll-behavior: none;
+}
+
+body {
+  display: flex;
+  flex-direction: column;
+}
+
+/* ================================================================
+   3. TOOLBAR
+   ================================================================ */
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 10px;
+  background: var(--bg-surface);
+  border-bottom: 2px solid var(--border);
+  z-index: 100;
+  flex-shrink: 0;
+  min-height: 44px;
+}
+
+.toolbar-brand {
+  display: flex;
+  align-items: center;
+  margin-right: 6px;
+}
+
+.toolbar-brand .logo {
+  font-size: 15px;
+  font-weight: 900;
+  letter-spacing: 2px;
+  color: var(--text-primary);
+}
+
+.connection-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  font-size: 10px;
+  font-weight: 700;
+  background: var(--bg-card);
+  color: var(--text-primary);
+  letter-spacing: 1px;
+}
+
+.connection-badge.disconnected {
+  color: var(--text-muted);
+}
+
+.toolbar-divider {
+  width: 2px;
+  height: 20px;
+  background: var(--border);
+  margin: 0 4px;
+  flex-shrink: 0;
+}
+
+.toolbar-spacer {
+  flex: 1;
+}
+
+.tb-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 5px 10px;
+  font-size: 11px;
+  font-weight: 700;
+  font-family: var(--font);
+  letter-spacing: 1px;
+  color: var(--text-secondary);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.tb-btn:hover {
+  color: var(--text-primary);
+}
+
+.tb-btn:active {
+  background: var(--text-primary);
+  color: var(--bg-base);
+}
+
+.tb-btn.active {
+  color: var(--text-primary);
+  background: var(--bg-card);
+}
+
+.tb-btn-primary {
+  color: var(--bg-base);
+  background: var(--text-primary);
+}
+
+.tb-btn-primary:hover {
+  background: var(--text-secondary);
+  color: var(--bg-base);
+}
+
+.latency-badge {
+  font-size: 9px;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ================================================================
+   4. WORKSPACE
+   ================================================================ */
+.workspace-container {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+  background: var(--bg-base);
+}
+
+.workspace {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  touch-action: none;
+}
+
+/* Grid overlay */
+.workspace-grid {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(rgba(255,255,255,0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.04) 1px, transparent 1px);
+  background-size: var(--grid-size) var(--grid-size);
+  opacity: 0;
+  z-index: 0;
+}
+
+.workspace-grid.visible {
+  opacity: 1;
+}
+
+/* Cog toggle button (mobile) */
+.cog-btn {
+  position: fixed;
+  top: 6px;
+  right: 6px;
+  z-index: 200;
+  width: 34px;
+  height: 34px;
+  font-size: 18px;
+  line-height: 1;
+  background: rgba(255,255,255,0.08);
+  color: var(--text-secondary);
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cog-btn:active {
+  background: var(--text-primary);
+  color: var(--bg-base);
+}
+
+.toolbar.hidden,
+.page-tabs.hidden {
+  display: none !important;
+}
+
+/* ================================================================
+   5. CONTROLS — BUTTONS
+   ================================================================ */
+.ctrl-btn {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: none;
+  background: var(--bg-card);
+  color: var(--text-primary);
+  z-index: 1;
+  overflow: hidden;
+}
+
+.ctrl-btn .btn-label {
+  font-weight: 700;
+  letter-spacing: 1px;
+  pointer-events: none;
+  line-height: 1.2;
+  text-align: center;
+  word-break: break-word;
+}
+
+.ctrl-btn .btn-keybind {
+  font-size: 8px;
+  font-weight: 500;
+  opacity: 0.4;
+  margin-top: 1px;
+  pointer-events: none;
+  letter-spacing: 0.5px;
+}
+
+/* Flash white on press (play mode) */
+.ctrl-btn.pressed {
+  background: var(--text-primary) !important;
+  color: var(--bg-base) !important;
+}
+
+.ctrl-btn.pressed .btn-keybind {
+  color: var(--bg-base);
+  opacity: 0.6;
+}
+
+/* ================================================================
+   6. CONTROLS — ANALOG STICK
+   ================================================================ */
+.ctrl-analog {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: none;
+  z-index: 1;
+}
+
+.analog-outer {
+  width: 100%;
+  height: 100%;
+  border: 3px solid var(--bg-card);
+  background: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.analog-inner {
+  width: 40%;
+  height: 40%;
+  background: var(--bg-card);
+  position: absolute;
+  pointer-events: none;
+  transition: none;
+}
+
+.analog-inner.active {
+  background: var(--text-primary);
+}
+
+.ctrl-analog .btn-label {
+  position: absolute;
+  bottom: -20px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  color: var(--text-muted);
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+.ctrl-analog .btn-keybind {
+  display: none;
+}
+
+/* ================================================================
+   7. CONTROLS — TRIGGER
+   ================================================================ */
+.ctrl-trigger {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: none;
+  background: var(--bg-card);
+  color: var(--text-primary);
+  z-index: 1;
+  font-weight: 700;
+  letter-spacing: 2px;
+  font-size: 11px;
+}
+
+.ctrl-trigger.pressed {
+  background: var(--text-primary) !important;
+  color: var(--bg-base) !important;
+}
+
+.ctrl-trigger .btn-keybind {
+  display: none;
+}
+
+/* ================================================================
+   8. EDIT MODE
+   ================================================================ */
+.ctrl-btn.edit-mode,
+.ctrl-analog.edit-mode,
+.ctrl-trigger.edit-mode {
+  cursor: move;
+}
+
+.ctrl-btn.selected,
+.ctrl-analog.selected,
+.ctrl-trigger.selected {
+  outline: 2px solid var(--text-primary);
+  outline-offset: 2px;
+  z-index: 50 !important;
+}
+
+/* Resize handles */
+.resize-handle {
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  background: var(--text-primary);
+  z-index: 60;
+  pointer-events: auto;
+  cursor: nwse-resize;
+  opacity: 0;
+}
+
+.ctrl-btn.selected .resize-handle,
+.ctrl-analog.selected .resize-handle,
+.ctrl-trigger.selected .resize-handle {
+  opacity: 1;
+}
+
+.resize-handle.nw { top: -8px;   left: -8px;  cursor: nwse-resize; }
+.resize-handle.ne { top: -8px;   right: -8px; cursor: nesw-resize; }
+.resize-handle.sw { bottom: -8px;left: -8px;  cursor: nesw-resize; }
+.resize-handle.se { bottom: -8px;right: -8px; cursor: nwse-resize; }
+
+/* ================================================================
+   9. PAGE TABS
+   ================================================================ */
+.page-tabs {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 4px 10px;
+  background: var(--bg-surface);
+  border-top: 2px solid var(--border);
+  z-index: 100;
+  flex-shrink: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.page-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.page-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 12px;
+  font-size: 11px;
+  font-weight: 700;
+  font-family: var(--font);
+  letter-spacing: 1px;
+  color: var(--text-secondary);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.page-tab:hover {
+  color: var(--text-primary);
+}
+
+.page-tab.active {
+  color: var(--text-primary);
+  background: var(--bg-card);
+}
+
+.page-tab-add {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  font-size: 14px;
+  font-weight: 700;
+  font-family: var(--font);
+  color: var(--text-muted);
+  background: transparent;
+  border: 2px dashed var(--border);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.page-tab-add:hover {
+  color: var(--text-primary);
+  border-color: var(--text-secondary);
+}
+
+/* ================================================================
+   10. MODALS
+   ================================================================ */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.85);
+  z-index: 1000;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.modal-overlay.open {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.modal {
+  width: 92%;
+  max-width: 380px;
+  max-height: 80vh;
+  background: var(--bg-elevated);
+  border: 2px solid var(--border);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  border-bottom: 2px solid var(--border);
+}
+
+.modal-title {
+  font-size: 14px;
+  font-weight: 900;
+  letter-spacing: 2px;
+  color: var(--text-primary);
+}
+
+.modal-close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  font-size: 14px;
+  font-weight: 700;
+  font-family: var(--font);
+  color: var(--text-muted);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+}
+
+.modal-close:hover {
+  color: var(--text-primary);
+  background: var(--bg-card);
+}
+
+.modal-body {
+  padding: 16px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.modal-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 10px 16px;
+  border-top: 2px solid var(--border);
+}
+
+/* ================================================================
+   11. FORM ELEMENTS
+   ================================================================ */
+.form-group {
+  margin-bottom: 12px;
+}
+
+.form-label {
+  display: block;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  margin-bottom: 4px;
+  letter-spacing: 1px;
+}
+
+.form-input,
+.form-select {
+  width: 100%;
+  padding: 8px 10px;
+  font-size: 12px;
+  font-weight: 500;
+  font-family: var(--font);
+  color: var(--text-primary);
+  background: var(--bg-card);
+  border: none;
+  outline: none;
+}
+
+.form-input:focus,
+.form-select:focus {
+  outline: 2px solid var(--text-primary);
+}
+
+.form-input::placeholder {
+  color: var(--text-muted);
+}
+
+.form-select {
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%23888888' stroke-width='3'/%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  padding-right: 28px;
+}
+
+.form-select option {
+  background: var(--bg-elevated);
+  color: var(--text-primary);
+}
+
+.form-row {
+  display: flex;
+  gap: 8px;
+}
+
+.form-row .form-group {
+  flex: 1;
+}
+
+.form-toggle {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  cursor: pointer;
+}
+
+.form-toggle input {
+  display: none;
+}
+
+.toggle-track {
+  width: 36px;
+  height: 20px;
+  background: var(--bg-card);
+  position: relative;
+  border: 2px solid var(--border);
+}
+
+.form-toggle input:checked + .toggle-track {
+  background: var(--text-primary);
+  border-color: var(--text-primary);
+}
+
+.toggle-track::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 12px;
+  height: 12px;
+  background: var(--text-muted);
+}
+
+.form-toggle input:checked + .toggle-track::after {
+  background: var(--bg-base);
+  transform: translateX(16px);
+}
+
+/* ================================================================
+   12. ACTION BUTTONS
+   ================================================================ */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 8px 16px;
+  font-size: 11px;
+  font-weight: 700;
+  font-family: var(--font);
+  letter-spacing: 1px;
+  border: none;
+  cursor: pointer;
+  color: var(--text-secondary);
+  background: var(--bg-card);
+}
+
+.btn:hover {
+  color: var(--text-primary);
+  background: var(--bg-card-hover);
+}
+
+.btn:active {
+  background: var(--text-primary);
+  color: var(--bg-base);
+}
+
+.btn-primary {
+  color: var(--bg-base);
+  background: var(--text-primary);
+}
+
+.btn-primary:hover {
+  background: var(--text-secondary);
+  color: var(--bg-base);
+}
+
+.btn-danger {
+  color: var(--text-primary);
+  background: #330000;
+}
+
+.btn-danger:hover {
+  background: #550000;
+}
+
+.btn-sm {
+  padding: 4px 8px;
+  font-size: 10px;
+}
+
+/* ================================================================
+   13. PROPERTIES PANEL
+   ================================================================ */
+.properties-panel {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 230px;
+  height: 100%;
+  background: var(--bg-elevated);
+  border-left: 2px solid var(--border);
+  z-index: 90;
+  overflow-y: auto;
+  transform: translateX(100%);
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+
+.properties-panel.open {
+  transform: translateX(0);
+}
+
+.properties-panel::-webkit-scrollbar {
+  width: 4px;
+}
+
+.properties-panel::-webkit-scrollbar-thumb {
+  background: var(--border);
+}
+
+.panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px;
+  border-bottom: 2px solid var(--border);
+  position: sticky;
+  top: 0;
+  background: var(--bg-elevated);
+  z-index: 1;
+}
+
+.panel-title {
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 2px;
+  color: var(--text-primary);
+}
+
+.panel-body {
+  padding: 12px 14px;
+}
+
+.panel-section {
+  margin-bottom: 16px;
+}
+
+.panel-actions {
+  display: flex;
+  gap: 8px;
+  padding: 12px 14px;
+  border-top: 2px solid var(--border);
+}
+
+/* ================================================================
+   14. TOAST NOTIFICATIONS
+   ================================================================ */
+.toast-container {
+  position: fixed;
+  bottom: 70px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 2000;
+  display: flex;
+  flex-direction: column-reverse;
+  align-items: center;
+  gap: 6px;
+  pointer-events: none;
+}
+
+.toast {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  color: var(--bg-base);
+  background: var(--text-primary);
+  pointer-events: auto;
+}
+
+.toast.leaving {
+  opacity: 0;
+}
+
+/* ================================================================
+   15. CONTEXT MENU
+   ================================================================ */
+.ctx-menu {
+  position: fixed;
+  min-width: 140px;
+  background: var(--bg-elevated);
+  border: 2px solid var(--border);
+  z-index: 500;
+  padding: 4px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.ctx-menu.open {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.ctx-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  font-size: 11px;
+  font-weight: 700;
+  font-family: var(--font);
+  letter-spacing: 1px;
+  color: var(--text-secondary);
+  background: none;
+  border: none;
+  cursor: pointer;
+  width: 100%;
+  text-align: left;
+}
+
+.ctx-item:hover {
+  color: var(--text-primary);
+  background: var(--bg-card);
+}
+
+.ctx-item.danger {
+  color: #ff4444;
+}
+
+.ctx-item.danger:hover {
+  background: rgba(255, 68, 68, 0.1);
+}
+
+.ctx-divider {
+  height: 2px;
+  background: var(--border);
+  margin: 4px 0;
+}
+
+/* ================================================================
+   16. SCROLLBAR
+   ================================================================ */
+::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-muted);
+}
+
+/* ================================================================
+   17. RESPONSIVE
+   ================================================================ */
+@media (max-width: 600px) {
+  .toolbar {
+    padding: 4px 6px;
+    gap: 2px;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .toolbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .tb-btn {
+    padding: 4px 8px;
+    font-size: 10px;
+  }
+
+  .toolbar-brand .logo {
+    font-size: 13px;
+  }
+
+  .properties-panel {
+    width: 200px;
+  }
+}
+
+@media (max-width: 400px) {
+  .toolbar-divider {
+    display: none;
+  }
+}
+
+/* ================================================================
+   18. PWA / FULLSCREEN
+   ================================================================ */
+@media (display-mode: standalone),
+       (display-mode: fullscreen) {
+  .toolbar {
+    padding-top: max(6px, env(safe-area-inset-top));
+  }
+
+  .page-tabs {
+    padding-bottom: max(4px, env(safe-area-inset-bottom));
+  }
+}
+
+/* ================================================================
+   19. SETTINGS GRID
+   ================================================================ */
+.settings-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.settings-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.settings-label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  color: var(--text-secondary);
+}
+
+/* ================================================================
+   20. MISC
+   ================================================================ */
+img, svg {
+  pointer-events: none;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+.hidden {
+  display: none !important;
+}
+
+.empty-state {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: var(--text-muted);
+  pointer-events: none;
+}
+
+.empty-state .empty-icon {
+  font-size: 36px;
+  opacity: 0.3;
+}
+
+.empty-state .empty-text {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 1px;
+}
+
+.empty-state .empty-hint {
+  font-size: 11px;
+  font-weight: 500;
+  opacity: 0.6;
+}

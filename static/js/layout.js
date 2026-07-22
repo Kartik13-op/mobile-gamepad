@@ -6,8 +6,8 @@ const DEFAULT_CONTROL = {
   name: 'Button',
   type: 'button',
   keybind: '',
-  x: 100,
-  y: 100,
+  x: 0.5,
+  y: 0.5,
   width: 60,
   height: 60,
   opacity: 1.0,
@@ -55,9 +55,23 @@ export class LayoutManager {
 
   setLayout(data) {
     this._layout = data;
+    this._migratePositions();
     this._renderPageTabs();
     this._renderControls();
     eventBus.emit('layout:changed', data);
+  }
+
+  _migratePositions() {
+    const ws = this._workspace;
+    if (!ws) return;
+    const w = ws.clientWidth || window.innerWidth;
+    const h = ws.clientHeight || window.innerHeight;
+    for (const page of this.pages) {
+      for (const btn of (page.buttons || [])) {
+        if (btn.x > 1) btn.x = btn.x / w;
+        if (btn.y > 1) btn.y = btn.y / h;
+      }
+    }
   }
 
   switchPage(index) {
@@ -206,8 +220,8 @@ export class LayoutManager {
       <span class="btn-label">${ctrl.name || ''}</span>
     `;
 
-    el.style.left = `${ctrl.x}px`;
-    el.style.top = `${ctrl.y}px`;
+    el.style.left = `${ctrl.x * 100}%`;
+    el.style.top = `${ctrl.y * 100}%`;
     el.style.width = `${ctrl.width}px`;
     el.style.height = `${ctrl.height}px`;
     el.style.opacity = ctrl.opacity ?? 1;
@@ -236,8 +250,8 @@ export class LayoutManager {
   }
 
   _applyBaseStyles(el, ctrl) {
-    el.style.left = `${ctrl.x}px`;
-    el.style.top = `${ctrl.y}px`;
+    el.style.left = `${ctrl.x * 100}%`;
+    el.style.top = `${ctrl.y * 100}%`;
     el.style.width = `${ctrl.width}px`;
     el.style.height = `${ctrl.height}px`;
     el.style.opacity = ctrl.opacity ?? 1;
@@ -252,8 +266,8 @@ export class LayoutManager {
     const el = this._workspace?.querySelector(selector);
     if (!el) return;
 
-    el.style.left = `${ctrl.x}px`;
-    el.style.top = `${ctrl.y}px`;
+    el.style.left = `${ctrl.x * 100}%`;
+    el.style.top = `${ctrl.y * 100}%`;
     el.style.width = `${ctrl.width}px`;
     el.style.height = `${ctrl.height}px`;
     el.style.opacity = ctrl.opacity ?? 1;

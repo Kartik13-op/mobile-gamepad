@@ -18,8 +18,8 @@ DEFAULT_CONTROL: Dict[str, Any] = {
     "name": "Button",
     "type": "button",
     "keybind": "",
-    "x": 100,
-    "y": 100,
+    "x": 0.5,
+    "y": 0.5,
     "width": 60,
     "height": 60,
     "opacity": 1.0,
@@ -51,13 +51,14 @@ class LayoutManager:
             return data
         return self._default_layout()
 
-    @staticmethod
-    def _default_layout() -> Dict[str, Any]:
+    @classmethod
+    def _default_layout(cls) -> Dict[str, Any]:
+        template = cls._load_default_controls_static()
         return {
             "version": "2.0",
             "activePageIndex": 0,
             "pages": [
-                {"id": generate_id(), "name": "Gamepad", "buttons": []}
+                {"id": generate_id(), "name": "Gamepad", "buttons": template}
             ],
         }
 
@@ -116,15 +117,35 @@ class LayoutManager:
         return None
 
     def add_page(self, name: str) -> Dict[str, Any]:
-        """Create a new empty page and return it."""
+        """Create a new page initialized with controls from default_gamepad.json."""
         self._push_history()
+        template = self._load_default_controls()
         page: Dict[str, Any] = {
             "id": generate_id(),
             "name": name,
-            "buttons": [],
+            "buttons": template,
         }
         self._layout["pages"].append(page)
         return page
+
+    @staticmethod
+    def _load_default_controls_static() -> list[Dict[str, Any]]:
+        import json
+        from pathlib import Path
+        path = Path(__file__).parent / "default_gamepad.json"
+        if path.exists():
+            try:
+                controls = json.loads(path.read_text(encoding="utf-8"))
+                if isinstance(controls, list):
+                    for ctrl in controls:
+                        ctrl["id"] = generate_id()
+                    return controls
+            except (json.JSONDecodeError, OSError):
+                pass
+        return []
+
+    def _load_default_controls(self) -> list[Dict[str, Any]]:
+        return self._load_default_controls_static()
 
     def delete_page(self, page_id: str) -> bool:
         """Delete a page by ID. At least one page must remain."""
@@ -144,6 +165,13 @@ class LayoutManager:
             return False
         page["name"] = name
         return True
+
+    def get_active_page_id(self) -> str | None:
+        pages = self._layout.get("pages", [])
+        idx = self._layout.get("activePageIndex", 0)
+        if pages and 0 <= idx < len(pages):
+            return pages[idx].get("id")
+        return None
 
     def set_active_page(self, index: int) -> None:
         """Switch the active page by index."""

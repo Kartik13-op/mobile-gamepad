@@ -1,9 +1,9 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>GamePad — Virtual Controller</title>
+  <title>GamePad â€” Virtual Controller</title>
   <meta name="description" content="Turn any mobile device into a gamepad controller.">
   <meta name="theme-color" content="#000000">
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -11,130 +11,116 @@
   <link rel="stylesheet" href="/static/css/main.css">
 </head>
 <body>
+  <div id="screen-gamepad" class="screen-gamepad">
 
-  <!-- ==========================================
-       TOP TOOLBAR
-       ========================================== -->
-  <header class="toolbar">
-    <div class="toolbar-brand">
-      <span class="logo">GAMEPAD</span>
-    </div>
-
-    <div id="connection-badge" class="connection-badge disconnected">
-      <span class="connection-text">OFF</span>
-      <span id="latency-value" class="latency-badge">--</span>
-    </div>
-
-    <div class="toolbar-divider"></div>
-
-    <button id="btn-play" class="tb-btn active">PLAY</button>
-    <button id="btn-edit" class="tb-btn">EDIT</button>
-
-    <div class="toolbar-divider edit-only hidden"></div>
-
-    <button id="btn-add-control" class="tb-btn tb-btn-primary edit-only hidden">+ ADD</button>
-    <button id="btn-undo" class="tb-btn edit-only hidden">UNDO</button>
-    <button id="btn-redo" class="tb-btn edit-only hidden">REDO</button>
-    <button id="btn-save" class="tb-btn tb-btn-primary edit-only hidden">SAVE</button>
-
-    <div class="toolbar-spacer"></div>
-
-    <button id="btn-settings" class="tb-btn">SET</button>
-  </header>
-
-  <!-- Cog toggle for mobile -->
-  <button id="btn-cog" class="cog-btn">&#9881;</button>
-
-  <!-- ==========================================
-       WORKSPACE
-       ========================================== -->
-  <main class="workspace-container">
-    <div id="workspace-grid" class="workspace-grid"></div>
-    <div id="workspace" class="workspace play-mode">
-    </div>
-
-    <!-- Properties Panel -->
-    <aside id="properties-panel" class="properties-panel">
-      <div class="panel-header">
-        <span class="panel-title">PROPERTIES</span>
-        <button id="prop-close" class="modal-close">X</button>
+    <header class="toolbar">
+      <div class="toolbar-brand">
+        <span class="logo">GAMEPAD</span>
       </div>
-      <div class="panel-body">
-        <div class="panel-section">
-          <div class="form-group">
-            <label class="form-label" for="prop-name">Label</label>
-            <input type="text" id="prop-name" class="form-input" placeholder="A, B, X, Y...">
-          </div>
-          <div class="form-group">
-            <label class="form-label" for="prop-keybind">Key</label>
-            <select id="prop-keybind" class="form-select">
-              <option value="">None</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label class="form-label" for="prop-control-type">Type</label>
-            <select id="prop-control-type" class="form-select" disabled>
-              <option value="button">Button</option>
-              <option value="analog_stick">Analog Stick</option>
-              <option value="trigger">Trigger</option>
-            </select>
-          </div>
-        </div>
-        <div class="panel-section">
-          <div class="form-row">
-            <div class="form-group">
-              <label class="form-label" for="prop-x">X</label>
-              <input type="number" id="prop-x" class="form-input">
-            </div>
-            <div class="form-group">
-              <label class="form-label" for="prop-y">Y</label>
-              <input type="number" id="prop-y" class="form-input">
-            </div>
-          </div>
-          <div class="form-row">
-            <div class="form-group">
-              <label class="form-label" for="prop-width">W</label>
-              <input type="number" id="prop-width" class="form-input" min="20">
-            </div>
-            <div class="form-group">
-              <label class="form-label" for="prop-height">H</label>
-              <input type="number" id="prop-height" class="form-input" min="20">
-            </div>
-          </div>
-          <div class="form-group">
-            <label class="form-label" for="prop-font-size">Font</label>
-            <input type="number" id="prop-font-size" class="form-input" min="6" max="64">
-          </div>
-          <div class="form-row">
-            <div class="form-group">
-              <label class="form-label" for="prop-opacity">Opacity</label>
-              <input type="number" id="prop-opacity" class="form-input" step="0.1" min="0.1" max="1.0">
-            </div>
-            <div class="form-group">
-              <label class="form-label" for="prop-layer">Z</label>
-              <input type="number" id="prop-layer" class="form-input" min="0" max="100">
-            </div>
-          </div>
-        </div>
-        <div class="panel-actions">
-          <button id="prop-duplicate" class="btn" style="flex:1">DUPE</button>
-          <button id="prop-delete" class="btn btn-danger">DEL</button>
-        </div>
+      <div id="device-info" class="device-info hidden">
+        <span id="device-name-display" class="device-name-text"></span>
+        <span id="device-status" class="device-status"></span>
       </div>
-    </aside>
-  </main>
+      <div id="connection-badge" class="connection-badge disconnected">
+        <span class="connection-text">OFF</span>
+        <span id="latency-value" class="latency-badge">--</span>
+      </div>
+      <div class="toolbar-divider"></div>
+      <button id="btn-play" class="tb-btn active">PLAY</button>
+      <button id="btn-edit" class="tb-btn">EDIT</button>
+      <div class="toolbar-divider edit-only hidden"></div>
+      <button id="btn-add-control" class="tb-btn tb-btn-primary edit-only hidden">+ BTN</button>
+      <button id="btn-add-analog" class="tb-btn edit-only hidden">+ STICK</button>
+      <button id="btn-add-trigger" class="tb-btn edit-only hidden">+ TRIG</button>
+      <button id="btn-undo" class="tb-btn edit-only hidden">UNDO</button>
+      <button id="btn-redo" class="tb-btn edit-only hidden">REDO</button>
+      <button id="btn-save" class="tb-btn tb-btn-primary edit-only hidden">SAVE</button>
+      <div class="toolbar-spacer"></div>
+      <button id="btn-settings" class="tb-btn">SET</button>
+    </header>
 
-  <!-- ==========================================
-       PAGE TABS
-       ========================================== -->
-  <footer class="page-tabs">
-    <div id="page-tabs-list"></div>
-    <button id="btn-add-page" class="page-tab-add">+</button>
-  </footer>
+    <button id="btn-cog" class="cog-btn">&#9881;</button>
 
-  <!-- ==========================================
-       MODAL: ADD CONTROL
-       ========================================== -->
+    <main class="workspace-container">
+      <div id="workspace-grid" class="workspace-grid"></div>
+      <div id="workspace" class="workspace play-mode"></div>
+      <button id="prop-toggle" class="prop-toggle hidden">☰</button>
+      <aside id="properties-panel" class="properties-panel">
+        <div class="panel-header">
+          <span class="panel-title">PROPERTIES</span>
+          <button id="prop-close" class="modal-close">X</button>
+        </div>
+        <div class="panel-body">
+          <div class="panel-section">
+            <div class="form-group">
+              <label class="form-label" for="prop-name">Label</label>
+              <input type="text" id="prop-name" class="form-input" placeholder="A, B, X, Y...">
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="prop-keybind">Key</label>
+              <select id="prop-keybind" class="form-select"><option value="">None</option></select>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="prop-control-type">Type</label>
+              <select id="prop-control-type" class="form-select" disabled>
+                <option value="button">Button</option>
+                <option value="analog_stick">Analog Stick</option>
+                <option value="trigger">Trigger</option>
+              </select>
+            </div>
+          </div>
+          <div class="panel-section">
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label" for="prop-x">X</label>
+                <input type="number" id="prop-x" class="form-input">
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="prop-y">Y</label>
+                <input type="number" id="prop-y" class="form-input">
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label" for="prop-width">W</label>
+                <input type="number" id="prop-width" class="form-input" min="20">
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="prop-height">H</label>
+                <input type="number" id="prop-height" class="form-input" min="20">
+              </div>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="prop-font-size">Font</label>
+              <input type="number" id="prop-font-size" class="form-input" min="6" max="64">
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label" for="prop-opacity">Opacity</label>
+                <input type="number" id="prop-opacity" class="form-input" step="0.1" min="0.1" max="1.0">
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="prop-layer">Z</label>
+                <input type="number" id="prop-layer" class="form-input" min="0" max="100">
+              </div>
+            </div>
+          </div>
+          <div class="panel-actions">
+            <button id="prop-duplicate" class="btn" style="flex:1">DUPE</button>
+            <button id="prop-delete" class="btn btn-danger">DEL</button>
+          </div>
+        </div>
+      </aside>
+    </main>
+
+    <footer id="page-tabs" class="page-tabs">
+      <div id="page-tabs-list"></div>
+      <button id="btn-add-page" class="page-tab-add">+</button>
+    </footer>
+
+  </div>
+
+  <!-- Modals -->
   <div id="modal-add-control" class="modal-overlay">
     <div class="modal">
       <div class="modal-header">
@@ -149,9 +135,7 @@
           </div>
           <div class="form-group">
             <label class="form-label" for="add-keybind">Key</label>
-            <select id="add-keybind" class="form-select">
-              <option value="">None</option>
-            </select>
+            <select id="add-keybind" class="form-select"><option value="">None</option></select>
           </div>
           <div class="form-group">
             <label class="form-label" for="add-control-type">Type</label>
@@ -190,9 +174,64 @@
     </div>
   </div>
 
-  <!-- ==========================================
-       MODAL: SETTINGS
-       ========================================== -->
+  <div id="modal-add-page" class="modal-overlay">
+    <div class="modal modal-sm">
+      <div class="modal-header">
+        <span class="modal-title">NEW PAGE</span>
+        <button class="modal-close">X</button>
+      </div>
+      <form id="form-add-page">
+        <div class="modal-body">
+          <div class="form-group">
+            <label class="form-label" for="add-page-name">Page Name</label>
+            <input type="text" id="add-page-name" class="form-input" value="Page" placeholder="Enter page name..." required>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn modal-cancel">CANCEL</button>
+          <button type="submit" class="btn btn-primary">CREATE</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div id="modal-rename-page" class="modal-overlay">
+    <div class="modal modal-sm">
+      <div class="modal-header">
+        <span class="modal-title">RENAME PAGE</span>
+        <button class="modal-close">X</button>
+      </div>
+      <form id="form-rename-page">
+        <div class="modal-body">
+          <div class="form-group">
+            <label class="form-label" for="rename-page-name">New Name</label>
+            <input type="text" id="rename-page-name" class="form-input" required>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn modal-cancel">CANCEL</button>
+          <button type="submit" class="btn btn-primary">RENAME</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div id="modal-confirm" class="modal-overlay">
+    <div class="modal modal-sm">
+      <div class="modal-header">
+        <span id="confirm-title" class="modal-title">CONFIRM</span>
+        <button class="modal-close">X</button>
+      </div>
+      <div class="modal-body">
+        <p id="confirm-message" style="margin:0;font-size:1.1rem;color:var(--text);"></p>
+      </div>
+      <div class="modal-footer">
+        <button id="confirm-no" class="btn modal-cancel">CANCEL</button>
+        <button id="confirm-yes" class="btn btn-danger">DELETE</button>
+      </div>
+    </div>
+  </div>
+
   <div id="modal-settings" class="modal-overlay">
     <div class="modal">
       <div class="modal-header">
@@ -254,10 +293,10 @@
     </div>
   </div>
 
-  <!-- Toast + Context Menu -->
   <div id="toast-container" class="toast-container"></div>
   <div id="ctx-menu" class="ctx-menu"></div>
 
   <script type="module" src="/static/js/app.js"></script>
 </body>
 </html>
+

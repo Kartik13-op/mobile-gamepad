@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 import time
 import logging
+import math
 from typing import Any, Awaitable, Callable, Dict
 
 from controller.keyboard import KeyboardController
@@ -31,6 +32,8 @@ class EventRouter:
         self.layout = layout
         self.config = config
         self.connections = connections
+        self._pressed_by_client: Dict[str, set[str]] = {}
+        self._analog_by_client: Dict[str, Dict[str, tuple[float, float, float]]] = {}
 
         self._handlers: Dict[str, Handler] = {
             "keydown": self._on_keydown,
@@ -56,6 +59,11 @@ class EventRouter:
             "set_active_page": self._on_set_active_page,
         }
 
+    def release_client(self, client_id: str) -> None:
+        """Forget per-client de-duplication state after disconnect/removal."""
+        self._pressed_by_client.pop(client_id, None)
+        self._analog_by_client.pop(client_id, None)
+
     async def route(self, client_id: str, message: Dict[str, Any]) -> None:
         """Dispatch a message to its handler based on the ``type`` field."""
         msg_type = message.get("type")
@@ -70,26 +78,61 @@ class EventRouter:
     # ------------------------------------------------------------------
 
     async def _on_keydown(self, client_id: str, msg: Dict[str, Any]) -> None:
-        key = msg.get("key", "")
+        if not self.connections.is_active_controller(client_id):
+            logger.debug("Ignored keydown from non-active client %s", client_id)
+            return
+        key = str(msg.get("key", "")).lower().strip()
         if key:
+            pressed = self._pressed_by_client.setdefault(client_id, set())
+            if key in pressed:
+                return
+            pressed.add(key)
+            self.keyboard.ensure_controller()
             self.keyboard.press_key(key)
             asyncio.create_task(self.connections.broadcast({
                 "type": "input", "subtype": "keydown", "key": key,
             }, exclude=client_id))
 
     async def _on_keyup(self, client_id: str, msg: Dict[str, Any]) -> None:
-        key = msg.get("key", "")
+        if not self.connections.is_active_controller(client_id):
+            logger.debug("Ignored keyup from non-active client %s", client_id)
+            return
+        key = str(msg.get("key", "")).lower().strip()
         if key:
+            pressed = self._pressed_by_client.setdefault(client_id, set())
+            if key not in pressed:
+                return
+            pressed.discard(key)
             self.keyboard.release_key(key)
             asyncio.create_task(self.connections.broadcast({
                 "type": "input", "subtype": "keyup", "key": key,
             }, exclude=client_id))
 
     async def _on_analog(self, client_id: str, msg: Dict[str, Any]) -> None:
-        key = msg.get("key", "")
-        x = msg.get("x", 0)
-        y = msg.get("y", 0)
+        if not self.connections.is_active_controller(client_id):
+            logger.debug("Ignored analog from non-active client %s", client_id)
+            return
+        key = str(msg.get("key", "")).lower().strip()
+        try:
+            x = float(msg.get("x", 0))
+            y = float(msg.get("y", 0))
+        except (TypeError, ValueError):
+            return
         if key:
+            analog = self._analog_by_client.setdefault(client_id, {})
+            now = time.monotonic()
+            last = analog.get(key)
+            if last is not None:
+                last_x, last_y, last_time = last
+                is_neutral = math.isclose(x, 0.0, abs_tol=0.001) and math.isclose(y, 0.0, abs_tol=0.001)
+                last_is_neutral = math.isclose(last_x, 0.0, abs_tol=0.001) and math.isclose(last_y, 0.0, abs_tol=0.001)
+                tiny_move = abs(x - last_x) < 0.01 and abs(y - last_y) < 0.01
+                if tiny_move and not is_neutral and now - last_time < 0.05:
+                    return
+                if tiny_move and is_neutral and last_is_neutral:
+                    return
+            analog[key] = (x, y, now)
+            self.keyboard.ensure_controller()
             self.keyboard.move_analog(key, x, y)
             asyncio.create_task(self.connections.broadcast({
                 "type": "input", "subtype": "analog", "key": key, "x": x, "y": y,

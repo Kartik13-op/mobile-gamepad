@@ -14,6 +14,7 @@ export class GamepadController {
 
     this._activeSticks = new Map();
     this._activeTriggers = new Map();
+    this._lastTouchAt = 0;
 
     // Workspace listeners
     this._onTouchStart = this._handleTouchStart.bind(this);
@@ -65,8 +66,8 @@ export class GamepadController {
   // -----------------------------------------------------------------
 
   _handleTouchStart(e) {
-    // Only capture if initial touch is on a control
     if (!this._workspace?.contains(e.target)) return;
+    this._lastTouchAt = performance.now();
     e.preventDefault();
     for (const touch of e.changedTouches) {
       const el = this._findControl(touch.clientX, touch.clientY);
@@ -84,7 +85,17 @@ export class GamepadController {
   }
 
   _handleTouchEnd(e) {
-    e.preventDefault();
+    this._lastTouchAt = performance.now();
+    let hasTracked = false;
+    for (const touch of e.changedTouches) {
+      if (this._activeSticks.has(touch.identifier) ||
+          this._activeTriggers.has(touch.identifier) ||
+          this._activeTouches.has(touch.identifier)) {
+        hasTracked = true;
+        break;
+      }
+    }
+    if (hasTracked) e.preventDefault();
     for (const touch of e.changedTouches) {
       if (this._activeSticks.has(touch.identifier)) {
         this._endStick(touch.identifier);
@@ -94,19 +105,28 @@ export class GamepadController {
         this._endTrigger(touch.identifier);
         continue;
       }
-      const keybind = this._activeTouches.get(touch.identifier);
-      if (keybind) {
-        ws.send({ type: 'keyup', key: keybind });
+      const touchState = this._activeTouches.get(touch.identifier);
+      if (touchState) {
+        ws.send({ type: 'keyup', key: touchState.keybind });
         this._activeTouches.delete(touch.identifier);
+        touchState.el?.classList.remove('pressed');
       }
-      const btn = this._findControl(touch.clientX, touch.clientY);
-      if (btn) btn.classList.remove('pressed');
     }
     this._syncPressedState();
   }
 
   _handleTouchMove(e) {
-    e.preventDefault();
+    this._lastTouchAt = performance.now();
+    let hasTracked = false;
+    for (const touch of e.changedTouches) {
+      if (this._activeSticks.has(touch.identifier) ||
+          this._activeTriggers.has(touch.identifier) ||
+          this._activeTouches.has(touch.identifier)) {
+        hasTracked = true;
+        break;
+      }
+    }
+    if (hasTracked) e.preventDefault();
     for (const touch of e.changedTouches) {
       if (this._activeSticks.has(touch.identifier)) {
         this._moveStick(touch.identifier, touch.clientX, touch.clientY);
@@ -116,16 +136,19 @@ export class GamepadController {
         this._moveTrigger(touch.identifier, touch.clientX, touch.clientY);
         continue;
       }
-      const currentKeybind = this._activeTouches.get(touch.identifier);
+      const currentTouch = this._activeTouches.get(touch.identifier);
+      const currentKeybind = currentTouch?.keybind || null;
       const btn = this._findControl(touch.clientX, touch.clientY);
       const newKeybind = btn?.dataset.keybind || null;
 
       if (currentKeybind && newKeybind !== currentKeybind) {
         ws.send({ type: 'keyup', key: currentKeybind });
         this._activeTouches.delete(touch.identifier);
+        currentTouch.el?.classList.remove('pressed');
       }
       if (newKeybind && newKeybind !== currentKeybind) {
-        this._activeTouches.set(touch.identifier, newKeybind);
+        this._activeTouches.set(touch.identifier, { keybind: newKeybind, el: btn });
+        btn.classList.add('pressed');
         ws.send({ type: 'keydown', key: newKeybind });
         this._vibrate();
       }
@@ -323,6 +346,7 @@ export class GamepadController {
 
   _onPointerDown(e) {
     if (e.pointerType === 'touch') return;
+    if (performance.now() - this._lastTouchAt < 700) return;
     if (!this._workspace?.contains(e.target)) return;
     const el = this._findControl(e.clientX, e.clientY);
     if (!el) return;
@@ -335,7 +359,7 @@ export class GamepadController {
     } else {
       const keybind = el.dataset.keybind;
       if (!keybind) return;
-      this._activeTouches.set(-1, keybind);
+      this._activeTouches.set(-1, { keybind, el });
       el.classList.add('pressed');
       ws.send({ type: 'keydown', key: keybind });
     }
@@ -343,6 +367,7 @@ export class GamepadController {
 
   _onPointerUp(e) {
     if (e.pointerType === 'touch') return;
+    if (performance.now() - this._lastTouchAt < 700) return;
     if (this._activeSticks.has(-1)) {
       this._endStick(-1);
       return;
@@ -351,16 +376,18 @@ export class GamepadController {
       this._endTrigger(-1);
       return;
     }
-    const keybind = this._activeTouches.get(-1);
-    if (keybind) {
-      ws.send({ type: 'keyup', key: keybind });
+    const touchState = this._activeTouches.get(-1);
+    if (touchState) {
+      ws.send({ type: 'keyup', key: touchState.keybind });
       this._activeTouches.delete(-1);
+      touchState.el?.classList.remove('pressed');
     }
     this._syncPressedState();
   }
 
   _onPointerMove(e) {
     if (e.pointerType === 'touch') return;
+    if (performance.now() - this._lastTouchAt < 700) return;
     if (this._activeSticks.has(-1)) {
       this._moveStick(-1, e.clientX, e.clientY);
     } else if (this._activeTriggers.has(-1)) {
@@ -375,7 +402,8 @@ export class GamepadController {
   _pressButton(touchId, el) {
     const keybind = el.dataset.keybind;
     if (!keybind) return;
-    this._activeTouches.set(touchId, keybind);
+    if (this._activeTouches.has(touchId)) return;
+    this._activeTouches.set(touchId, { keybind, el });
     el.classList.add('pressed');
     ws.send({ type: 'keydown', key: keybind });
     this._vibrate();
@@ -396,7 +424,9 @@ export class GamepadController {
 
   _syncPressedState() {
     if (!this._workspace) return;
-    const activeKeybinds = new Set(this._activeTouches.values());
+    const activeKeybinds = new Set(
+      Array.from(this._activeTouches.values(), touch => touch.keybind)
+    );
     for (const trig of this._activeTriggers.values()) {
       activeKeybinds.add(trig.keybind);
     }
@@ -407,8 +437,9 @@ export class GamepadController {
   }
 
   _releaseAll() {
-    for (const keybind of this._activeTouches.values()) {
-      ws.send({ type: 'keyup', key: keybind });
+    for (const touchState of this._activeTouches.values()) {
+      ws.send({ type: 'keyup', key: touchState.keybind });
+      touchState.el?.classList.remove('pressed');
     }
     this._activeTouches.clear();
     if (this._workspace) {

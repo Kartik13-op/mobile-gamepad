@@ -7,8 +7,13 @@ export class UIManager {
 
   init() {
     eventBus.on('ws:connected', () => this._setConnected(true));
-    eventBus.on('ws:disconnected', () => this._setConnected(false));
+    eventBus.on('ws:disconnected', () => {
+      this._setConnected(false);
+      this._hideDeviceName();
+    });
     eventBus.on('ws:latency', (ms) => this._setLatency(ms));
+    eventBus.on('ws:session', (msg) => this._setDeviceName(msg.deviceName));
+    eventBus.on('ws:device_updated', (msg) => this._setDeviceName(msg.deviceName));
   }
 
   get mode() { return this._mode; }
@@ -38,6 +43,38 @@ export class UIManager {
     badge.classList.toggle('disconnected', !connected);
     const text = badge.querySelector('.connection-text');
     if (text) text.textContent = connected ? 'ON' : 'OFF';
+  }
+
+  _setDeviceName(deviceName) {
+    const info = document.getElementById('device-info');
+    const display = document.getElementById('device-name-display');
+    const status = document.getElementById('device-status');
+    if (!info || !display) return;
+    display.textContent = deviceName || 'Unknown Device';
+    info.classList.remove('hidden');
+    
+    // Will be updated via controller_changed event
+    if (status) {
+      status.className = 'device-status active';
+      status.title = 'Active Controller';
+    }
+  }
+
+  _setDeviceStatus(isActive) {
+    const status = document.getElementById('device-status');
+    if (!status) return;
+    if (isActive) {
+      status.className = 'device-status active';
+      status.title = 'Active Controller';
+    } else {
+      status.className = 'device-status waiting';
+      status.title = 'Waiting for Active Controller';
+    }
+  }
+
+  _hideDeviceName() {
+    const info = document.getElementById('device-info');
+    if (info) info.classList.add('hidden');
   }
 
   _setLatency(ms) {

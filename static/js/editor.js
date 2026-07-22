@@ -40,6 +40,7 @@ export class EditorManager {
     });
 
     this._wirePropertiesPanel();
+    this._wirePropToggle();
   }
 
   activate() {
@@ -165,7 +166,7 @@ export class EditorManager {
     const el = this._workspace?.querySelector(`[data-id="${id}"]`);
     if (el) el.classList.add('selected');
     this._syncPropertiesPanel();
-    ui.showPropertiesPanel();
+    document.getElementById('prop-toggle')?.classList.remove('hidden');
     eventBus.emit('editor:selected', id);
   }
 
@@ -175,6 +176,7 @@ export class EditorManager {
       if (el) el.classList.remove('selected');
     }
     this._selectedId = null;
+    document.getElementById('prop-toggle')?.classList.add('hidden');
     eventBus.emit('editor:deselected');
   }
 
@@ -193,28 +195,30 @@ export class EditorManager {
   _onDragMove(e) {
     if (!this._dragId || !this._workspace) return;
     const wsRect = this._workspace.getBoundingClientRect();
-    let x = e.clientX - wsRect.left - this._dragOffsetX;
-    let y = e.clientY - wsRect.top - this._dragOffsetY;
-
-    if (this._snapEnabled) {
-      x = snap(x, this._gridSize);
-      y = snap(y, this._gridSize);
-    }
-
     const el = this._workspace.querySelector(`[data-id="${this._dragId}"]`);
     if (!el) return;
+    let px = e.clientX - wsRect.left - this._dragOffsetX;
+    let py = e.clientY - wsRect.top - this._dragOffsetY;
+
+    if (this._snapEnabled) {
+      px = snap(px, this._gridSize);
+      py = snap(py, this._gridSize);
+    }
+
     const w = el.offsetWidth;
     const h = el.offsetHeight;
-    x = clamp(x, 0, wsRect.width - w);
-    y = clamp(y, 0, wsRect.height - h);
+    px = clamp(px, 0, wsRect.width - w);
+    py = clamp(py, 0, wsRect.height - h);
 
-    el.style.left = `${x}px`;
-    el.style.top = `${y}px`;
+    const rx = px / wsRect.width;
+    const ry = py / wsRect.height;
+    el.style.left = `${rx * 100}%`;
+    el.style.top = `${ry * 100}%`;
 
     const ctrl = layout.activeControls.find(c => c.id === this._dragId);
     if (ctrl) {
-      ctrl.x = x;
-      ctrl.y = y;
+      ctrl.x = rx;
+      ctrl.y = ry;
     }
 
     this._debouncedSyncProperties();
@@ -238,14 +242,15 @@ export class EditorManager {
   _startResize(handleEl, e) {
     const ctrlEl = handleEl.closest('.ctrl-btn, .ctrl-analog, .ctrl-trigger');
     if (!ctrlEl) return;
+    const wsRect = this._workspace?.getBoundingClientRect() || { width: 1, height: 1 };
     this._resizing = true;
     this._resizeDir = handleEl.dataset.dir;
     this._resizeStartX = e.clientX;
     this._resizeStartY = e.clientY;
     this._dragId = ctrlEl.dataset.id;
     this._resizeOrigRect = {
-      x: parseInt(ctrlEl.style.left) || 0,
-      y: parseInt(ctrlEl.style.top) || 0,
+      x: (parseFloat(ctrlEl.style.left) || 0) / 100 * wsRect.width,
+      y: (parseFloat(ctrlEl.style.top) || 0) / 100 * wsRect.height,
       w: ctrlEl.offsetWidth,
       h: ctrlEl.offsetHeight,
     };
@@ -253,6 +258,7 @@ export class EditorManager {
 
   _onResizeMove(e) {
     if (!this._resizeOrigRect || !this._dragId || !this._workspace) return;
+    const wsRect = this._workspace.getBoundingClientRect();
     const dx = e.clientX - this._resizeStartX;
     const dy = e.clientY - this._resizeStartY;
     const { x, y, w, h } = this._resizeOrigRect;
@@ -288,18 +294,21 @@ export class EditorManager {
       if (nh < minSize) nh = minSize;
     }
 
+    const rx = clamp(nx / wsRect.width, 0, 1);
+    const ry = clamp(ny / wsRect.height, 0, 1);
+
     const el = this._workspace.querySelector(`[data-id="${this._dragId}"]`);
     if (el) {
-      el.style.left = `${nx}px`;
-      el.style.top = `${ny}px`;
+      el.style.left = `${rx * 100}%`;
+      el.style.top = `${ry * 100}%`;
       el.style.width = `${nw}px`;
       el.style.height = `${nh}px`;
     }
 
     const ctrl = layout.activeControls.find(c => c.id === this._dragId);
     if (ctrl) {
-      ctrl.x = nx;
-      ctrl.y = ny;
+      ctrl.x = rx;
+      ctrl.y = ry;
       ctrl.width = nw;
       ctrl.height = nh;
     }
@@ -334,8 +343,8 @@ export class EditorManager {
     this._setField('prop-name', ctrl.name);
     this._setField('prop-keybind', ctrl.keybind);
     this._setField('prop-control-type', ctrl.type || 'button');
-    this._setField('prop-x', ctrl.x);
-    this._setField('prop-y', ctrl.y);
+    this._setField('prop-x', Math.round(ctrl.x * 100));
+    this._setField('prop-y', Math.round(ctrl.y * 100));
     this._setField('prop-width', ctrl.width);
     this._setField('prop-height', ctrl.height);
     this._setField('prop-font-size', ctrl.fontSize || 16);
@@ -348,13 +357,22 @@ export class EditorManager {
     if (el) el.value = value;
   }
 
+  _wirePropToggle() {
+    const btn = document.getElementById('prop-toggle');
+    if (!btn) return;
+    btn.addEventListener('click', () => {
+      const panel = document.getElementById('properties-panel');
+      if (panel) panel.classList.toggle('open');
+    });
+  }
+
   _wirePropertiesPanel() {
     const fields = [
       { id: 'prop-name', key: 'name', type: 'string' },
       { id: 'prop-keybind', key: 'keybind', type: 'string' },
       { id: 'prop-control-type', key: 'type', type: 'string' },
-      { id: 'prop-x', key: 'x', type: 'number' },
-      { id: 'prop-y', key: 'y', type: 'number' },
+      { id: 'prop-x', key: 'x', type: 'percent' },
+      { id: 'prop-y', key: 'y', type: 'percent' },
       { id: 'prop-width', key: 'width', type: 'number' },
       { id: 'prop-height', key: 'height', type: 'number' },
       { id: 'prop-font-size', key: 'fontSize', type: 'number' },
@@ -367,7 +385,14 @@ export class EditorManager {
       if (!el) continue;
       el.addEventListener('input', () => {
         if (!this._selectedId) return;
-        const value = field.type === 'number' ? parseFloat(el.value) || 0 : el.value;
+        let value;
+        if (field.type === 'percent') {
+          value = (parseFloat(el.value) || 0) / 100;
+        } else if (field.type === 'number') {
+          value = parseFloat(el.value) || 0;
+        } else {
+          value = el.value;
+        }
         layout.updateControl(this._selectedId, { [field.key]: value });
       });
     }

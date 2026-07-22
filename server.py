@@ -6,13 +6,15 @@ Start with:
 
 from __future__ import annotations
 
+import os
+import sys
 import uuid
 import logging
 from pathlib import Path
 from contextlib import asynccontextmanager
 from typing import AsyncGenerator
 
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import HTMLResponse
 
@@ -33,7 +35,6 @@ logging.basicConfig(
 )
 logger = logging.getLogger("touchkeys")
 
-# ---------------------------------------------------------------------------
 # Paths
 # ---------------------------------------------------------------------------
 
@@ -52,6 +53,47 @@ connections = ConnectionManager()
 event_router = EventRouter(keyboard, layout_manager, config_manager, connections)
 
 # ---------------------------------------------------------------------------
+# Single-instance lock
+# ---------------------------------------------------------------------------
+
+_LOCK_FILE = BASE_DIR / ".server.lock"
+
+
+def _acquire_lock() -> bool:
+    """Prevent multiple server instances by creating a lock file with PID."""
+    if _LOCK_FILE.exists():
+        try:
+            pid = int(_LOCK_FILE.read_text().strip())
+            if os.name == "nt":
+                import ctypes
+                handle = ctypes.windll.kernel32.OpenProcess(0x0400, False, pid)
+                if handle:
+                    ctypes.windll.kernel32.CloseHandle(handle)
+                    logger.warning("Server already running (PID %d). Exiting.", pid)
+                    return False
+            else:
+                try:
+                    os.kill(pid, 0)
+                    logger.warning("Server already running (PID %d). Exiting.", pid)
+                    return False
+                except OSError:
+                    pass
+        except (ValueError, OSError):
+            pass
+        # Stale lock — clean it
+        _LOCK_FILE.unlink(missing_ok=True)
+    _LOCK_FILE.write_text(str(os.getpid()))
+    return True
+
+
+def _release_lock() -> None:
+    try:
+        _LOCK_FILE.unlink(missing_ok=True)
+    except Exception:
+        pass
+
+
+# ---------------------------------------------------------------------------
 # Application lifecycle
 # ---------------------------------------------------------------------------
 
@@ -59,11 +101,17 @@ event_router = EventRouter(keyboard, layout_manager, config_manager, connections
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     """Print the connection URL on startup and release keys on shutdown."""
+    if not _acquire_lock():
+        sys.exit(1)
     ip = get_local_ip()
     logger.info("TouchKeys server starting...")
     logger.info("Open on your phone -> http://%s:8000", ip)
+    keyboard.ensure_controller()
+    logger.info("Virtual Xbox 360 gamepad ready")
     yield
     keyboard.release_all()
+    keyboard.shutdown()
+    _release_lock()
     logger.info("TouchKeys server stopped.")
 
 
@@ -99,7 +147,41 @@ async def get_keys() -> dict:
 @app.get("/api/clients")
 async def get_clients() -> dict:
     """Return the list of connected client IDs."""
-    return {"clients": connections.get_connections()}
+    clients = connections.get_connections()
+    return {"clients": clients, "count": len(clients)}
+
+
+@app.delete("/api/clients/{client_id}")
+async def remove_client(client_id: str) -> dict:
+    """Remove a connected device from the active session."""
+    if not connections.has_client(client_id):
+        raise HTTPException(status_code=404, detail="Client not found")
+    was_active = connections.is_active_controller(client_id)
+    event_router.release_client(client_id)
+    promoted_client = await connections.remove_client(client_id)
+    if was_active:
+        keyboard.release_all()
+    if promoted_client:
+        await connections.send(promoted_client.client_id, {
+            "type": "controller_activated",
+            "message": "You are now the active controller",
+        })
+        await connections.broadcast({
+            "type": "controller_changed",
+            "activeClientId": promoted_client.client_id,
+            "deviceName": promoted_client.device_name,
+        }, exclude=promoted_client.client_id)
+    return {"success": True}
+
+
+@app.get("/api/debug")
+async def get_debug() -> dict:
+    """Return diagnostic info about the server state."""
+    return {
+        "controller_count": keyboard.controller_count,
+        "connections": connections.count,
+        "pressed_keys": list(keyboard.pressed_keys),
+    }
 
 
 # ---------------------------------------------------------------------------
@@ -111,14 +193,16 @@ async def get_clients() -> dict:
 async def websocket_endpoint(websocket: WebSocket) -> None:
     """Persistent bidirectional channel for input events and layout sync."""
     client_id = uuid.uuid4().hex[:8]
-    await connections.connect(client_id, websocket)
+    role = websocket.query_params.get("role", "controller")
+    client = await connections.connect(client_id, websocket, can_control=(role != "monitor"))
 
     try:
-        # Send initial state
         await connections.send(client_id, {
-            "type": "connected",
+            "type": "session",
             "clientId": client_id,
+            "deviceName": client.device_name,
             "ip": get_local_ip(),
+            "isActive": client.is_active_controller,
         })
         await connections.send(client_id, {
             "type": "layout",
@@ -129,9 +213,27 @@ async def websocket_endpoint(websocket: WebSocket) -> None:
             "data": config_manager.get_dict(),
         })
 
-        # Message loop
+        if client.is_active_controller:
+            await connections.broadcast({
+                "type": "controller_changed",
+                "activeClientId": client_id,
+                "deviceName": client.device_name,
+            }, exclude=client_id)
+
         while True:
             data = await websocket.receive_json()
+            if data.get("type") == "hello":
+                device_name = str(data.get("deviceName", ""))[:50].strip()
+                if device_name:
+                    await connections.set_device_name(client_id, device_name)
+                    await connections.send(client_id, {
+                        "type": "device_updated",
+                        "clientId": client_id,
+                        "deviceName": device_name,
+                        "isActive": connections.is_active_controller(client_id),
+                    })
+                continue
+
             await event_router.route(client_id, data)
 
     except WebSocketDisconnect:
@@ -139,8 +241,23 @@ async def websocket_endpoint(websocket: WebSocket) -> None:
     except Exception as exc:
         logger.error("WebSocket error for %s: %s", client_id, exc)
     finally:
-        keyboard.release_all()
-        await connections.disconnect(client_id)
+        was_active_controller = connections.is_active_controller(client_id)
+        event_router.release_client(client_id)
+        if was_active_controller or connections.count <= 1:
+            keyboard.release_all()
+        promoted_client = await connections.disconnect(client_id)
+        
+        # If a waiting client was promoted to active, notify it
+        if promoted_client:
+            await connections.send(promoted_client.client_id, {
+                "type": "controller_activated",
+                "message": f"You are now the active controller",
+            })
+            await connections.broadcast({
+                "type": "controller_changed",
+                "activeClientId": promoted_client.client_id,
+                "deviceName": promoted_client.device_name,
+            }, exclude=promoted_client.client_id)
 
 
 # ---------------------------------------------------------------------------

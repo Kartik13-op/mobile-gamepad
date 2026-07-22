@@ -1,26 +1,22 @@
-# Mobile GamePad
+# Mobile Gamepad
 
-Turn any phone, tablet, or touch device on the same WiFi into a **gamepad controller** for your PC. All buttons, analog sticks, and triggers are fully customizable — resize, reposition, and configure them in real-time from the browser.
-
-![screenshot](https://img.shields.io/badge/status-stable-brightgreen)
+Turn any phone or tablet into a **virtual Xbox 360 gamepad** for your PC. Fully customizable controls with a real-time layout editor, analog sticks, and triggers.
 
 ---
 
 ## Features
 
-- **Xbox-style gamepad** — A/B/X/Y, D-pad, bumpers, triggers, analog sticks, HOME/BACK/START
-- **Analog LT/RT triggers** — press and drag to control 0–1 values with smooth interpolation
-- **Dual analog sticks** — dead-zone filtering, throttle, EMA smoothing, power-curve response
+- **Xbox 360 controller emulation** — single virtual controller via vgamepad + ViGEmBus; games see a real gamepad
+- **A/B/X/Y, D-pad, LB/RB, LS/RS, LT/RT, BACK/START** — all standard Xbox controls
+- **Analog triggers** — touch and drag for smooth 0–1 analog values
+- **Dual analog sticks** — dead-zone filtering, throttle, change-threshold filtering
 - **Multi-touch** — press multiple buttons and move both sticks simultaneously
-- **Real-time layout editor** — drag, resize, rename, re-layer every control with undo/redo
-- **Multiple pages** — create separate controller pages for different games
-- **Desktop monitor** — bundled tkinter GUI to see live input state (server status, test panel)
-- **Xbox 360 controller emulation** – games see a real gamepad via ViGEmBus virtual driver; no cursor interference
-- **Ultra low latency** – WebSocket transport with 16ms throttle and change-threshold filtering
-- **Edit mode** – toggle between **PLAY** (inputs active) and **EDIT** (arrange controls)
-- **Save / Load / Import / Export** – layouts persist and are shareable as JSON files
-- **PWA ready** – add to home screen for fullscreen, no chrome
-- **Black & white design** – no animations except white flash on press, no distractions
+- **Real-time layout editor** — drag, resize, re-layer every control with undo/redo
+- **Multiple pages** — create different layouts per game, all sharing one virtual controller
+- **Desktop monitor** — bundled customtkinter GUI with live input visualization
+- **PWA ready** — add to home screen for fullscreen
+- **Ultra low latency** — WebSocket transport with 16ms throttle
+- **Save / Load / Import / Export** — layouts persist as JSON files
 
 ---
 
@@ -28,39 +24,26 @@ Turn any phone, tablet, or touch device on the same WiFi into a **gamepad contro
 
 ### Prerequisites
 
-- **Windows 10/11** (uses ViGEmBus virtual gamepad driver + SendInput)
+- **Windows 10/11** (requires ViGEmBus driver)
 - **Python 3.9+**
-- Your phone/tablet and PC on the **same WiFi network**
+- Phone and PC on the **same WiFi**
 
 ### Install & Run
 
 ```bash
-# 1. Clone the repo
-git clone https://github.com/Kartik13-op/mobile-gamepad.git
-cd mobile-gamepad
-
-# 2. Install Python dependencies
 pip install -r requirements.txt
-
-# 3. (First time only) Install the ViGEmBus virtual driver
-#    vgamepad will prompt you to install it automatically on first import,
-#    or download from: https://github.com/nefarius/ViGEmBus/releases
-
-# 4. Start the server
 python server.py
-
-# 5. Open on your phone
-#    The server prints the URL, e.g. http://192.168.1.100:8000
-#    Open this URL in Chrome/Safari on your phone
 ```
 
-### Desktop Monitor (optional)
+Open the printed URL (e.g. `http://192.168.1.100:8000`) on your phone. The first page is pre-populated with a full gamepad layout.
+
+### Desktop Monitor
 
 ```bash
 python gui.py
 ```
 
-Opens a tkinter window showing server status, connected devices, and a live test panel with stick crosshairs, trigger bars, and button indicators.
+Connects as a WebSocket monitor — shows live stick crosshairs, trigger bars, button indicators, and connected devices.
 
 ---
 
@@ -68,271 +51,123 @@ Opens a tkinter window showing server status, connected devices, and a live test
 
 ### Modes
 
-| Mode | Button | What it does |
-|------|--------|--------------|
-| **PLAY** | `PLAY` (top-left) | Touch inputs are sent to the PC as keyboard/gamepad events |
-| **EDIT** | `EDIT` (top-left) | Touch inputs are disabled; tap, drag, resize controls on screen |
+| Mode | Button | Behavior |
+|------|--------|----------|
+| **PLAY** | `PLAY` | Touch inputs drive the virtual Xbox 360 controller |
+| **EDIT** | `EDIT` | Touch inputs disabled; tap, drag, resize controls |
 
 ### Toolbar
 
 | Button | Action |
 |--------|--------|
-| PLAY | Switch to play mode |
-| EDIT | Switch to edit mode |
-| + ADD | Add a new control (button, analog stick, or trigger) |
-| UNDO / REDO | Undo/redo layout changes |
+| PLAY / EDIT | Toggle mode |
+| + BTN / + STICK / + TRIG | Quick-add a button, analog stick, or trigger |
+| UNDO / REDO | Undo/redo layout edits |
 | SAVE | Save layout to `layout.json` |
-| SET | Open settings panel |
-| ⚙ (cog) | Toggle toolbar visibility on mobile |
+| SET | Settings panel |
 
-### Controls Reference
-
-| Control | Touch behavior |
-|---------|---------------|
-| **A, B, X, Y** | Tap = press, release = release |
-| **LB, RB** | Tap = press, release = release |
-| **LT, RT** | Press = keydown, drag anywhere = analog value (0–1), release = keyup + zero |
-| **D-Pad (▲◄►▼)** | Tap = press, release = release |
-| **HOME, BACK, START** | Tap = press, release = release |
-| **LS, RS (Left/Right Stick)** | Drag thumb = analog X/Y, release snaps to center |
-
-### Editing Controls
+### Editing
 
 1. Switch to **EDIT** mode
-2. **Tap** a control to select it (blue border)
-3. **Drag** the control to move it
-4. **Drag the bottom-right resize handle** to resize
-5. The **Properties Panel** opens on the right — edit name, keybind, type, size, opacity, and layer
-6. Press **Delete** key or use context menu to remove a control
-7. Use **UNDO / REDO** to revert changes
-8. Press **SAVE** to persist
+2. Tap a control to select it → ☰ hamburger appears top-right
+3. Tap ☰ to open the properties panel
+4. Drag to move, drag corner handles to resize
+5. `Ctrl+Z`/`Ctrl+Y` to undo/redo
+6. `Ctrl+S` to save
 
-### Settings
+### Controls
 
-| Setting | Description |
-|---------|-------------|
-| Snap to grid | Align controls to grid cells |
-| Grid size | Grid cell size in pixels |
-| Show grid | Toggle grid overlay visibility |
-| Haptic feedback | Vibrate on button press (mobile) |
-| Auto-save | Automatically save on changes |
-
-### Keyboard Shortcuts (on PC)
-
-| Shortcut | Action |
-|----------|--------|
-| `Ctrl+S` | Save layout |
-| `Ctrl+Z` | Undo |
-| `Ctrl+Y` | Redo |
-| `Ctrl+D` | Duplicate selected control |
-| `Delete` | Delete selected control |
-
----
-
-## Supported Keybinds
-
-| Category | Keys |
-|----------|------|
-| Letters | A–Z |
-| Numbers | 0–9 |
-| Function | F1–F24 |
-| Modifiers | Shift, Ctrl, Alt, Win |
-| Navigation | Up, Down, Left, Right, Home, End, PageUp, PageDown |
-| Editing | Backspace, Delete, Insert |
-| Whitespace | Space, Tab, Enter |
-| Control | Escape, CapsLock, PrintScreen, Pause, ScrollLock |
-| Numpad | Numpad0–9, Add, Subtract, Multiply, Divide, Decimal |
-| Gamepad | `gamepad_a`, `gamepad_b`, `gamepad_x`, `gamepad_y` |
-| | `gamepad_lb`, `gamepad_rb`, `gamepad_lt`, `gamepad_rt` |
-| | `gamepad_ls`, `gamepad_rs` |
-| | `gamepad_dpad_up/down/left/right` |
-| | `gamepad_home`, `gamepad_back`, `gamepad_start` |
-
-Gamepad keys are treated as virtual gamepad buttons (not keyboard keys) and are exposed to the desktop monitor and any automation software that listens to WebSocket input broadcasts.
+| Control | Behavior |
+|---------|----------|
+| Buttons (A, B, X, Y, LB, RB, D-pad, BACK, START) | Tap to press, release to release |
+| LT / RT | Touch and drag — analog value 0–1 based on drag distance |
+| LS / RS | Drag — analog X/Y, snaps to center on release |
 
 ---
 
 ## Architecture
 
 ```
-┌──────────────────────┐      WebSocket       ┌──────────────────────┐
-│   Mobile Browser     │ ──────────────────→  │   PC Server          │
-│   (index.html)       │   keydown/keyup/     │   (server.py)        │
-│                      │   analog             │                      │
-│  ┌────────────────┐  │                      │  ┌────────────────┐  │
-│  │ Controller.js  │──│─────────────────────│→│  events.py      │  │
-│  │ Touch handlers │  │                      │  └───────┬────────┘  │
-│  └────────────────┘  │                      │          │           │
-│  ┌────────────────┐  │                      │  ┌───────▼────────┐  │
-│  │ Layout Editor  │  │                      │  │ keyboard.py    │  │
-│  │ (editor.js)    │  │                      │  │ (vgamepad +    │  │
-│  └────────────────┘  │                      │  │  SendInput)    │  │
-│  ┌────────────────┐  │                      │  └───────┬────────┘  │
-│  │ Layout State   │──│──HTTP POST/GET──────│──────────│────────── │
-│  │ (layout.js)    │  │                      │          │           │
-│  └────────────────┘  │                      │  ┌───────▼────────┐  │
-│  ┌────────────────┐  │                      │  │ ViGEmBus      │  │
-│  │ WebSocket.js   │  │                      │  │ (Xbox 360     │  │
-│  └────────────────┘  │                      │  │  virtual HID) │  │
-│                      │                      │  └───────┬────────┘  │
-│                      │                      │          │           │
-│                      │                      │  ┌───────▼────────┐  │
-│                      │                      │  │ network.py     │  │
-│                      │                      │  └────────────────┘  │
-└──────────────────────┘                      └──────────────────────┘
+Phone Browser                    PC Server
+┌──────────────┐   WebSocket    ┌──────────────────┐
+│ controller.js │ ──────────→  │ events.py         │
+│ layout.js     │   keydown/    │   ↓               │
+│ editor.js     │   analog      │ keyboard.py       │
+└──────────────┘               │   (vgamepad)       │
+                                │   ↓               │
+                                │ ViGEmBus driver   │
+                                │   ↓               │
+                                │ game sees Xbox 360│
+                                └──────────────────┘
 ```
 
 ### Data Flow
 
-1. User touches a control on the mobile browser
-2. `controller.js` determines the touch type (button press, analog stick drag, trigger drag)
-3. A JSON message is sent via WebSocket:
-   - `{type: "input", subtype: "keydown", key: "gamepad_a"}`
-   - `{type: "input", subtype: "analog", key: "gamepad_ls", x: 0.45, y: -0.82}`
-4. `server.py` receives the message and passes it to `events.py`
-5. `events.py` routes to `keyboard.py` which applies EMA smoothing and drives the virtual Xbox 360 controller via `vgamepad` (ViGEmBus driver)
-6. Gamepad button presses (A, B, X, Y, LB, RB, D-Pad, etc.) are sent as Xbox controller button presses
-7. Analog stick movements (LS, RS) are sent as Xbox joystick axis values
-8. Trigger drags (LT, RT) set the Xbox trigger analog value 0–1
-9. Regular keyboard keys (W, Space, etc.) use `SendInput` with virtual key codes
-10. All input messages are broadcast (fire-and-forget) to other WebSocket clients (gui.py monitor)
-
-### Network
-
-- Server runs on `0.0.0.0:8000`
-- WebSocket endpoint: `ws://<pc-ip>:8000/ws`
-- HTTP endpoints: `/` (UI), `/api/clients`, `/api/keys`
-- Broadcast: all input events are forwarded to every connected WebSocket client
-- Fire-and-forget: broadcasts use `asyncio.create_task` to never block the hot path
-
-### Latency Pipeline
-
-```
-Touch → elementsFromPoint → dead-zone check → throttle (16ms)
-→ change-threshold → WS send → server receive → fire-and-forget broadcast
-→ EMA (α=0.35) → vgamepad/SendInput → ViGEmBus driver → game
-```
+1. Touch on phone → `controller.js` determines type (button, stick, trigger)
+2. JSON message sent via WebSocket (`keydown` / `analog`)
+3. `events.py` routes to `keyboard.py`
+4. `keyboard.py` sends button/axis state to vgamepad → ViGEmBus → XInput
+5. All input broadcast to other WebSocket clients (monitors)
 
 ---
 
 ## Project Structure
 
 ```
-mobile-gamepad/
-├── server.py              # FastAPI + WebSocket server entry point
-├── gui.py                 # tkinter desktop monitor (optional)
-├── requirements.txt       # Python dependencies
-├── layout.json            # Saved control layout
-├── settings.json          # Application settings (snap, grid, haptic)
-├── .gitignore
-├── README.md
+Folder/
+├── server.py              # FastAPI + WebSocket server
+├── gui.py                 # customtkinter monitor (optional)
+├── requirements.txt
+├── layout.json            # Saved layout (auto-created)
+├── settings.json          # App settings
 │
-├── controller/            # Backend modules
-│   ├── __init__.py
-│   ├── keyboard.py        # vgamepad (Xbox 360) + SendInput input simulation
-│   ├── layout.py          # Layout CRUD, undo/redo, page management
-│   ├── config.py          # Settings load/save
-│   ├── events.py          # WebSocket message routing + broadcast
-│   ├── storage.py         # JSON file I/O with locking
-│   ├── network.py         # LAN IP detection + connection tracker
-│   └── utils.py           # Shared helpers
+├── controller/
+│   ├── keyboard.py        # Single virtual Xbox 360 gamepad
+│   ├── layout.py          # Layout CRUD, undo/redo, pages
+│   ├── events.py          # WebSocket message routing
+│   ├── config.py          # Settings
+│   ├── storage.py         # JSON file I/O
+│   ├── network.py         # LAN IP, connection manager
+│   ├── utils.py
+│   └── default_gamepad.json  # Template for new pages
 │
 ├── templates/
-│   └── index.html         # Single-page application HTML
+│   └── index.html         # SPA frontend
 │
 └── static/
-    ├── css/
-    │   └── main.css       # All styles (black-and-white design)
+    ├── css/main.css
     └── js/
-        ├── app.js         # App entry point, wiring, keyboard shortcuts
-        ├── websocket.js   # WebSocket client with reconnection
-        ├── controller.js  # Touch handling, analog sticks, triggers
-        ├── editor.js      # Layout editor (select, drag, resize, properties)
-        ├── layout.js      # Client-side layout state, control CRUD, pages
-        ├── ui.js          # Mode management, modals, toasts, context menu
-        ├── settings.js    # Settings panel logic
-        └── utils.js       # Event bus, debounce, throttle helpers
+        ├── app.js         # Entry point
+        ├── websocket.js   # WebSocket client
+        ├── controller.js  # Touch handling
+        ├── editor.js      # Layout editor
+        ├── layout.js      # Client layout state
+        ├── ui.js          # Modals, toasts, mode
+        ├── settings.js
+        └── utils.js
 ```
 
 ---
 
-## Installation Methods
+## Requirements
 
-### 1. Direct (pip)
-
-```bash
-git clone https://github.com/Kartik13-op/mobile-gamepad.git
-cd mobile-gamepad
-pip install -r requirements.txt
-python server.py
-```
-
-### 2. Virtual Environment (recommended)
-
-```bash
-git clone https://github.com/Kartik13-op/mobile-gamepad.git
-cd mobile-gamepad
-python -m venv venv
-# Windows:
-venv\Scripts\activate
-# macOS/Linux:
-# source venv/bin/activate
-pip install -r requirements.txt
-python server.py
-```
-
-### 3. Portable (USB stick)
-
-Install dependencies on your PC, copy the entire `mobile-gamepad` folder to a USB drive, and run `python server.py` on any Windows machine with Python installed.
-
-### 4. Run as Background Service (advanced)
-
-Use `nssm` or `pyw` to run `server.py` as a background process that starts on boot.
-
----
-
-## Desktop Monitor (gui.py)
-
-The tkinter monitor has two tabs:
-
-**Server tab** — shows connection status, connected device IDs, Start/Stop server buttons.
-
-**Test tab** — live visualization of all inputs:
-- LS/RS crosshairs with draggable dots
-- LT/RT analog fill bars with numeric readout
-- LB/RB, A/B/X/Y, HOME/BACK/START, D-Pad button state indicators
-
----
-
-## Development
-
-### Running with hot-reload for frontend
-
-The static files are served directly; just edit CSS/JS and refresh the browser.
-
-### Running the server with auto-restart
-
-```bash
-uvicorn server:app --host 0.0.0.0 --port 8000 --reload
-```
+- `fastapi`, `uvicorn` — Web server
+- `vgamepad` — Xbox 360 virtual controller via ViGEmBus
+- `websockets` — WebSocket client (optional, for gui.py)
+- `customtkinter` — Desktop monitor (optional)
 
 ---
 
 ## Troubleshooting
 
-| Problem | Solution |
-|---------|----------|
-| `vgamepad` / ViGEmBus not working | Run as Administrator once, or install ViGEmBus from https://github.com/nefarius/ViGEmBus/releases |
-| Phone can't connect | Ensure both devices are on the **same WiFi** and Windows Firewall allows port 8000 |
-| Input lag | Use a 5 GHz WiFi network; keep the server PC wired via Ethernet |
-| Sticks not centering | Release all touches and re-engage |
-| Layout lost after refresh | Click **SAVE** before refreshing; auto-save must be enabled in settings |
+| Problem | Fix |
+|---------|-----|
+| Phone can't connect | Same WiFi? Windows Firewall blocking port 8000? |
+| Controller not detected | Run `python server.py` and check `joy.cpl` while server is running |
+| ViGEmBus not installed | vgamepad installs it automatically; or download from ViGEmBus releases |
+| Input lag | 5 GHz WiFi; wired Ethernet for server PC |
 
 ---
-
-## Games Tested
-
-- Rocket League(Easy Anticheat Turned OFF)
 
 ## License
 

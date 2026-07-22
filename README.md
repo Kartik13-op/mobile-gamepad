@@ -407,13 +407,11 @@ The phone needs nothing but a modern web browser with:
 - [x] Undo/Redo
 - [x] Multi-page layouts
 - [x] Desktop monitor
+- [ ] Mapping device Gyro into different analog inputs.
 - [ ] Keyboard & mouse input support
-- [ ] Multiple virtual controllers
-- [ ] Bluetooth direct connect
-- [ ] On-device layout editor
-- [ ] Layout presets/themes
+- [ ] Multi Virtual Controller Support
 - [ ] Macro/rapid-fire support
-
+- [ ] Bundle whole project into a simple .exe file.
 ---
 
 ## Contributing

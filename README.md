@@ -1,4 +1,4 @@
-# Mobile Gamepad
+# TouchKeys — Mobile Gamepad
 
 Turn any phone or tablet into a **virtual Xbox 360 gamepad** for your PC. Fully customizable controls with a real-time layout editor, analog sticks, and triggers.
 
@@ -114,7 +114,7 @@ Phone Browser                    PC Server
 ## Project Structure
 
 ```
-Folder/
+TouchKeys/
 ├── server.py              # FastAPI + WebSocket server
 ├── gui.py                 # customtkinter monitor (optional)
 ├── requirements.txt

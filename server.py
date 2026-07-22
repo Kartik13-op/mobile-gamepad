@@ -132,6 +132,13 @@ async def index() -> HTMLResponse:
     return HTMLResponse(content=html_path.read_text(encoding="utf-8"))
 
 
+@app.get("/monitor", response_class=HTMLResponse)
+async def monitor() -> HTMLResponse:
+    """Serve the desktop monitor page (WebSocket-based live input viewer)."""
+    html_path = TEMPLATE_DIR / "monitor.html"
+    return HTMLResponse(content=html_path.read_text(encoding="utf-8"))
+
+
 @app.get("/api/ip")
 async def get_ip() -> dict:
     """Return the LAN IP so the client can display it."""

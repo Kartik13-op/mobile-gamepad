@@ -17,11 +17,17 @@ env/
 .idea/
 *.swp
 *.swo
+*~
 
 # OS
 Thumbs.db
 .DS_Store
+.Directory
 
 # Project runtime
 layout.json.bak
 *.log
+.server.lock
+
+# Runtime artifacts
+settings.json

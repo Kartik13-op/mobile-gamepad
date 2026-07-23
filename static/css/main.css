@@ -1,35 +1,25 @@
 ﻿/* ================================================================
-   GamePad â€” Bold Black & White Design System
-   No outlines, no border-radius, no animations except white flash
+   TouchKeys — Bold Black & White Design System
    ================================================================ */
 
-/* --- Google Fonts --- */
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@500;700;900&display=swap');
 
-/* ================================================================
-   1. DESIGN TOKENS
-   ================================================================ */
+/* --- Design Tokens --- */
 :root {
   --bg-base:       #000000;
   --bg-surface:    #0a0a0a;
   --bg-elevated:   #111111;
   --bg-card:       #1a1a1a;
   --bg-card-hover: #222222;
-
   --text-primary:  #ffffff;
   --text-secondary:#888888;
   --text-muted:    #444444;
-
   --border:        #222222;
-
   --font:          'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
-
   --grid-size:     20px;
 }
 
-/* ================================================================
-   2. RESET & BASE
-   ================================================================ */
+/* --- Reset & Base --- */
 *, *::before, *::after {
   margin: 0;
   padding: 0;
@@ -60,25 +50,18 @@ body {
   flex-direction: column;
 }
 
-input,
-textarea,
-select,
-button {
+input, textarea, select, button {
   user-select: auto;
   -webkit-user-select: auto;
   touch-action: manipulation;
 }
 
-input,
-textarea,
-select {
+input, textarea, select {
   -webkit-text-size-adjust: 100%;
   caret-color: var(--text-primary);
 }
 
-/* ================================================================
-   3. TOOLBAR
-   ================================================================ */
+/* --- Toolbar --- */
 .toolbar {
   display: flex;
   align-items: center;
@@ -182,89 +165,6 @@ select {
   flex: 1;
 }
 
-.tb-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 34px;
-  padding: 6px 12px;
-  font-size: 11px;
-  font-weight: 700;
-  font-family: var(--font);
-  letter-spacing: 1px;
-  color: var(--text-secondary);
-  background: transparent;
-  border: none;
-  cursor: pointer;
-  white-space: nowrap;
-}
-
-.tb-btn:hover {
-  color: var(--text-primary);
-}
-
-.tb-btn:active {
-  background: var(--text-primary);
-  color: var(--bg-base);
-}
-
-.tb-btn.active {
-  color: var(--text-primary);
-  background: #27334f;
-}
-
-.tb-btn-primary {
-  color: var(--bg-base);
-  background: var(--text-primary);
-}
-
-.tb-btn-primary:hover {
-  background: var(--text-secondary);
-  color: var(--bg-base);
-}
-
-.latency-badge {
-  font-size: 9px;
-  color: var(--text-muted);
-  font-variant-numeric: tabular-nums;
-}
-
-/* ================================================================
-   4. WORKSPACE
-   ================================================================ */
-.workspace-container {
-  flex: 1;
-  position: relative;
-  overflow: hidden;
-  background: var(--bg-base);
-}
-
-.workspace {
-  position: relative;
-  width: 100%;
-  height: 100%;
-  touch-action: none;
-  background: var(--bg-base);
-}
-
-/* Grid overlay */
-.workspace-grid {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  background-image:
-    linear-gradient(rgba(255,255,255,0.04) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255,255,255,0.04) 1px, transparent 1px);
-  background-size: var(--grid-size) var(--grid-size);
-  opacity: 0;
-  z-index: 0;
-}
-
-.workspace-grid.visible {
-  opacity: 1;
-}
-
-/* Cog toggle button (mobile) */
 .cog-btn {
   position: fixed;
   top: 6px;
@@ -293,9 +193,29 @@ select {
   display: none !important;
 }
 
-/* ================================================================
-   5. CONTROLS â€” BUTTONS
-   ================================================================ */
+.latency-badge {
+  font-size: 9px;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* --- Workspace --- */
+.workspace-container {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+  background: var(--bg-base);
+}
+
+.workspace {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  touch-action: none;
+  background: var(--bg-base);
+}
+
+/* --- Controls: Buttons --- */
 .ctrl-btn {
   position: absolute;
   display: flex;
@@ -331,7 +251,6 @@ select {
   letter-spacing: 0.5px;
 }
 
-/* Flash white on press (play mode) */
 .ctrl-btn.pressed {
   background: var(--text-primary) !important;
   color: var(--bg-base) !important;
@@ -342,9 +261,7 @@ select {
   opacity: 0.6;
 }
 
-/* ================================================================
-   6. CONTROLS â€” ANALOG STICK
-   ================================================================ */
+/* --- Controls: Analog Stick --- */
 .ctrl-analog {
   position: absolute;
   display: flex;
@@ -369,8 +286,8 @@ select {
 }
 
 .analog-inner {
-  width: 40%;
-  height: 40%;
+  width: 30%;
+  height: 30%;
   background: var(--bg-card);
   position: absolute;
   pointer-events: none;
@@ -398,9 +315,7 @@ select {
   display: none;
 }
 
-/* ================================================================
-   7. CONTROLS â€” TRIGGER
-   ================================================================ */
+/* --- Controls: Trigger --- */
 .ctrl-trigger {
   position: absolute;
   display: flex;
@@ -428,61 +343,7 @@ select {
   display: none;
 }
 
-/* ================================================================
-   8. EDIT MODE
-   ================================================================ */
-.ctrl-btn.edit-mode,
-.ctrl-analog.edit-mode,
-.ctrl-trigger.edit-mode {
-  cursor: move;
-}
-
-.ctrl-btn.selected,
-.ctrl-analog.selected,
-.ctrl-trigger.selected {
-  outline: 2px solid var(--text-primary);
-  outline-offset: 2px;
-  z-index: 50 !important;
-}
-
-/* Resize handles */
-.resize-handle {
-  position: absolute;
-  width: 28px;
-  height: 28px;
-  z-index: 60;
-  pointer-events: auto;
-  cursor: nwse-resize;
-  opacity: 0;
-}
-
-.resize-handle::after {
-  content: '';
-  position: absolute;
-  width: 12px;
-  height: 12px;
-  background: var(--text-primary);
-}
-
-.ctrl-btn.selected .resize-handle,
-.ctrl-analog.selected .resize-handle,
-.ctrl-trigger.selected .resize-handle {
-  opacity: 1;
-}
-
-.resize-handle.nw { top: -14px;  left: -14px; cursor: nwse-resize; }
-.resize-handle.ne { top: -14px;  right: -14px; cursor: nesw-resize; }
-.resize-handle.sw { bottom: -14px;left: -14px; cursor: nesw-resize; }
-.resize-handle.se { bottom: -14px;right: -14px; cursor: nwse-resize; }
-
-.resize-handle.nw::after { bottom: 0; right: 0;  }
-.resize-handle.ne::after { bottom: 0; left: 0;   }
-.resize-handle.sw::after { top: 0;    right: 0;  }
-.resize-handle.se::after { top: 0;    left: 0;   }
-
-/* ================================================================
-   9. PAGE TABS
-   ================================================================ */
+/* --- Page Tabs --- */
 .page-tabs {
   display: flex;
   align-items: center;
@@ -525,372 +386,7 @@ select {
   background: var(--bg-card);
 }
 
-.page-tab-add {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 26px;
-  height: 26px;
-  font-size: 14px;
-  font-weight: 700;
-  font-family: var(--font);
-  color: var(--text-muted);
-  background: transparent;
-  border: 2px dashed var(--border);
-  cursor: pointer;
-  flex-shrink: 0;
-}
-
-.page-tab-add:hover {
-  color: var(--text-primary);
-  border-color: var(--text-secondary);
-}
-
-/* ================================================================
-   10. MODALS
-   ================================================================ */
-.modal-overlay {
-  position: fixed;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 20px 0;
-  overflow-y: auto;
-  background: rgba(0, 0, 0, 0.85);
-  z-index: 1000;
-  opacity: 0;
-  pointer-events: none;
-}
-
-.modal-overlay.open {
-  opacity: 1;
-  pointer-events: auto;
-}
-
-.modal {
-  width: 92%;
-  max-width: 380px;
-  max-height: 80vh;
-  background: var(--bg-elevated);
-  border: 2px solid var(--border);
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-}
-
-.modal-sm {
-  max-width: 300px;
-}
-
-.modal-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 14px 16px;
-  border-bottom: 2px solid var(--border);
-}
-
-.modal-title {
-  font-size: 14px;
-  font-weight: 900;
-  letter-spacing: 2px;
-  color: var(--text-primary);
-}
-
-.modal-close {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 28px;
-  height: 28px;
-  font-size: 14px;
-  font-weight: 700;
-  font-family: var(--font);
-  color: var(--text-muted);
-  background: transparent;
-  border: none;
-  cursor: pointer;
-}
-
-.modal-close:hover {
-  color: var(--text-primary);
-  background: var(--bg-card);
-}
-
-.modal-body {
-  padding: 16px;
-  overflow-y: auto;
-  flex: 1;
-  min-height: 0;
-}
-
-.modal form {
-  display: flex;
-  flex-direction: column;
-  flex: 1;
-  min-height: 0;
-  overflow: hidden;
-}
-
-.modal-footer {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 8px;
-  padding: 10px 16px;
-  border-top: 2px solid var(--border);
-}
-
-/* ================================================================
-   11. FORM ELEMENTS
-   ================================================================ */
-.form-group {
-  margin-bottom: 12px;
-}
-
-.form-label {
-  display: block;
-  font-size: 10px;
-  font-weight: 700;
-  color: var(--text-secondary);
-  margin-bottom: 4px;
-  letter-spacing: 1px;
-}
-
-.form-input,
-.form-select {
-  width: 100%;
-  padding: 8px 10px;
-  font-size: 12px;
-  font-weight: 500;
-  font-family: var(--font);
-  color: var(--text-primary);
-  background: var(--bg-card);
-  border: 1px solid var(--border);
-  outline: none;
-  user-select: text;
-  -webkit-user-select: text;
-  touch-action: manipulation;
-}
-
-.form-input:focus,
-.form-select:focus {
-  outline: 2px solid var(--text-primary);
-  border-color: var(--text-primary);
-}
-
-.form-input::placeholder {
-  color: var(--text-muted);
-}
-
-.form-select {
-  cursor: pointer;
-  appearance: none;
-  padding-right: 28px;
-}
-
-.form-select option {
-  background: var(--bg-elevated);
-  color: var(--text-primary);
-}
-
-.form-row {
-  display: flex;
-  gap: 8px;
-}
-
-.form-row .form-group {
-  flex: 1;
-}
-
-.form-toggle {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  cursor: pointer;
-}
-
-.form-toggle input {
-  display: none;
-}
-
-.toggle-track {
-  width: 36px;
-  height: 20px;
-  background: var(--bg-card);
-  position: relative;
-  border: 2px solid var(--border);
-}
-
-.form-toggle input:checked + .toggle-track {
-  background: var(--text-primary);
-  border-color: var(--text-primary);
-}
-
-.toggle-track::after {
-  content: '';
-  position: absolute;
-  top: 2px;
-  left: 2px;
-  width: 12px;
-  height: 12px;
-  background: var(--text-muted);
-}
-
-.form-toggle input:checked + .toggle-track::after {
-  background: var(--bg-base);
-  transform: translateX(16px);
-}
-
-/* ================================================================
-   12. ACTION BUTTONS
-   ================================================================ */
-.btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 4px;
-  padding: 8px 16px;
-  font-size: 11px;
-  font-weight: 700;
-  font-family: var(--font);
-  letter-spacing: 1px;
-  border: none;
-  cursor: pointer;
-  color: var(--text-secondary);
-  background: var(--bg-card);
-}
-
-.btn:hover {
-  color: var(--text-primary);
-  background: var(--bg-card-hover);
-}
-
-.btn:active {
-  background: var(--text-primary);
-  color: var(--bg-base);
-}
-
-.btn-primary {
-  color: var(--bg-base);
-  background: var(--text-primary);
-}
-
-.btn-primary:hover {
-  background: var(--text-secondary);
-  color: var(--bg-base);
-}
-
-.btn-danger {
-  color: var(--text-primary);
-  background: #330000;
-}
-
-.btn-danger:hover {
-  background: #550000;
-}
-
-.btn-sm {
-  padding: 4px 8px;
-  font-size: 10px;
-}
-
-/* ================================================================
-   13. PROPERTIES PANEL
-   ================================================================ */
-/* Properties panel toggle button */
-.prop-toggle {
-  position: absolute;
-  top: 8px;
-  right: 8px;
-  z-index: 95;
-  width: 36px;
-  height: 36px;
-  font-size: 18px;
-  line-height: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--bg-elevated);
-  color: var(--text-primary);
-  border: 2px solid var(--border);
-  cursor: pointer;
-}
-
-.prop-toggle.hidden {
-  display: none;
-}
-
-.prop-toggle:active {
-  background: var(--text-primary);
-  color: var(--bg-base);
-}
-
-.properties-panel {
-  position: absolute;
-  top: 0;
-  right: 0;
-  width: 230px;
-  height: 100%;
-  background: var(--bg-elevated);
-  border-left: 2px solid var(--border);
-  z-index: 90;
-  overflow-y: auto;
-  transform: translateX(100%);
-  scrollbar-width: thin;
-  scrollbar-color: var(--border) transparent;
-}
-
-.properties-panel.open {
-  transform: translateX(0);
-}
-
-.properties-panel::-webkit-scrollbar {
-  width: 4px;
-}
-
-.properties-panel::-webkit-scrollbar-thumb {
-  background: var(--border);
-}
-
-.panel-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 12px 14px;
-  border-bottom: 2px solid var(--border);
-  position: sticky;
-  top: 0;
-  background: var(--bg-elevated);
-  z-index: 1;
-}
-
-.panel-title {
-  font-size: 11px;
-  font-weight: 900;
-  letter-spacing: 2px;
-  color: var(--text-primary);
-}
-
-.panel-body {
-  padding: 12px 14px;
-}
-
-.panel-section {
-  margin-bottom: 16px;
-}
-
-.panel-actions {
-  display: flex;
-  gap: 8px;
-  padding: 12px 14px;
-  border-top: 2px solid var(--border);
-}
-
-/* ================================================================
-   14. TOAST NOTIFICATIONS
-   ================================================================ */
+/* --- Toast --- */
 .toast-container {
   position: fixed;
   bottom: 70px;
@@ -921,64 +417,7 @@ select {
   opacity: 0;
 }
 
-/* ================================================================
-   15. CONTEXT MENU
-   ================================================================ */
-.ctx-menu {
-  position: fixed;
-  min-width: 140px;
-  background: var(--bg-elevated);
-  border: 2px solid var(--border);
-  z-index: 500;
-  padding: 4px;
-  opacity: 0;
-  pointer-events: none;
-}
-
-.ctx-menu.open {
-  opacity: 1;
-  pointer-events: auto;
-}
-
-.ctx-item {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 10px;
-  font-size: 11px;
-  font-weight: 700;
-  font-family: var(--font);
-  letter-spacing: 1px;
-  color: var(--text-secondary);
-  background: none;
-  border: none;
-  cursor: pointer;
-  width: 100%;
-  text-align: left;
-}
-
-.ctx-item:hover {
-  color: var(--text-primary);
-  background: var(--bg-card);
-}
-
-.ctx-item.danger {
-  color: #ff4444;
-}
-
-.ctx-item.danger:hover {
-  background: rgba(255, 68, 68, 0.1);
-}
-
-.ctx-divider {
-  height: 2px;
-  background: var(--border);
-  margin: 4px 0;
-}
-
-/* ================================================================
-   16. SCROLLBAR
-   ================================================================ */
+/* --- Scrollbar --- */
 ::-webkit-scrollbar {
   width: 4px;
   height: 4px;
@@ -996,9 +435,7 @@ select {
   background: var(--text-muted);
 }
 
-/* ================================================================
-   17. RESPONSIVE
-   ================================================================ */
+/* --- Responsive --- */
 @media (max-width: 600px) {
   .toolbar {
     padding: 4px 6px;
@@ -1011,31 +448,13 @@ select {
     display: none;
   }
 
-  .tb-btn {
-    padding: 4px 8px;
-    font-size: 10px;
-  }
-
   .toolbar-brand .logo {
     font-size: 13px;
   }
-
-  .properties-panel {
-    width: 200px;
-  }
 }
 
-@media (max-width: 400px) {
-  .toolbar-divider {
-    display: none;
-  }
-}
-
-/* ================================================================
-   18. PWA / FULLSCREEN
-   ================================================================ */
-@media (display-mode: standalone),
-       (display-mode: fullscreen) {
+/* --- PWA / Fullscreen --- */
+@media (display-mode: standalone), (display-mode: fullscreen) {
   .toolbar {
     padding-top: max(6px, env(safe-area-inset-top));
   }
@@ -1045,38 +464,7 @@ select {
   }
 }
 
-/* ================================================================
-   19. SETTINGS GRID
-   ================================================================ */
-.settings-grid {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.settings-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-}
-
-.settings-label {
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 1px;
-  color: var(--text-secondary);
-}
-
-/* ================================================================
-   20. MISC
-   ================================================================ */
-img, svg {
-  pointer-events: none;
-  user-select: none;
-  -webkit-user-drag: none;
-}
-
+/* --- Misc --- */
 .hidden {
   display: none !important;
 }
@@ -1093,11 +481,6 @@ img, svg {
   pointer-events: none;
 }
 
-.empty-state .empty-icon {
-  font-size: 36px;
-  opacity: 0.3;
-}
-
 .empty-state .empty-text {
   font-size: 13px;
   font-weight: 700;
@@ -1110,14 +493,10 @@ img, svg {
   opacity: 0.6;
 }
 
-/* ================================================================
-   21. SCREEN - GAMEPAD
-   ================================================================ */
+/* --- Screen --- */
 .screen-gamepad {
   display: flex;
   flex-direction: column;
   width: 100%;
   height: 100%;
 }
-
-

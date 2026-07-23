@@ -48,8 +48,28 @@ class LayoutManager:
         """Load layout from disk or return minimal defaults."""
         data = self.storage.read_json(LAYOUT_FILE)
         if data and self.validate_layout(data):
+            self._migrate_layout(data)
             return data
         return self._default_layout()
+
+    @staticmethod
+    def _migrate_layout(data: Dict[str, Any]) -> None:
+        """Migrate old/incorrect layout formats in-place."""
+        ref_w, ref_h = 800, 600
+        for page in data.get("pages", []):
+            for btn in page.get("buttons", []):
+                # Fractional x/y converted to 0-1 range (old pixel format)
+                if btn.get("x", 0) > 1:
+                    btn["x"] = btn["x"] / ref_w
+                if btn.get("y", 0) > 1:
+                    btn["y"] = btn["y"] / ref_h
+                # Fractional width/height converted to pixels (v2 format uses px)
+                w = btn.get("width", 60)
+                h = btn.get("height", 60)
+                if 0 < w < 1:
+                    btn["width"] = max(20, round(w * ref_w))
+                if 0 < h < 1:
+                    btn["height"] = max(20, round(h * ref_h))
 
     @classmethod
     def _default_layout(cls) -> Dict[str, Any]:

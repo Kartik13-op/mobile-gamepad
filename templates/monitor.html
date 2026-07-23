@@ -1,0 +1,1052 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TouchKeys — Desktop Control Center</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@500;700;900&display=swap">
+<style>
+*, *::before, *::after { margin:0; padding:0; box-sizing:border-box; border-radius:0 !important; }
+:root {
+  --bg-base: #000; --bg-surface: #0a0a0a; --bg-elevated: #111;
+  --bg-card: #1a1a1a; --bg-card-hover: #222;
+  --text: #fff; --text-dim: #888; --text-muted: #444;
+  --border: #222; --accent: #7dff9b; --danger: #ff4444;
+  --font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  --sidebar-w: 200px;
+}
+html, body { width:100%; height:100%; overflow:hidden; font-family:var(--font); font-size:13px; font-weight:500; color:var(--text); background:var(--bg-base); -webkit-font-smoothing:antialiased; user-select:none; }
+#app { display:flex; height:100%; flex-direction:column; }
+
+/* Sidebar */
+#sidebar { width:var(--sidebar-w); background:var(--bg-surface); border-right:2px solid var(--border); display:flex; flex-direction:column; flex-shrink:0; }
+.sb-brand { padding:16px; font-size:15px; font-weight:900; letter-spacing:2px; border-bottom:2px solid var(--border); }
+.sb-nav { flex:1; display:flex; flex-direction:column; padding:8px 0; }
+.sb-tab { display:flex; align-items:center; gap:10px; padding:10px 16px; font-size:11px; font-weight:700; letter-spacing:1px; color:var(--text-dim); background:none; border:none; cursor:pointer; text-align:left; font-family:var(--font); }
+.sb-tab:hover { color:var(--text); background:var(--bg-elevated); }
+.sb-tab.active { color:var(--text); background:var(--bg-card); }
+.sb-tab .ico { font-size:16px; width:20px; text-align:center; }
+.sb-conn { padding:12px 16px; border-top:2px solid var(--border); font-size:10px; display:flex; align-items:center; gap:6px; }
+.conn-dot { width:8px; height:8px; flex-shrink:0; background:var(--text-muted); }
+.conn-dot.on { background:var(--accent); box-shadow:0 0 6px var(--accent); }
+.conn-dot.off { background:var(--danger); }
+
+/* Main layout */
+#main { display:flex; flex:1; min-height:0; }
+#content { flex:1; overflow:hidden; position:relative; }
+.tab-page { position:absolute; inset:0; overflow-y:auto; padding:24px; display:none; }
+.tab-page.active { display:block; }
+
+/* Status bar */
+#status-bar { display:flex; align-items:center; gap:16px; padding:6px 16px; background:var(--bg-surface); border-top:2px solid var(--border); font-size:10px; color:var(--text-dim); flex-shrink:0; }
+#status-bar .stat { display:flex; align-items:center; gap:4px; }
+#status-bar .val { color:var(--text); font-weight:700; }
+
+/* Cards */
+.card { background:var(--bg-card); border:2px solid var(--border); padding:16px; margin-bottom:16px; }
+.card-title { font-size:10px; font-weight:700; letter-spacing:1px; color:var(--text-dim); margin-bottom:12px; }
+.card-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(180px, 1fr)); gap:12px; }
+.stat-card { background:var(--bg-elevated); border:2px solid var(--border); padding:16px; text-align:center; }
+.stat-card .num { font-size:32px; font-weight:900; letter-spacing:1px; }
+.stat-card .lbl { font-size:9px; font-weight:700; letter-spacing:1px; color:var(--text-dim); margin-top:4px; }
+.stat-card .num.green { color:var(--accent); }
+.stat-card .num.red { color:var(--danger); }
+
+/* QR */
+#qr-wrap { text-align:center; padding:16px; }
+#qr-wrap img { width:200px; height:200px; border:2px solid var(--border); }
+#qr-wrap .url { font-size:18px; font-weight:900; letter-spacing:2px; margin-top:12px; }
+
+/* Buttons */
+.btn { display:inline-flex; align-items:center; justify-content:center; gap:4px; padding:8px 16px; font-size:11px; font-weight:700; font-family:var(--font); letter-spacing:1px; border:none; cursor:pointer; color:var(--text-dim); background:var(--bg-card); }
+.btn:hover { color:var(--text); background:var(--bg-card-hover); }
+.btn:active { background:var(--text); color:var(--bg-base); }
+.btn-primary { color:var(--bg-base); background:var(--text); }
+.btn-primary:hover { background:var(--text-dim); color:var(--bg-base); }
+.btn-danger { color:var(--text); background:#330000; }
+.btn-danger:hover { background:#550000; }
+.btn-sm { padding:4px 8px; font-size:10px; }
+.btn-group { display:flex; gap:8px; flex-wrap:wrap; }
+
+/* Form */
+.form-group { margin-bottom:12px; }
+.form-label { display:block; font-size:10px; font-weight:700; color:var(--text-dim); margin-bottom:4px; letter-spacing:1px; }
+.form-input, .form-select { width:100%; padding:8px 10px; font-size:12px; font-weight:500; font-family:var(--font); color:var(--text); background:var(--bg-card); border:1px solid var(--border); outline:none; }
+.form-input:focus, .form-select:focus { outline:2px solid var(--text); border-color:var(--text); }
+.form-row { display:flex; gap:8px; }
+.form-row .form-group { flex:1; }
+
+/* Device list */
+.device-item { display:flex; align-items:center; gap:12px; padding:12px; border:2px solid var(--border); margin-bottom:8px; }
+.device-item .info { flex:1; }
+.device-item .name { font-weight:700; font-size:13px; }
+.device-item .meta { font-size:10px; color:var(--text-dim); margin-top:2px; }
+.tag { display:inline-block; padding:2px 8px; font-size:9px; font-weight:700; letter-spacing:1px; }
+.tag-active { background:var(--accent); color:var(--bg-base); }
+.tag-monitor { background:var(--text-dim); color:var(--bg-base); }
+.tag-connected { background:var(--bg-card-hover); color:var(--text); }
+
+/* Layout Editor */
+#editor-layout { display:flex; gap:16px; height:100%; }
+#editor-canvas-wrap { flex:1; position:relative; background:var(--bg-surface); border:2px solid var(--border); overflow:hidden; min-height:400px; }
+#editor-canvas { position:relative; width:100%; height:100%; }
+#editor-canvas .ctrl-el { position:absolute; cursor:move; border:1px solid rgba(255,255,255,0.12); display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:700; letter-spacing:1px; overflow:hidden; z-index:1; }
+#editor-canvas .ctrl-el:hover { outline:1px solid rgba(255,255,255,0.3); }
+#editor-canvas .ctrl-el.selected { outline:2px solid var(--text); outline-offset:2px; z-index:10; }
+#editor-canvas .ctrl-el.ctrl-button { background:linear-gradient(180deg,#2a2a2a,var(--bg-card)); }
+#editor-canvas .ctrl-el.ctrl-stick { background:transparent; border:3px solid var(--bg-card); }
+#editor-canvas .ctrl-el.ctrl-trigger { background:linear-gradient(180deg,#2a2a2a,var(--bg-card)); }
+.resize-h { position:absolute; width:16px; height:16px; z-index:20; opacity:0; pointer-events:none; }
+.ctrl-el.selected .resize-h { opacity:1; pointer-events:auto; }
+.resize-h::after { content:''; position:absolute; width:8px; height:8px; background:var(--text); }
+.resize-h.nw { top:-8px; left:-8px; cursor:nwse-resize; }
+.resize-h.ne { top:-8px; right:-8px; cursor:nesw-resize; }
+.resize-h.sw { bottom:-8px; left:-8px; cursor:nesw-resize; }
+.resize-h.se { bottom:-8px; right:-8px; cursor:nwse-resize; }
+.resize-h.nw::after { bottom:0; right:0; }
+.resize-h.ne::after { bottom:0; left:0; }
+.resize-h.sw::after { top:0; right:0; }
+.resize-h.se::after { top:0; left:0; }
+
+/* Properties panel */
+#editor-props { width:260px; background:var(--bg-surface); border:2px solid var(--border); padding:12px; overflow-y:auto; flex-shrink:0; max-height:100%; }
+#editor-props .prop-section { margin-bottom:12px; padding-bottom:12px; border-bottom:2px solid var(--border); }
+#editor-props .prop-section:last-child { border-bottom:none; }
+#editor-props .ph { font-size:10px; font-weight:700; letter-spacing:1px; color:var(--text-dim); margin-bottom:8px; }
+#editor-props input[type="range"] { width:100%; -webkit-appearance:none; appearance:none; height:4px; background:var(--border); outline:none; }
+#editor-props input[type="range"]::-webkit-slider-thumb { -webkit-appearance:none; width:14px; height:14px; background:var(--text); cursor:pointer; }
+#editor-props .range-row { display:flex; align-items:center; gap:8px; margin-bottom:6px; }
+#editor-props .range-row label { font-size:10px; font-weight:700; color:var(--text-dim); width:20px; letter-spacing:1px; }
+#editor-props .range-row input[type="range"] { flex:1; }
+#editor-props .range-row .rv { font-size:10px; font-weight:700; width:32px; text-align:right; font-variant-numeric:tabular-nums; }
+
+/* Page tabs for editor */
+.editor-pages { display:flex; align-items:center; gap:4px; margin-bottom:12px; flex-wrap:wrap; }
+.editor-page-tab { padding:4px 10px; font-size:10px; font-weight:700; font-family:var(--font); letter-spacing:1px; color:var(--text-dim); background:none; border:1px solid var(--border); cursor:pointer; }
+.editor-page-tab:hover { color:var(--text); }
+.editor-page-tab.active { color:var(--text); background:var(--bg-card); }
+.editor-page-add { padding:4px 8px; font-size:12px; font-weight:700; font-family:var(--font); color:var(--text-muted); background:none; border:1px dashed var(--border); cursor:pointer; }
+
+/* Input Monitor */
+#monitor-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(60px,1fr)); gap:8px; margin-bottom:24px; }
+.mon-btn { height:60px; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:700; letter-spacing:1px; background:var(--bg-card); border:2px solid var(--border); transition:background 0.05s; }
+.mon-btn.active { background:var(--text); color:var(--bg-base); border-color:var(--text); }
+#monitor-sticks { display:flex; gap:24px; margin-bottom:24px; }
+.stick-wrap { text-align:center; }
+.stick-wrap canvas { border:2px solid var(--border); background:var(--bg-elevated); }
+.stick-wrap .slbl { font-size:10px; font-weight:700; color:var(--text-dim); margin-top:4px; letter-spacing:1px; }
+#monitor-triggers { display:flex; gap:16px; }
+.trigger-wrap { flex:1; }
+.trigger-wrap .tlbl { font-size:10px; font-weight:700; color:var(--text-dim); margin-bottom:4px; letter-spacing:1px; }
+.trigger-bar { height:24px; background:var(--bg-elevated); border:2px solid var(--border); position:relative; }
+.trigger-fill { height:100%; background:var(--text); width:0%; transition:width 0.05s; }
+.trigger-val { position:absolute; right:8px; top:50%; transform:translateY(-50%); font-size:10px; font-weight:700; color:var(--text-dim); }
+
+/* Section title */
+.section-title { font-size:14px; font-weight:900; letter-spacing:2px; margin-bottom:16px; }
+.section-sub { font-size:10px; color:var(--text-dim); letter-spacing:1px; margin-bottom:16px; }
+
+/* Scrollbar */
+::-webkit-scrollbar { width:4px; height:4px; }
+::-webkit-scrollbar-track { background:transparent; }
+::-webkit-scrollbar-thumb { background:var(--border); }
+::-webkit-scrollbar-thumb:hover { background:var(--text-muted); }
+.hidden { display:none !important; }
+
+/* Toggle */
+.toggle { position:relative; display:inline-flex; align-items:center; cursor:pointer; }
+.toggle input { display:none; }
+.toggle-track { width:32px; height:18px; background:var(--bg-card); border:2px solid var(--border); }
+.toggle input:checked + .toggle-track { background:var(--text); border-color:var(--text); }
+.toggle-track::after { content:''; position:absolute; top:3px; left:3px; width:10px; height:10px; background:var(--text-muted); }
+.toggle input:checked + .toggle-track::after { background:var(--bg-base); transform:translateX(14px); }
+
+/* Quick actions */
+.qactions { display:flex; gap:8px; flex-wrap:wrap; margin-top:12px; }
+.qactions .btn { flex:1; min-width:120px; }
+
+/* Empty state */
+.empty-state { display:flex; flex-direction:column; align-items:center; justify-content:center; padding:48px; color:var(--text-muted); text-align:center; gap:8px; }
+.empty-state .ico { font-size:36px; opacity:0.3; }
+.empty-state .txt { font-size:13px; font-weight:700; letter-spacing:1px; }
+
+/* Modal */
+.modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.85); z-index:1000; display:flex; align-items:center; justify-content:center; opacity:0; pointer-events:none; }
+.modal-overlay.open { opacity:1; pointer-events:auto; }
+.modal { background:var(--bg-elevated); border:2px solid var(--border); width:92%; max-width:360px; max-height:80vh; display:flex; flex-direction:column; }
+.modal-header { display:flex; align-items:center; justify-content:space-between; padding:14px 16px; border-bottom:2px solid var(--border); }
+.modal-title { font-size:14px; font-weight:900; letter-spacing:2px; }
+.modal-close { width:28px; height:28px; background:none; border:none; color:var(--text-muted); cursor:pointer; font-size:14px; font-weight:700; font-family:var(--font); }
+.modal-close:hover { color:var(--text); background:var(--bg-card); }
+.modal-body { padding:16px; overflow-y:auto; flex:1; }
+.modal-footer { display:flex; gap:8px; justify-content:flex-end; padding:10px 16px; border-top:2px solid var(--border); }
+
+/* Toast */
+.toast-container { position:fixed; bottom:60px; left:50%; transform:translateX(-50%); z-index:2000; display:flex; flex-direction:column-reverse; align-items:center; gap:6px; pointer-events:none; }
+.toast { padding:8px 14px; font-size:11px; font-weight:700; letter-spacing:1px; color:var(--bg-base); background:var(--text); pointer-events:auto; }
+.toast.leaving { opacity:0; }
+</style>
+</head>
+<body>
+<div id="app">
+  <div style="display:flex;flex:1;min-height:0;">
+    <aside id="sidebar">
+      <div class="sb-brand">TOUCHKEYS</div>
+      <nav class="sb-nav">
+        <button class="sb-tab active" data-tab="dashboard"><span class="ico">&#9632;</span> DASHBOARD</button>
+        <button class="sb-tab" data-tab="devices"><span class="ico">&#9679;</span> DEVICES</button>
+        <button class="sb-tab" data-tab="editor"><span class="ico">&#9998;</span> LAYOUT</button>
+        <button class="sb-tab" data-tab="monitor"><span class="ico">&#9654;</span> INPUT</button>
+      </nav>
+      <div class="sb-conn">
+        <span class="conn-dot off" id="conn-dot"></span>
+        <span id="conn-label">Disconnected</span>
+      </div>
+    </aside>
+    <main id="content">
+      <!-- Dashboard -->
+      <section class="tab-page active" id="tab-dashboard">
+        <div class="section-title">DASHBOARD</div>
+        <div class="section-sub">Server overview and quick actions</div>
+        <div id="qr-wrap">
+          <img id="qr-img" alt="QR Code">
+          <div class="url" id="server-url">--</div>
+        </div>
+        <div class="card-grid" id="stat-cards">
+          <div class="stat-card"><div class="num" id="stat-server">--</div><div class="lbl">SERVER</div></div>
+          <div class="stat-card"><div class="num" id="stat-clients">0</div><div class="lbl">CLIENTS</div></div>
+          <div class="stat-card"><div class="num" id="stat-controller">--</div><div class="lbl">CONTROLLER</div></div>
+          <div class="stat-card"><div class="num" id="stat-device">--</div><div class="lbl">ACTIVE DEVICE</div></div>
+        </div>
+        <div class="card">
+          <div class="card-title">QUICK ACTIONS</div>
+          <div class="qactions">
+            <button class="btn btn-primary" onclick="window.open('/monitor','_blank')">OPEN MONITOR</button>
+            <button class="btn" onclick="fetch('/api/debug').then(r=>r.json()).then(d=>showToast('Server OK, connections: '+d.connections))">PING SERVER</button>
+            <button class="btn btn-danger" id="btn-disconnect-all">DISCONNECT ALL</button>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title">HOW TO USE</div>
+          <div style="font-size:11px;color:var(--text-dim);line-height:1.8;">
+            1. Open <strong style="color:var(--text);" id="url-hint">http://IP:8000</strong> on any mobile device<br>
+            2. The first device to connect becomes the <strong style="color:var(--accent);">active controller</strong><br>
+            3. Use <strong style="color:var(--text);">LAYOUT</strong> tab to edit button positions in real-time<br>
+            4. Use <strong style="color:var(--text);">INPUT</strong> tab to monitor live button presses
+          </div>
+        </div>
+      </section>
+
+      <!-- Devices -->
+      <section class="tab-page" id="tab-devices">
+        <div class="section-title">DEVICES</div>
+        <div class="section-sub">Connected clients and server information</div>
+        <div id="device-list"></div>
+        <div class="card" style="margin-top:16px;">
+          <div class="card-title">SERVER INFO</div>
+          <div id="server-info" style="font-size:11px;color:var(--text-dim);line-height:2;"></div>
+        </div>
+      </section>
+
+      <!-- Layout Editor -->
+      <section class="tab-page" id="tab-editor">
+        <div class="section-title">LAYOUT EDITOR</div>
+        <div class="section-sub">Drag to reposition, resize handles, or edit properties</div>
+        <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;">
+          <button class="btn btn-primary btn-sm" id="btn-add-ctrl">+ CONTROL</button>
+          <button class="btn btn-sm" id="btn-undo">UNDO</button>
+          <button class="btn btn-sm" id="btn-redo">REDO</button>
+          <div style="flex:1;"></div>
+          <button class="btn btn-sm btn-primary" id="btn-save-layout">SAVE</button>
+        </div>
+        <div id="editor-pages-wrap">
+          <div class="editor-pages" id="editor-pages"></div>
+        </div>
+        <div id="editor-layout">
+          <div id="editor-canvas-wrap">
+            <div id="editor-canvas"></div>
+            <div class="empty-state" id="editor-empty">
+              <div class="ico">&#9881;</div>
+              <div class="txt">No controls on this page</div>
+              <div style="font-size:10px;color:var(--text-muted);">Add controls using the + button above</div>
+            </div>
+          </div>
+          <div id="editor-props">
+            <div class="prop-section">
+              <div class="ph">PROPERTIES</div>
+              <div id="props-content">
+                <div class="empty-state" style="padding:16px;">
+                  <div class="txt" style="font-size:10px;">Select a control to edit</div>
+                </div>
+              </div>
+            </div>
+            <div class="prop-section" id="prop-actions" style="display:none;">
+              <div style="display:flex;gap:8px;">
+                <button class="btn btn-sm" style="flex:1;" id="btn-duplicate">DUPE</button>
+                <button class="btn btn-sm btn-danger" style="flex:1;" id="btn-delete">DELETE</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Input Monitor -->
+      <section class="tab-page" id="tab-monitor">
+        <div class="section-title">INPUT MONITOR</div>
+        <div class="section-sub">Live input visualization from the active controller</div>
+        <div id="monitor-content">
+          <div class="empty-state">
+            <div class="ico">&#9654;</div>
+            <div class="txt">Waiting for input...</div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+  <footer id="status-bar">
+    <span class="stat">Clients: <span class="val" id="sb-clients">0</span></span>
+    <span class="stat">Page: <span class="val" id="sb-page">--</span></span>
+    <span class="stat">Active: <span class="val" id="sb-active">--</span></span>
+    <span style="flex:1;"></span>
+    <span class="stat" id="sb-latency">Ping: --</span>
+  </footer>
+</div>
+
+<!-- Toast -->
+<div class="toast-container" id="toast"></div>
+
+<!-- Modals -->
+<div class="modal-overlay" id="modal-add-ctrl">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">ADD CONTROL</span>
+      <button class="modal-close" onclick="closeModal('modal-add-ctrl')">X</button>
+    </div>
+    <form id="form-add-ctrl">
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label">Label</label>
+          <input class="form-input" id="add-name" value="Button" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Key</label>
+          <select class="form-select" id="add-key"><option value="">None</option></select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Type</label>
+          <select class="form-select" id="add-type">
+            <option value="button">Button</option>
+            <option value="analog_stick">Analog Stick</option>
+            <option value="trigger">Trigger</option>
+          </select>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Width</label>
+            <input class="form-input" id="add-w" type="number" value="60" min="20">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Height</label>
+            <input class="form-input" id="add-h" type="number" value="60" min="20">
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn" onclick="closeModal('modal-add-ctrl')">CANCEL</button>
+        <button type="submit" class="btn btn-primary">CREATE</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-rename-page">
+  <div class="modal modal-sm">
+    <div class="modal-header">
+      <span class="modal-title">RENAME PAGE</span>
+      <button class="modal-close" onclick="closeModal('modal-rename-page')">X</button>
+    </div>
+    <form id="form-rename-page">
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label">New Name</label>
+          <input class="form-input" id="rename-name" required>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn" onclick="closeModal('modal-rename-page')">CANCEL</button>
+        <button type="submit" class="btn btn-primary">RENAME</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// Desktop Control Center — Single-file SPA
+// ============================================================
+(function() {
+  'use strict';
+
+  // --- State ---
+  let ws = null;
+  let layoutData = null;
+  let activePageIdx = 0;
+  let selectedCtrlId = null;
+  let sessionId = null;
+  let keysList = [];
+  let inputState = {};
+  let prevInputState = {};
+  let reconnectTimer = null;
+  let pingTimer = null;
+  let statsTimer = null;
+  let debounceTimers = {};
+  let dragState = null;
+  let resizeState = null;
+
+  // --- DOM refs ---
+  const $ = id => document.getElementById(id);
+  const canvasEl = $('editor-canvas');
+  const propsContent = $('props-content');
+  const propActions = $('prop-actions');
+  const editorEmpty = $('editor-empty');
+
+  // --- Toast ---
+  function showToast(msg) {
+    const c = $('toast');
+    const t = document.createElement('div');
+    t.className = 'toast';
+    t.textContent = msg;
+    c.appendChild(t);
+    setTimeout(() => { t.classList.add('leaving'); setTimeout(() => t.remove(), 300); }, 2000);
+  }
+
+  // --- Modal ---
+  window.openModal = function(id) { document.getElementById(id).classList.add('open'); };
+  window.closeModal = function(id) { document.getElementById(id).classList.remove('open'); };
+
+  // --- Tab switching ---
+  document.querySelectorAll('.sb-tab').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.sb-tab').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.tab-page').forEach(p => p.classList.remove('active'));
+      btn.classList.add('active');
+      const tab = document.getElementById('tab-' + btn.dataset.tab);
+      if (tab) tab.classList.add('active');
+      if (btn.dataset.tab === 'editor') renderEditor();
+      if (btn.dataset.tab === 'monitor') renderMonitor();
+    });
+  });
+
+  // --- WebSocket ---
+  function connectWS() {
+    if (ws && ws.readyState === WebSocket.OPEN) return;
+    const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
+    ws = new WebSocket(`${proto}//${location.host}/ws?role=monitor`);
+    ws.onopen = () => {
+      $('conn-dot').className = 'conn-dot on';
+      $('conn-label').textContent = 'Connected';
+      startPing();
+    };
+    ws.onclose = () => {
+      $('conn-dot').className = 'conn-dot off';
+      $('conn-label').textContent = 'Disconnected';
+      stopPing();
+      scheduleReconnect();
+    };
+    ws.onerror = () => ws.close();
+    ws.onmessage = e => {
+      try { handleMessage(JSON.parse(e.data)); } catch(_) {}
+    };
+  }
+
+  function scheduleReconnect() {
+    if (reconnectTimer) return;
+    reconnectTimer = setTimeout(() => { reconnectTimer = null; connectWS(); }, 3000);
+  }
+
+  function sendWS(msg) { if (ws && ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify(msg)); }
+
+  function normalizeLayout(data) {
+    if (!data || !data.pages) return;
+    const refW = 800, refH = 600;
+    for (const page of data.pages) {
+      for (const btn of (page.buttons || [])) {
+        if (btn.x > 1) btn.x = btn.x / refW;
+        if (btn.y > 1) btn.y = btn.y / refH;
+        if (btn.width > 0 && btn.width < 1) btn.width = Math.round(btn.width * refW);
+        if (btn.height > 0 && btn.height < 1) btn.height = Math.round(btn.height * refH);
+        if (btn.width < 20) btn.width = 60;
+        if (btn.height < 20) btn.height = 60;
+      }
+    }
+  }
+
+  function handleMessage(msg) {
+    switch (msg.type) {
+      case 'session':
+        sessionId = msg.clientId;
+        break;
+      case 'layout':
+        layoutData = msg.data;
+        normalizeLayout(layoutData);
+        activePageIdx = (layoutData && layoutData.activePageIndex != null) ? layoutData.activePageIndex : 0;
+        renderEditor();
+        updateStatusBar();
+        break;
+      case 'input':
+        if (msg.subtype === 'keydown') { inputState[msg.key] = { pressed: true, time: Date.now() }; }
+        else if (msg.subtype === 'keyup') { inputState[msg.key] = { pressed: false, time: Date.now() }; }
+        else if (msg.subtype === 'analog') {
+          inputState['analog:' + msg.key] = { x: msg.x, y: msg.y, time: Date.now() };
+        }
+        renderMonitor();
+        break;
+      case 'controller_changed':
+        updateStatusBar();
+        break;
+      case 'active_page':
+        activePageIdx = msg.index;
+        if (layoutData) layoutData.activePageIndex = msg.index;
+        renderEditor();
+        updateStatusBar();
+        break;
+      case 'device_updated':
+        updateStatusBar();
+        break;
+    }
+  }
+
+  // --- Ping ---
+  function startPing() {
+    stopPing();
+    pingTimer = setInterval(() => {
+      const ts = Date.now();
+      sendWS({ type: 'ping', timestamp: ts });
+      const onMsg = ws.onmessage;
+      ws.onmessage = e => {
+        try {
+          const m = JSON.parse(e.data);
+          if (m.type === 'pong') {
+            $('sb-latency').textContent = `Ping: ${Date.now() - m.timestamp}ms`;
+          }
+        } catch(_) {}
+        ws.onmessage = onMsg;
+      };
+    }, 5000);
+  }
+  function stopPing() { if (pingTimer) { clearInterval(pingTimer); pingTimer = null; } }
+
+  // --- Stats polling ---
+  function startStats() {
+    statsTimer = setInterval(async () => {
+      try {
+        const dbg = await (await fetch('/api/debug')).json();
+        const cl = await (await fetch('/api/clients')).json();
+        $('stat-server').textContent = 'OK';
+        $('stat-server').className = 'num green';
+        $('stat-clients').textContent = cl.count;
+        $('sb-clients').textContent = cl.count;
+        $('stat-controller').textContent = dbg.controller_count;
+        $('stat-device').textContent = dbg.pressed_keys.length ? dbg.pressed_keys.join(',') : 'Idle';
+        $('sb-active').textContent = cl.clients.find(c => c.isActive)?.deviceName || '--';
+        renderDevices(cl.clients);
+      } catch(e) {
+        $('stat-server').textContent = 'ERR';
+        $('stat-server').className = 'num red';
+      }
+    }, 3000);
+  }
+
+  // --- Devices ---
+  function renderDevices(clients) {
+    const list = $('device-list');
+    if (!clients.length) {
+      list.innerHTML = '<div class="empty-state"><div class="ico">&#9679;</div><div class="txt">No devices connected</div></div>';
+      return;
+    }
+    list.innerHTML = clients.map(c => {
+      const tag = c.isActive ? 'tag-active' : (c.canControl ? 'tag-connected' : 'tag-monitor');
+      const label = c.isActive ? 'CONTROLLER' : (c.canControl ? 'CONNECTED' : 'MONITOR');
+      return `<div class="device-item">
+        <div class="info">
+          <div class="name">${esc(c.deviceName)}</div>
+          <div class="meta">ID: ${c.clientId}</div>
+        </div>
+        <span class="tag ${tag}">${label}</span>
+        ${!c.isActive ? `<button class="btn btn-sm btn-danger" onclick="removeClient('${c.clientId}')" style="margin-left:8px;">KICK</button>` : ''}
+      </div>`;
+    }).join('');
+  }
+
+  window.removeClient = async function(id) {
+    try {
+      await fetch('/api/clients/' + id, { method: 'DELETE' });
+      showToast('Client removed');
+    } catch(e) { showToast('Failed to remove client'); }
+  };
+
+  // --- Server info ---
+  async function loadServerInfo() {
+    try {
+      const ip = await (await fetch('/api/ip')).json();
+      const url = `http://${ip.ip}:8000`;
+      $('server-url').textContent = url;
+      $('url-hint').textContent = url;
+      $('qr-img').src = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(url)}`;
+      $('server-info').innerHTML = `
+        <strong>IP:</strong> ${ip.ip}<br>
+        <strong>Port:</strong> 8000<br>
+        <strong>URL:</strong> <a href="${url}" style="color:var(--text);" target="_blank">${url}</a><br>
+        <strong>Server:</strong> TouchKeys v2.0<br>
+        <strong>Monitor:</strong> <a href="/monitor" style="color:var(--text);" target="_blank">/monitor</a>
+      `;
+    } catch(e) {}
+  }
+
+  // --- Load keys ---
+  async function loadKeys() {
+    try {
+      const k = await (await fetch('/api/keys')).json();
+      keysList = k.keys || [];
+      const sel = document.getElementById('add-key');
+      sel.innerHTML = '<option value="">None</option>' + keysList.map(key => `<option value="${key}">${key}</option>`).join('');
+    } catch(e) {}
+  }
+
+  // === LAYOUT EDITOR ===
+  function getCurrentPage() {
+    if (!layoutData || !layoutData.pages) return null;
+    return layoutData.pages[activePageIdx] || null;
+  }
+
+  function renderEditor() {
+    const page = getCurrentPage();
+    if (!page) {
+      canvasEl.innerHTML = '<div class="empty-state"><div class="ico">&#9881;</div><div class="txt">No layout data</div></div>';
+      editorEmpty.classList.add('hidden');
+      return;
+    }
+
+    // Page tabs
+    const pagesWrap = $('editor-pages');
+    pagesWrap.innerHTML = layoutData.pages.map((p, i) =>
+      `<button class="editor-page-tab ${i === activePageIdx ? 'active' : ''}" data-idx="${i}">${esc(p.name)}</button>`
+    ).join('') +
+    `<button class="editor-page-add" id="btn-add-page">+</button>`;
+
+    pagesWrap.querySelectorAll('.editor-page-tab').forEach(el => {
+      el.addEventListener('click', () => {
+        const idx = parseInt(el.dataset.idx);
+        if (idx !== activePageIdx) {
+          activePageIdx = idx;
+          sendWS({ type: 'set_active_page', index: idx });
+        }
+      });
+      el.addEventListener('contextmenu', e => {
+        e.preventDefault();
+        const pageId = layoutData.pages[parseInt(el.dataset.idx)].id;
+        if (layoutData.pages.length > 1) {
+          if (confirm('Delete page "' + el.textContent + '"?')) {
+            sendWS({ type: 'delete_page', pageId });
+          }
+        } else {
+          showToast('Cannot delete the last page');
+        }
+      });
+    });
+
+    $('btn-add-page').onclick = () => {
+      const name = prompt('Page name:', 'Page ' + (layoutData.pages.length + 1));
+      if (name) sendWS({ type: 'add_page', name });
+    };
+
+    // Render controls — normalize coords: x/y = fraction, w/h = pixels
+    const controls = page.buttons || [];
+    const cw = canvasEl.clientWidth || 800;
+    const ch = canvasEl.clientHeight || 600;
+    if (!cw || !ch) return;
+    if (!controls.length) {
+      editorEmpty.classList.remove('hidden');
+      canvasEl.innerHTML = '';
+    } else {
+      editorEmpty.classList.add('hidden');
+      canvasEl.innerHTML = controls.map(ctrl => {
+        const cls = ctrl.type === 'analog_stick' ? 'ctrl-stick' : ctrl.type === 'trigger' ? 'ctrl-trigger' : 'ctrl-button';
+        const sel = ctrl.id === selectedCtrlId ? ' selected' : '';
+        const label = esc(ctrl.name || '');
+        // Normalize: if w/h < 1 treat as fraction, else pixels
+        const pw = ctrl.width < 1 ? Math.round(ctrl.width * cw) : Math.round(ctrl.width);
+        const ph = ctrl.height < 1 ? Math.round(ctrl.height * ch) : Math.round(ctrl.height);
+        const px = Math.round(ctrl.x * cw);
+        const py = Math.round(ctrl.y * ch);
+        return `<div class="ctrl-el ${cls}${sel}" data-id="${ctrl.id}" style="left:${px}px;top:${py}px;width:${pw}px;height:${ph}px;opacity:${ctrl.opacity};z-index:${ctrl.layer||0};">
+          <span style="font-size:${ctrl.fontSize||12}px;">${label}</span>
+          <span class="resize-h nw"></span><span class="resize-h ne"></span>
+          <span class="resize-h sw"></span><span class="resize-h se"></span>
+        </div>`;
+      }).join('');
+
+      // Bind drag & resize
+      canvasEl.querySelectorAll('.ctrl-el').forEach(el => {
+        el.addEventListener('mousedown', e => {
+          if (e.target.classList.contains('resize-h')) return startResize(e, el);
+          startDrag(e, el);
+        });
+        el.addEventListener('click', e => {
+          e.stopPropagation();
+          selectControl(el.dataset.id);
+        });
+      });
+    }
+
+    // Deselect on canvas click
+    canvasEl.onclick = () => selectControl(null);
+    updateProps();
+  }
+
+  // --- Selection ---
+  function selectControl(id) {
+    selectedCtrlId = id;
+    canvasEl.querySelectorAll('.ctrl-el').forEach(el => {
+      el.classList.toggle('selected', el.dataset.id === id);
+    });
+    updateProps();
+  }
+
+  function getSelectedControl() {
+    if (!selectedCtrlId) return null;
+    const page = getCurrentPage();
+    if (!page) return null;
+    return page.buttons.find(b => b.id === selectedCtrlId) || null;
+  }
+
+  // --- Props panel ---
+  function updateProps() {
+    const ctrl = getSelectedControl();
+    if (!ctrl) {
+      propsContent.innerHTML = '<div class="empty-state" style="padding:16px;"><div class="txt" style="font-size:10px;">Select a control to edit</div></div>';
+      propActions.style.display = 'none';
+      return;
+    }
+    propActions.style.display = '';
+    const fields = [
+      { key:'name', label:'Label', min:1, max:20, step:1 },
+      { key:'x', label:'X', min:0, max:1, step:0.01 },
+      { key:'y', label:'Y', min:0, max:1, step:0.01 },
+      { key:'width', label:'W', min:20, max:300, step:1 },
+      { key:'height', label:'H', min:20, max:300, step:1 },
+      { key:'opacity', label:'Op', min:0.1, max:1, step:0.05 },
+      { key:'fontSize', label:'F', min:6, max:64, step:1 },
+      { key:'layer', label:'Z', min:0, max:100, step:1 },
+    ];
+    propsContent.innerHTML = fields.map(f =>
+      `<div class="range-row">
+        <label>${f.label}</label>
+        <input type="range" min="${f.min}" max="${f.max}" step="${f.step}" value="${ctrl[f.key] ?? ''}" data-key="${f.key}">
+        <span class="rv">${f.key === 'x' || f.key === 'y' ? (ctrl[f.key]*100).toFixed(0)+'%' : ctrl[f.key]}</span>
+      </div>`
+    ).join('');
+
+    propsContent.querySelectorAll('input[type="range"]').forEach(inp => {
+      inp.addEventListener('input', () => {
+        const key = inp.dataset.key;
+        const val = parseFloat(inp.value);
+        const page = getCurrentPage();
+        if (!page || !selectedCtrlId) return;
+        // Update locally first for responsiveness
+        const ctrl = page.buttons.find(b => b.id === selectedCtrlId);
+        if (ctrl) {
+          ctrl[key] = val;
+          inp.nextElementSibling.textContent = key === 'x' || key === 'y' ? (val*100).toFixed(0)+'%' : val;
+        }
+        renderEditor();
+        debounceUpdate(selectedCtrlId, { [key]: val });
+      });
+    });
+
+    // Add keyboard and type selectors
+    const extra = document.createElement('div');
+    extra.style.marginTop = '12px';
+    extra.innerHTML = `
+      <div class="form-group">
+        <label class="form-label">Key</label>
+        <select class="form-select" id="prop-key">
+          <option value="">None</option>
+          ${keysList.map(k => `<option value="${k}" ${k === ctrl.keybind ? 'selected' : ''}>${k}</option>`).join('')}
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Type</label>
+        <select class="form-select" id="prop-type" disabled>
+          <option value="button" ${ctrl.type === 'button' ? 'selected' : ''}>Button</option>
+          <option value="analog_stick" ${ctrl.type === 'analog_stick' ? 'selected' : ''}>Analog Stick</option>
+          <option value="trigger" ${ctrl.type === 'trigger' ? 'selected' : ''}>Trigger</option>
+        </select>
+      </div>
+    `;
+    propsContent.appendChild(extra);
+    const keySel = extra.querySelector('#prop-key');
+    keySel.addEventListener('change', () => {
+      debounceUpdate(selectedCtrlId, { keybind: keySel.value });
+    });
+
+    // Duplicate / Delete
+    $('btn-duplicate').onclick = () => {
+      const page = getCurrentPage();
+      if (page && selectedCtrlId) sendWS({ type: 'duplicate_button', pageId: page.id, buttonId: selectedCtrlId });
+    };
+    $('btn-delete').onclick = () => {
+      const page = getCurrentPage();
+      if (page && selectedCtrlId) {
+        sendWS({ type: 'delete_button', pageId: page.id, buttonId: selectedCtrlId });
+        selectControl(null);
+      }
+    };
+  }
+
+  // --- Debounced update ---
+  function debounceUpdate(ctrlId, updates) {
+    const key = 'update_' + ctrlId;
+    if (debounceTimers[key]) clearTimeout(debounceTimers[key]);
+    debounceTimers[key] = setTimeout(() => {
+      delete debounceTimers[key];
+      const page = getCurrentPage();
+      if (page) sendWS({ type: 'update_button', pageId: page.id, buttonId: ctrlId, data: updates });
+    }, 100);
+  }
+
+  // --- Drag ---
+  function startDrag(e, el) {
+    if (e.button !== 0) return;
+    const rect = canvasEl.getBoundingClientRect();
+    const ctrl = getCurrentPage()?.buttons.find(b => b.id === el.dataset.id);
+    if (!ctrl) return;
+    dragState = { el, ctrlId: el.dataset.id, startX: e.clientX, startY: e.clientY, origX: ctrl.x, origY: ctrl.y, rect };
+    e.preventDefault();
+  }
+
+  function startResize(e, el) {
+    if (e.button !== 0) return;
+    const handle = e.target;
+    const rect = canvasEl.getBoundingClientRect();
+    const ctrl = getCurrentPage()?.buttons.find(b => b.id === el.dataset.id);
+    if (!ctrl) return;
+    resizeState = {
+      el, ctrlId: el.dataset.id, handle: handle.classList.contains('nw') ? 'nw' :
+        handle.classList.contains('ne') ? 'ne' :
+        handle.classList.contains('sw') ? 'sw' : 'se',
+      startX: e.clientX, startY: e.clientY,
+      origW: ctrl.width, origH: ctrl.height, origX: ctrl.x, origY: ctrl.y,
+      rect
+    };
+    e.preventDefault();
+  }
+
+  document.addEventListener('mousemove', e => {
+    if (dragState) {
+      const { ctrlId, startX, startY, origX, origY, rect } = dragState;
+      const dx = (e.clientX - startX) / rect.width;
+      const dy = (e.clientY - startY) / rect.height;
+      const page = getCurrentPage();
+      const ctrl = page?.buttons.find(b => b.id === ctrlId);
+      if (!ctrl) { dragState = null; return; }
+      ctrl.x = Math.max(0, Math.min(1 - ctrl.width / rect.width, origX + dx));
+      ctrl.y = Math.max(0, Math.min(1 - ctrl.height / rect.height, origY + dy));
+      renderEditor();
+      debounceUpdate(ctrlId, { x: ctrl.x, y: ctrl.y });
+    }
+    if (resizeState) {
+      const { ctrlId, handle, startX, startY, origW, origH, origX, origY, rect } = resizeState;
+      const dx = e.clientX - startX;
+      const dy = e.clientY - startY;
+      const page = getCurrentPage();
+      const ctrl = page?.buttons.find(b => b.id === ctrlId);
+      if (!ctrl) { resizeState = null; return; }
+      let nw = origW, nh = origH, nx = origX, ny = origY;
+      const minSize = 20;
+      if (handle.includes('e')) { nw = Math.max(minSize, origW + dx); }
+      if (handle.includes('w')) { const d = Math.min(dx, origW - minSize); nw = Math.max(minSize, origW - d); nx = origX + (d / rect.width); }
+      if (handle.includes('s')) { nh = Math.max(minSize, origH + dy); }
+      if (handle.includes('n')) { const d = Math.min(dy, origH - minSize); nh = Math.max(minSize, origH - d); ny = origY + (d / rect.height); }
+      ctrl.width = Math.round(nw);
+      ctrl.height = Math.round(nh);
+      ctrl.x = Math.max(0, Math.min(1, nx));
+      ctrl.y = Math.max(0, Math.min(1, ny));
+      renderEditor();
+      const updates = { width: ctrl.width, height: ctrl.height, x: ctrl.x, y: ctrl.y };
+      debounceUpdate(ctrlId, updates);
+    }
+  });
+
+  document.addEventListener('mouseup', () => {
+    dragState = null;
+    resizeState = null;
+  });
+
+  // --- Delete key ---
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Delete' && selectedCtrlId) {
+      const page = getCurrentPage();
+      if (page) {
+        sendWS({ type: 'delete_button', pageId: page.id, buttonId: selectedCtrlId });
+        selectControl(null);
+      }
+    }
+  });
+
+  // --- Add control ---
+  $('btn-add-ctrl').onclick = () => openModal('modal-add-ctrl');
+  $('form-add-ctrl').onsubmit = e => {
+    e.preventDefault();
+    const page = getCurrentPage();
+    if (!page) return;
+    const data = {
+      name: $('add-name').value,
+      keybind: $('add-key').value,
+      type: $('add-type').value,
+      width: parseInt($('add-w').value) || 60,
+      height: parseInt($('add-h').value) || 60,
+      x: 0.4, y: 0.4,
+    };
+    sendWS({ type: 'add_button', pageId: page.id, data });
+    closeModal('modal-add-ctrl');
+    $('form-add-ctrl').reset();
+  };
+
+  // --- Undo / Redo ---
+  $('btn-undo').onclick = () => sendWS({ type: 'undo' });
+  $('btn-redo').onclick = () => sendWS({ type: 'redo' });
+  $('btn-save-layout').onclick = () => sendWS({ type: 'save_layout', data: layoutData });
+
+  // === INPUT MONITOR ===
+  const MONITOR_BTNS = [
+    'gamepad_a','gamepad_b','gamepad_x','gamepad_y',
+    'gamepad_lb','gamepad_rb','gamepad_back','gamepad_start',
+    'gamepad_dpad_up','gamepad_dpad_down','gamepad_dpad_left','gamepad_dpad_right',
+    'gamepad_ls','gamepad_rs','gamepad_guide'
+  ];
+  const MONITOR_STICKS = ['gamepad_ls','gamepad_rs'];
+  const MONITOR_TRIGGERS = ['gamepad_lt','gamepad_rt'];
+  let _monitorBuilt = false;
+
+  function buildMonitorDOM() {
+    const wrap = $('monitor-content');
+    if (!wrap) return;
+    let html = '';
+    // Buttons
+    html += '<div class="section-sub">Buttons</div><div id="monitor-grid">';
+    MONITOR_BTNS.forEach(key => {
+      html += `<div class="mon-btn" data-key="${key}">${key.replace('gamepad_','')}</div>`;
+    });
+    html += '</div>';
+    // Sticks
+    html += '<div class="section-sub">Analog Sticks</div><div id="monitor-sticks">';
+    MONITOR_STICKS.forEach(key => {
+      html += `<div class="stick-wrap">
+        <canvas width="120" height="120" data-key="${key}"></canvas>
+        <div class="slbl">${key}</div>
+      </div>`;
+    });
+    html += '</div>';
+    // Triggers
+    html += '<div class="section-sub">Triggers</div><div id="monitor-triggers">';
+    MONITOR_TRIGGERS.forEach(key => {
+      html += `<div class="trigger-wrap">
+        <div class="tlbl">${key}</div>
+        <div class="trigger-bar">
+          <div class="trigger-fill"></div>
+          <span class="trigger-val">0%</span>
+        </div>
+      </div>`;
+    });
+    html += '</div>';
+    wrap.innerHTML = html;
+    _monitorBuilt = true;
+  }
+
+  function updateMonitor() {
+    if (!_monitorBuilt) buildMonitorDOM();
+    // Update buttons by toggling class
+    MONITOR_BTNS.forEach(key => {
+      const el = document.querySelector(`.mon-btn[data-key="${key}"]`);
+      if (!el) return;
+      el.classList.toggle('active', !!(inputState[key] && inputState[key].pressed));
+    });
+    // Update triggers
+    MONITOR_TRIGGERS.forEach(key => {
+      const pressed = inputState[key]?.pressed || false;
+      const analog = inputState['analog:' + key];
+      const rawVal = analog ? analog.x : (pressed ? 1 : 0);
+      const val = Math.max(0, Math.min(1, rawVal));
+      const fill = document.querySelector(`.trigger-wrap:nth-child(${MONITOR_TRIGGERS.indexOf(key)+1}) .trigger-fill`);
+      const valEl = document.querySelector(`.trigger-wrap:nth-child(${MONITOR_TRIGGERS.indexOf(key)+1}) .trigger-val`);
+      if (fill) fill.style.width = (val*100)+'%';
+      if (valEl) valEl.textContent = (val*100).toFixed(0)+'%';
+    });
+    // Draw sticks
+    MONITOR_STICKS.forEach(key => {
+      const canvas = document.querySelector(`canvas[data-key="${key}"]`);
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      const w = canvas.width, h = canvas.height;
+      const cx = w/2, cy = h/2, radius = cx - 10;
+      const state = inputState['analog:' + key] || inputState[key];
+      const x = state && state.x != null ? state.x : 0;
+      const y = state && state.y != null ? state.y : 0; // phone sends -1 up, +1 down — canvas matches
+      const px = cx + x * radius;
+      const py = cy + y * radius;
+
+      ctx.clearRect(0, 0, w, h);
+      ctx.strokeStyle = '#333'; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(cx,0); ctx.lineTo(cx,h); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(0,cy); ctx.lineTo(w,cy); ctx.stroke();
+      ctx.strokeStyle = '#555'; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.arc(cx, cy, radius, 0, Math.PI*2); ctx.stroke();
+      ctx.fillStyle = '#fff';
+      ctx.beginPath(); ctx.arc(px, py, 6, 0, Math.PI*2); ctx.fill();
+      ctx.fillStyle = '#888'; ctx.font = '9px Inter'; ctx.textAlign = 'center';
+      ctx.fillText('('+x.toFixed(2)+', '+y.toFixed(2)+')', cx, h-4);
+    });
+  }
+
+  function renderMonitor() { updateMonitor(); }
+
+  // --- Status bar ---
+  function updateStatusBar() {
+    if (layoutData && layoutData.pages) {
+      const page = layoutData.pages[activePageIdx];
+      $('sb-page').textContent = page ? page.name : '--';
+    }
+  }
+
+  // --- Disconnect all ---
+  $('btn-disconnect-all').onclick = async () => {
+    try {
+      const cl = await (await fetch('/api/clients')).json();
+      for (const c of cl.clients) {
+        await fetch('/api/clients/' + c.clientId, { method: 'DELETE' });
+      }
+      showToast('All clients disconnected');
+    } catch(e) { showToast('Failed'); }
+  };
+
+  // --- Utility ---
+  function esc(s) {
+    const d = document.createElement('div');
+    d.textContent = s;
+    return d.innerHTML;
+  }
+
+  // === INIT ===
+  function init() {
+    loadServerInfo();
+    loadKeys();
+    connectWS();
+    startStats();
+  }
+
+  init();
+})();
+</script>
+</body>
+</html>

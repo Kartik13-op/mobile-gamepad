@@ -112,6 +112,10 @@ Open that URL on your phone. A complete Xbox 360 gamepad layout appears automati
 2. **PC**: Press a button on the phone → check `joy.cpl` → the virtual Xbox 360 controller responds
 3. **Game**: Launch any XInput-compatible game → the virtual controller is recognized as Gamepad #1
 
+### QR Code Connection
+
+The dashboard displays a QR code encoding the server URL. Scan it with your phone's camera to open the controller instantly — no need to type the IP address manually. Access the QR code at `http://<server-ip>:8000/monitor` (Dashboard tab).
+
 ---
 
 ## Usage
@@ -129,6 +133,27 @@ Open that URL on your phone. A complete Xbox 360 gamepad layout appears automati
 | **HOME** | Tap | `keydown` / `keyup` | Guide button |
 | **Cog (⚙)** | Tap | — | Toggle toolbar visibility |
 | **SET** | Tap | — | Open settings (haptic, fullscreen) |
+
+### Desktop Monitor (`/monitor`)
+
+Open `http://<server-ip>:8000/monitor` on any desktop browser for a full control center:
+
+| Tab | Features |
+|-----|----------|
+| **Dashboard** | QR code for one-scan phone connection, live stat cards (server status, client count, active controller, active device), quick actions (ping, disconnect all), usage guide |
+| **Devices** | Live list of connected clients with role tags (CONTROLLER/CONNECTED/MONITOR), force-disconnect (KICK) per device, server info panel |
+| **Layout Editor** | Drag-and-drop canvas with resize handles, property sliders (x, y, w, h, opacity, layer, font size), page tabs with add/delete, undo/redo, add-button modal. All changes sync live to connected phones |
+| **Input Monitor** | 15-button grid with live press highlighting, dual analog stick canvases with crosshairs and coordinate display, analog trigger bars with fill percentage |
+
+Changes made in the Layout Editor are pushed to all connected phones in real-time over WebSocket.
+
+### Button Logic
+
+Every button on the phone sends two WebSocket messages:
+- **`keydown`** when pressed (finger down) — includes dead-zone filtering for analog controls
+- **`keyup`** when released (finger up)
+
+The server deduplicates rapid presses per-client and broadcasts input events to the monitor for live visualization. Analog controls (sticks, triggers) send `analog` messages with continuous x/y values at ~60 updates/sec per finger.
 
 ### Multi-Touch
 
@@ -155,23 +180,23 @@ The server reads and writes `layout.json` in the project root. Edit it to custom
 
 ```json
 {
-  "version": 2,
+  "version": "2.0",
   "activePageIndex": 0,
   "pages": [
     {
-      "id": "550e8400-e29b-41d4-a716-446655440000",
+      "id": "p1",
       "name": "Standard",
       "buttons": [
         {
-          "id": "550e8400-e29b-41d4-a716-446655440001",
+          "id": "b01",
           "name": "A",
           "keybind": "gamepad_a",
           "type": "button",
-          "x": 0.50,
-          "y": 0.55,
-          "width": 0.15,
-          "height": 0.15,
-          "opacity": 1.0,
+          "x": 0.76,
+          "y": 0.78,
+          "width": 54,
+          "height": 54,
+          "opacity": 0.90,
           "fontSize": 16,
           "layer": 1,
           "visible": true
@@ -215,13 +240,13 @@ The server reads and writes `layout.json` in the project root. Edit it to custom
 ### Coordinate System
 
 - **Positions** (`x`, `y`) are ratios from 0–1 relative to viewport width/height
-- **Dimensions** (`width`, `height`) are ratios relative to viewport
+- **Dimensions** (`width`, `height`) are in **pixels** (e.g., 54, 60, 90)
 - **Origin**: (0,0) is top-left; (1,1) is bottom-right
-- **Minimum size**: Controls are clamped to 40×40px minimum
+- **Minimum size**: Controls are clamped to 20px minimum
 
 ```
-Example: A button at center that's 20% of screen width:
-x = 0.40, y = 0.425, width = 0.20, height = 0.15
+Example: A button at 76% from left, 78% from top, 54×54 pixels:
+x = 0.76, y = 0.78, width = 54, height = 54
 ```
 
 ---
@@ -271,7 +296,8 @@ TouchKeys/
 │   └── utils.py              # Shared utilities
 │
 ├── templates/
-│   └── index.html            # Mobile SPA (all JS/CSS inlined)
+│   ├── index.html            # Mobile SPA (all JS/CSS inlined)
+│   └── monitor.html          # Desktop Control Center (dashboard, layout editor, input monitor)
 │
 └── static/
     ├── css/main.css          # Reference stylesheet
@@ -427,10 +453,10 @@ Contributions are welcome! Here's how to help:
 **Ideas for contributions:**
 - Add a formal test suite
 - Implement keyboard/mouse input alongside gamepad
-- Create a web-based layout editor (instead of editing JSON)
 - Add Linux support (via `uinput` or similar)
-- Improve the desktop monitor UI
 - Translate the client UI
+- Macro/rapid-fire scripting
+- Multi-controller support (multiple virtual gamepads)
 
 ---
 

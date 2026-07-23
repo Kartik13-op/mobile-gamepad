@@ -1,6 +1,6 @@
 {
   "version": "2.0",
-  "activePageIndex": 0,
+  "activePageIndex": 1,
   "pages": [
     {
       "id": "p1",
@@ -255,8 +255,8 @@
           "name": "BRAKE",
           "type": "trigger",
           "keybind": "gamepad_lt",
-          "x": 0.8184982249368559,
-          "y": 0.606121918477428,
+          "x": 0.8145888089028933,
+          "y": 0.5751958876029909,
           "width": 140,
           "height": 80,
           "opacity": 0.85,
@@ -269,8 +269,8 @@
           "name": "GAS",
           "type": "trigger",
           "keybind": "gamepad_rt",
-          "x": 0.7971275354519001,
-          "y": 0.1731574862353078,
+          "x": 0.8029916595028439,
+          "y": 0.21144685779413475,
           "width": 161,
           "height": 145,
           "opacity": 0.85,
@@ -402,6 +402,20 @@
           "opacity": 0.6,
           "fontSize": 9,
           "layer": 1,
+          "visible": true
+        },
+        {
+          "id": "a1417af61874",
+          "name": "View",
+          "type": "analog_stick",
+          "keybind": "gamepad_rs",
+          "x": 0.5710369514858628,
+          "y": 0.1673184343732824,
+          "width": 193,
+          "height": 152,
+          "opacity": 1.0,
+          "fontSize": 16,
+          "layer": 0,
           "visible": true
         }
       ]

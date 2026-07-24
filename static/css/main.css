@@ -277,25 +277,38 @@ input, textarea, select {
 .analog-outer {
   width: 100%;
   height: 100%;
-  border: 3px solid var(--bg-card);
   background: transparent;
-  display: flex;
-  align-items: center;
-  justify-content: center;
   position: relative;
 }
 
-.analog-inner {
-  width: 30%;
-  height: 30%;
-  background: var(--bg-card);
+.analog-ring {
   position: absolute;
+  border: 2px solid var(--accent);
+  border-radius: 50%;
+  background: transparent;
   pointer-events: none;
-  transition: none;
+  box-shadow: 0 0 8px var(--accent), inset 0 0 8px var(--accent);
+  display: none;
 }
 
-.analog-inner.active {
-  background: var(--text-primary);
+.analog-ring.visible {
+  display: block;
+}
+
+.analog-dot {
+  position: absolute;
+  width: 25%;
+  height: 25%;
+  background: var(--accent);
+  border-radius: 50%;
+  pointer-events: none;
+  box-shadow: 0 0 6px var(--accent);
+  transform: translate(-50%, -50%);
+  display: none;
+}
+
+.analog-dot.visible {
+  display: block;
 }
 
 .ctrl-analog .btn-label {

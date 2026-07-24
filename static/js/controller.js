@@ -157,25 +157,35 @@ export class GamepadController {
   }
 
   // -----------------------------------------------------------------
-  // Analog Stick
+  // Analog Stick (Dynamic Center)
   // -----------------------------------------------------------------
 
   _startStick(touchId, el, cx, cy) {
     const rect = el.getBoundingClientRect();
-    const inner = el.querySelector('.analog-inner');
-    if (!inner) return;
+    const maxDist = Math.min(rect.width, rect.height) / 2 * 0.85;
 
-    const centerX = rect.left + rect.width / 2;
-    const centerY = rect.top + rect.height / 2;
-    const maxDist = Math.min(rect.width, rect.height) / 2 - inner.offsetWidth / 2;
+    // Create dynamic ring centred on touch point
+    const ring = document.createElement('div');
+    ring.className = 'analog-ring visible';
+    ring.style.width = `${maxDist * 2}px`;
+    ring.style.height = `${maxDist * 2}px`;
+    ring.style.left = `${cx - rect.left - maxDist}px`;
+    ring.style.top = `${cy - rect.top - maxDist}px`;
+    el.querySelector('.analog-outer').appendChild(ring);
 
-    inner.classList.add('active');
+    // Create dynamic dot at touch point
+    const dot = document.createElement('div');
+    dot.className = 'analog-dot visible';
+    dot.style.left = `${cx - rect.left}px`;
+    dot.style.top = `${cy - rect.top}px`;
+    el.querySelector('.analog-outer').appendChild(dot);
 
     this._activeSticks.set(touchId, {
       el,
-      inner,
-      centerX,
-      centerY,
+      ring,
+      dot,
+      centerX: cx,
+      centerY: cy,
       maxDist,
       lastSentX: 0,
       lastSentY: 0,
@@ -209,7 +219,10 @@ export class GamepadController {
       ny = dy;
     }
 
-    stick.inner.style.transform = `translate(${nx}px, ${ny}px)`;
+    // Position dot relative to the element, offset from initial touch point
+    const elRect = stick.el.getBoundingClientRect();
+    stick.dot.style.left = `${stick.centerX - elRect.left + nx}px`;
+    stick.dot.style.top = `${stick.centerY - elRect.top + ny}px`;
 
     const rawX = dist > 0 ? nx / maxDist : 0;
     const rawY = dist > 0 ? ny / maxDist : 0;
@@ -245,8 +258,9 @@ export class GamepadController {
     const stick = this._activeSticks.get(touchId);
     if (!stick) return;
 
-    stick.inner.classList.remove('active');
-    stick.inner.style.transform = 'translate(0px, 0px)';
+    // Remove dynamic elements
+    stick.ring?.remove();
+    stick.dot?.remove();
 
     if (stick.lastSentX !== 0 || stick.lastSentY !== 0) {
       ws.send({ type: 'analog', key: stick.el.dataset.keybind || 'ls', x: 0, y: 0 });
@@ -256,10 +270,7 @@ export class GamepadController {
   }
 
   _resetSticks() {
-    this._workspace?.querySelectorAll('.analog-inner').forEach(el => {
-      el.classList.remove('active');
-      el.style.transform = 'translate(0px, 0px)';
-    });
+    this._workspace?.querySelectorAll('.analog-ring, .analog-dot').forEach(el => el.remove());
     this._activeSticks.clear();
   }
 

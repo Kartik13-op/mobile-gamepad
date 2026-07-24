@@ -108,7 +108,7 @@ pip install -r requirements.txt
 python server.py
 ```
 
-Or double-click `start.ps1` after the first setup.
+Or double-click `start.ps1` after the first setup — it runs `gui.py`, which starts the server and opens the desktop monitor in your browser.
 
 The server prints a URL like:
 ```
@@ -337,7 +337,7 @@ TouchKeys/
 ├── layout.json               # Saved control layout (auto-generated)
 ├── settings.json             # Application settings (auto-generated)
 ├── setup.ps1                 # One-click setup: installs Python + deps + launches server
-├── start.ps1                 # Quick-launch server using existing .venv
+├── start.ps1                 # Quick-launch: runs gui.py which starts the server and opens the browser
 ├── .gitignore                # Git ignore rules
 ├── .server.lock              # Single-instance lock file (auto-generated)
 ├── IMPROVEMENTS.md           # Development notes and ideas
@@ -537,7 +537,7 @@ Two PowerShell scripts are provided for convenience:
 | Script | When to use |
 |--------|-------------|
 | `setup.ps1` | **First run** — installs Python (if missing), creates `.venv`, installs deps, launches server |
-| `start.ps1` | **Subsequent runs** — quick-launch the server using the existing `.venv` |
+| `start.ps1` | **Subsequent runs** — runs `gui.py`, which starts the server and opens the browser automatically |
 
 Right-click either script → **Run with PowerShell**.
 

@@ -14,6 +14,8 @@ export class GamepadController {
 
     this._activeSticks = new Map();
     this._activeTriggers = new Map();
+    this._touchpadStates = new Map();
+    this._touchpadOffsets = new Map();
     this._lastTouchAt = 0;
 
     // Workspace listeners
@@ -59,6 +61,7 @@ export class GamepadController {
     this._releaseAll();
     this._resetSticks();
     this._resetTriggers();
+    this._resetTouchpads();
   }
 
   // -----------------------------------------------------------------
@@ -78,6 +81,8 @@ export class GamepadController {
         this._startStick(touch.identifier, el, touch.clientX, touch.clientY);
       } else if (type === 'trigger') {
         this._startTrigger(touch.identifier, el, touch.clientX, touch.clientY);
+      } else if (type === 'touchpad') {
+        this._startTouchpad(touch.identifier, el, touch.clientX, touch.clientY);
       } else {
         this._pressButton(touch.identifier, el);
       }
@@ -90,6 +95,7 @@ export class GamepadController {
     for (const touch of e.changedTouches) {
       if (this._activeSticks.has(touch.identifier) ||
           this._activeTriggers.has(touch.identifier) ||
+          this._touchpadStates.has(touch.identifier) ||
           this._activeTouches.has(touch.identifier)) {
         hasTracked = true;
         break;
@@ -103,6 +109,10 @@ export class GamepadController {
       }
       if (this._activeTriggers.has(touch.identifier)) {
         this._endTrigger(touch.identifier);
+        continue;
+      }
+      if (this._touchpadStates.has(touch.identifier)) {
+        this._endTouchpad(touch.identifier);
         continue;
       }
       const touchState = this._activeTouches.get(touch.identifier);
@@ -121,6 +131,7 @@ export class GamepadController {
     for (const touch of e.changedTouches) {
       if (this._activeSticks.has(touch.identifier) ||
           this._activeTriggers.has(touch.identifier) ||
+          this._touchpadStates.has(touch.identifier) ||
           this._activeTouches.has(touch.identifier)) {
         hasTracked = true;
         break;
@@ -134,6 +145,10 @@ export class GamepadController {
       }
       if (this._activeTriggers.has(touch.identifier)) {
         this._moveTrigger(touch.identifier, touch.clientX, touch.clientY);
+        continue;
+      }
+      if (this._touchpadStates.has(touch.identifier)) {
+        this._moveTouchpad(touch.identifier, touch.clientX, touch.clientY);
         continue;
       }
       const currentTouch = this._activeTouches.get(touch.identifier);
@@ -234,6 +249,13 @@ export class GamepadController {
       const factor = scaled / magnitude;
       finalX = rawX * factor;
       finalY = rawY * factor;
+    }
+
+    // Add touchpad offset (additive) if this stick has one
+    const tpOffset = this._touchpadOffsets.get(stick.el.dataset.keybind);
+    if (tpOffset) {
+      finalX = Math.max(-1, Math.min(1, finalX + tpOffset.x));
+      finalY = Math.max(-1, Math.min(1, finalY + tpOffset.y));
     }
 
     const now = performance.now();
@@ -351,6 +373,119 @@ export class GamepadController {
     this._activeTriggers.clear();
   }
 
+  _resetTouchpads() {
+    for (const [id, tp] of this._touchpadStates) {
+      if (tp.decayTimer) { clearTimeout(tp.decayTimer); tp.decayTimer = null; }
+      tp.el.classList.remove('active');
+      ws.send({ type: 'analog', key: tp.keybind, x: 0, y: 0 });
+    }
+    this._touchpadOffsets.clear();
+    this._touchpadStates.clear();
+  }
+
+  // -----------------------------------------------------------------
+  // Touchpad (additive mouse-like aim)
+  // -----------------------------------------------------------------
+
+  _startTouchpad(touchId, el, cx, cy) {
+    const keybind = el.dataset.keybind;
+    if (!keybind) return;
+    this._touchpadStates.set(touchId, {
+      el, keybind,
+      sensitivity: parseFloat(el.dataset.sensitivity) || 1,
+      lastX: cx, lastY: cy,
+      lastTime: performance.now(),
+      lastSentX: 0, lastSentY: 0, lastSendTime: 0,
+      decayTimer: null,
+    });
+    this._touchpadOffsets.set(keybind, { x: 0, y: 0 });
+    el.classList.add('active');
+    this._sendTouchpad(touchId, 0, 0);
+    this._resendStick(keybind);
+  }
+
+  _moveTouchpad(touchId, cx, cy) {
+    const tp = this._touchpadStates.get(touchId);
+    if (!tp) return;
+    const now = performance.now();
+    const dt = Math.max(1, now - tp.lastTime);
+    const vx = (cx - tp.lastX) / dt;
+    const vy = (cy - tp.lastY) / dt;
+    const scale = 0.5;
+    let outX = vx * scale * tp.sensitivity;
+    let outY = vy * scale * tp.sensitivity;
+    // Acceleration curve: faster drags get proportionally more output
+    outX = outX * (1 + Math.abs(outX) * 2);
+    outY = outY * (1 + Math.abs(outY) * 2);
+    outX = Math.max(-1, Math.min(1, outX));
+    outY = Math.max(-1, Math.min(1, outY));
+    tp.lastX = cx;
+    tp.lastY = cy;
+    tp.lastTime = now;
+    // Schedule decay to 0 if the finger stops moving
+    if (tp.decayTimer) clearTimeout(tp.decayTimer);
+    tp.decayTimer = setTimeout(() => {
+      this._touchpadOffsets.set(tp.keybind, { x: 0, y: 0 });
+      this._sendTouchpad(touchId, 0, 0);
+      tp.decayTimer = null;
+    }, 40);
+    this._touchpadOffsets.set(tp.keybind, { x: outX, y: outY });
+    this._sendTouchpad(touchId, outX, outY);
+  }
+
+  _endTouchpad(touchId) {
+    const tp = this._touchpadStates.get(touchId);
+    if (!tp) return;
+    if (tp.decayTimer) { clearTimeout(tp.decayTimer); tp.decayTimer = null; }
+    tp.el.classList.remove('active');
+    this._touchpadOffsets.delete(tp.keybind);
+    this._touchpadStates.delete(touchId);
+    // If no active stick touch for this keybind, send zero
+    const hasStick = Array.from(this._activeSticks.values())
+      .some(s => s.el.dataset.keybind === tp.keybind);
+    if (!hasStick) {
+      ws.send({ type: 'analog', key: tp.keybind, x: 0, y: 0 });
+    } else {
+      this._resendStick(tp.keybind);
+    }
+  }
+
+  _sendTouchpad(touchId, x, y) {
+    const tp = this._touchpadStates.get(touchId);
+    if (!tp) return;
+    const now = performance.now();
+    if (now - tp.lastSendTime < ANALOG_THROTTLE_MS) return;
+    tp.lastSendTime = now;
+    const rx = Math.round(x * 1000) / 1000;
+    const ry = Math.round(y * 1000) / 1000;
+    if (rx === tp.lastSentX && ry === tp.lastSentY) return;
+    tp.lastSentX = rx;
+    tp.lastSentY = ry;
+    // Check if the mapped stick is also active — if so, let the stick send the combined value
+    const hasActiveStick = Array.from(this._activeSticks.values())
+      .some(s => s.el.dataset.keybind === tp.keybind);
+    if (hasActiveStick) {
+      // The stick's _updateStickPosition will include touchpad offset — force a re-send
+      this._resendStick(tp.keybind);
+    } else {
+      // Touchpad alone — send directly
+      ws.send({ type: 'analog', key: tp.keybind, x: rx, y: ry });
+    }
+  }
+
+  _resendStick(keybind) {
+    for (const [tid, stick] of this._activeSticks) {
+      if (stick.el.dataset.keybind === keybind) {
+        const elRect = stick.el.getBoundingClientRect();
+        const dotLeft = parseFloat(stick.dot.style.left);
+        const dotTop = parseFloat(stick.dot.style.top);
+        const curCx = stick.centerX + (dotLeft - (stick.centerX - elRect.left));
+        const curCy = stick.centerY + (dotTop - (stick.centerY - elRect.top));
+        this._updateStickPosition(tid, curCx, curCy);
+      }
+    }
+  }
+
   // -----------------------------------------------------------------
   // Pointer fallback (desktop)
   // -----------------------------------------------------------------
@@ -426,9 +561,11 @@ export class GamepadController {
       if (el.classList.contains('ctrl-btn')) return el;
       if (el.classList.contains('ctrl-trigger')) return el;
       if (el.classList.contains('ctrl-analog')) return el;
+      if (el.classList.contains('ctrl-touchpad')) return el;
       if (el.closest('.ctrl-btn')) return el.closest('.ctrl-btn');
       if (el.closest('.ctrl-trigger')) return el.closest('.ctrl-trigger');
       if (el.closest('.ctrl-analog')) return el.closest('.ctrl-analog');
+      if (el.closest('.ctrl-touchpad')) return el.closest('.ctrl-touchpad');
     }
     return null;
   }

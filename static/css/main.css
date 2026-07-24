@@ -358,6 +358,56 @@ input, textarea, select {
   display: none;
 }
 
+/* --- Controls: Touchpad --- */
+.ctrl-touchpad {
+  position: absolute;
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: none;
+  border: 1px solid rgba(255,255,255,0.12);
+  background:
+    linear-gradient(45deg, rgba(255,255,255,0.02) 25%, transparent 25%, transparent 75%, rgba(255,255,255,0.02) 75%),
+    linear-gradient(45deg, rgba(255,255,255,0.02) 25%, transparent 25%, transparent 75%, rgba(255,255,255,0.02) 75%);
+  background-size: 12px 12px;
+  background-position: 0 0, 6px 6px;
+  background-color: var(--bg-card);
+  color: var(--text-dim);
+  z-index: 1;
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 1px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+}
+.ctrl-touchpad::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border: 2px solid transparent;
+  background:
+    radial-gradient(circle at 50% 50%, rgba(125,255,155,0.06) 0%, transparent 70%);
+  pointer-events: none;
+}
+.ctrl-touchpad .touchpad-label {
+  pointer-events: none;
+  opacity: 0.5;
+}
+.ctrl-touchpad .touchpad-icon {
+  pointer-events: none;
+  opacity: 0.25;
+  font-size: 16px;
+  margin-bottom: 2px;
+}
+.ctrl-touchpad.active {
+  border-color: rgba(125,255,155,0.3);
+}
+.ctrl-touchpad.active::after {
+  border-color: rgba(125,255,155,0.15);
+}
+
 /* --- Page Tabs --- */
 .page-tabs {
   display: flex;

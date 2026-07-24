@@ -1,6 +1,6 @@
 {
   "version": "2.0",
-  "activePageIndex": 1,
+  "activePageIndex": 2,
   "pages": [
     {
       "id": "p1",
@@ -119,20 +119,6 @@
           "visible": true
         },
         {
-          "id": "b09",
-          "name": "RS",
-          "type": "analog_stick",
-          "keybind": "gamepad_rs",
-          "x": 0.5106197822679088,
-          "y": 0.48106746418213847,
-          "width": 227,
-          "height": 187,
-          "opacity": 0.85,
-          "fontSize": 12,
-          "layer": 2,
-          "visible": true
-        },
-        {
           "id": "b10",
           "name": "▲",
           "type": "button",
@@ -193,10 +179,10 @@
           "name": "Y",
           "type": "button",
           "keybind": "gamepad_y",
-          "x": 0.8108224084415134,
-          "y": 0.2724503196968015,
-          "width": 54,
-          "height": 54,
+          "x": 0.563979849018874,
+          "y": 0.25670340319563356,
+          "width": 205,
+          "height": 101,
           "opacity": 0.9,
           "fontSize": 16,
           "layer": 1,
@@ -207,10 +193,10 @@
           "name": "X",
           "type": "button",
           "keybind": "gamepad_x",
-          "x": 0.7391656746877422,
-          "y": 0.35686832410743535,
-          "width": 54,
-          "height": 54,
+          "x": 0.39609635481220934,
+          "y": 0.2558256098916079,
+          "width": 176,
+          "height": 90,
           "opacity": 0.9,
           "fontSize": 16,
           "layer": 1,
@@ -221,10 +207,10 @@
           "name": "B",
           "type": "button",
           "keybind": "gamepad_b",
-          "x": 0.8727056021103784,
-          "y": 0.3730676736130929,
-          "width": 54,
-          "height": 54,
+          "x": 0.7563967351281855,
+          "y": 0.37700440273838487,
+          "width": 162,
+          "height": 117,
           "opacity": 0.9,
           "fontSize": 16,
           "layer": 1,
@@ -235,14 +221,30 @@
           "name": "A",
           "type": "button",
           "keybind": "gamepad_a",
-          "x": 0.8117997624500042,
-          "y": 0.4486496692024591,
-          "width": 54,
-          "height": 54,
+          "x": 0.7507166884233849,
+          "y": 0.6533595837176419,
+          "width": 165,
+          "height": 108,
           "opacity": 0.9,
           "fontSize": 16,
           "layer": 1,
           "visible": true
+        },
+        {
+          "id": "d7eb7b0bb97b",
+          "name": "Right Stick",
+          "type": "touchpad",
+          "keybind": "gamepad_rs",
+          "x": 0.4192453520905787,
+          "y": 0.4813590685893676,
+          "width": 359,
+          "height": 203,
+          "opacity": 1.0,
+          "fontSize": 16,
+          "layer": 0,
+          "visible": true,
+          "mappedTo": "gamepad_rs",
+          "sensitivity": 0.5
         }
       ]
     },
@@ -495,20 +497,6 @@
           "visible": true
         },
         {
-          "id": "b46",
-          "name": "AIM",
-          "type": "analog_stick",
-          "keybind": "gamepad_rs",
-          "x": 0.6188796172952765,
-          "y": 0.06050173095133337,
-          "width": 235,
-          "height": 172,
-          "opacity": 0.85,
-          "fontSize": 12,
-          "layer": 2,
-          "visible": true
-        },
-        {
           "id": "b47",
           "name": "A",
           "type": "button",
@@ -647,6 +635,22 @@
           "fontSize": 9,
           "layer": 1,
           "visible": true
+        },
+        {
+          "id": "cd1d6d0e93ee",
+          "name": "VIew",
+          "type": "touchpad",
+          "keybind": "gamepad_rs",
+          "x": 0.5029207959626597,
+          "y": 0.12967793339661746,
+          "width": 372,
+          "height": 202,
+          "opacity": 1.0,
+          "fontSize": 16,
+          "layer": 0,
+          "visible": true,
+          "mappedTo": "gamepad_rs",
+          "sensitivity": 1
         }
       ]
     }

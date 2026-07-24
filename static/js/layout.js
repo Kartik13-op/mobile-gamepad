@@ -53,7 +53,7 @@ export class LayoutManager {
 
   _renderControls() {
     if (!this._workspace) return;
-    this._workspace.querySelectorAll('.ctrl-btn, .ctrl-analog, .ctrl-trigger').forEach(el => el.remove());
+    this._workspace.querySelectorAll('.ctrl-btn, .ctrl-analog, .ctrl-trigger, .ctrl-touchpad').forEach(el => el.remove());
 
     let emptyState = this._workspace.querySelector('.empty-state');
     const controls = this.activeControls;
@@ -86,6 +86,8 @@ export class LayoutManager {
       this._createAnalogStick(ctrl);
     } else if (type === 'trigger') {
       this._createTrigger(ctrl);
+    } else if (type === 'touchpad') {
+      this._createTouchpad(ctrl);
     } else {
       this._createButton(ctrl);
     }
@@ -134,6 +136,21 @@ export class LayoutManager {
     el.dataset.keybind = ctrl.keybind || '';
     el.dataset.controlType = 'trigger';
     el.innerHTML = ctrl.name || '';
+    this._applyBaseStyles(el, ctrl);
+    this._workspace.appendChild(el);
+  }
+
+  _createTouchpad(ctrl) {
+    const el = document.createElement('div');
+    el.className = 'ctrl-touchpad';
+    el.dataset.id = ctrl.id;
+    el.dataset.keybind = ctrl.mappedTo || ctrl.keybind || 'gamepad_rs';
+    el.dataset.controlType = 'touchpad';
+    el.dataset.sensitivity = String(ctrl.sensitivity ?? 1);
+    el.innerHTML = `
+      <span class="touchpad-icon">&#9678;</span>
+      <span class="touchpad-label">${ctrl.name || 'TOUCHPAD'}</span>
+    `;
     this._applyBaseStyles(el, ctrl);
     this._workspace.appendChild(el);
   }

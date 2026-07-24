@@ -59,7 +59,8 @@ Traditional phone-as-gamepad solutions require installing proprietary apps, deal
 
 ### Layout System
 - **Fully customizable** — every control is positionable by ratio (0–1) relative to viewport
-- **Three control types** — buttons (momentary), analog sticks (2-axis drag), and analog triggers (1-axis drag)
+- **Four control types** — buttons (momentary), analog sticks (2-axis drag), analog triggers (1-axis drag), and touchpads (velocity-based mouse-like aim)
+- **Touchpad** — maps finger velocity to analog stick output with acceleration curve. Works like a laptop trackpad for FPS camera control. Configurable sensitivity and mapped stick.
 - **Multiple pages** — create different layouts for different games, all sharing one virtual controller
 - **Undo / Redo** — unlimited history for layout edits via the desktop monitor
 - **Save / Load / Import / Export** — layouts persist as `layout.json`; share layouts as JSON files
@@ -140,6 +141,7 @@ The dashboard displays a QR code encoding the server URL. Scan it with your phon
 | **LB, RB** | Tap | `keydown` / `keyup` | Shoulder button |
 | **LT, RT** | Touch + drag up/down | `analog` (x = 0–1) | Trigger axis |
 | **LS, RS** | Touch anywhere + drag | `analog` (x = -1..1, y = -1..1) | Joystick axis |
+| **Touchpad** | Drag (velocity-based, acceleration) | `analog` (x = -1..1, y = -1..1) | Mapped joystick axis (additive) |
 | **BACK, START** | Tap | `keydown` / `keyup` | Back / Start |
 | **HOME** | Tap | `keydown` / `keyup` | Guide button |
 | **Cog (⚙)** | Tap | — | Toggle toolbar visibility |
@@ -255,6 +257,7 @@ The server reads and writes `layout.json` in the project root. This file contain
 | `button` | `.ctrl-btn` | Momentary press; flashes white on touch |
 | `analog_stick` | `.ctrl-analog` | Circular drag zone with dynamic centering; returns to center on release |
 | `trigger` | `.ctrl-trigger` | Linear drag; analog value proportional to drag distance from initial touch point |
+| `touchpad` | `.ctrl-touchpad` | Velocity-based drag mapped to an analog stick with acceleration curve. Works like a laptop trackpad for camera control. Output is additive with the mapped stick's own touch input. |
 
 ### Control Properties
 
@@ -262,8 +265,8 @@ The server reads and writes `layout.json` in the project root. This file contain
 |----------|------|-------------|
 | `id` | string | Unique identifier (server-generated) |
 | `name` | string | Display label shown on the control |
-| `keybind` | string | Gamepad action this control maps to (see keybind reference) |
-| `type` | string | One of `button`, `analog_stick`, `trigger` |
+| `keybind` | string | Gamepad action this control maps to (see keybind reference). For touchpads, this is the target stick's keybind. |
+| `type` | string | One of `button`, `analog_stick`, `trigger`, `touchpad` |
 | `x` | number | Horizontal position ratio (0 = left, 1 = right edge) |
 | `y` | number | Vertical position ratio (0 = top, 1 = bottom edge) |
 | `width` | number | Width in CSS pixels |
@@ -272,6 +275,8 @@ The server reads and writes `layout.json` in the project root. This file contain
 | `fontSize` | number | Label font size in CSS pixels |
 | `layer` | number | Z-index layer for stacking order |
 | `visible` | boolean | Whether the control is shown |
+| `mappedTo` | string | (Touchpad only) Keybind of the analog stick this touchpad controls |
+| `sensitivity` | number | (Touchpad only) Velocity multiplier (0.25–3.0, default 1.0) |
 
 ### Keybind Reference
 
@@ -597,6 +602,7 @@ The phone needs nothing but a modern web browser with:
 - [x] Undo / Redo
 - [x] Multi-page layouts
 - [x] Desktop monitor
+- [x] Touchpad element (velocity-based mouse-like analog stick control)
 - [ ] Mapping device Gyro into different analog inputs
 - [ ] Keyboard & mouse input support
 - [ ] Multi Virtual Controller Support

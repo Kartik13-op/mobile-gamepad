@@ -95,7 +95,8 @@ html, body { width:100%; height:100%; overflow:hidden; font-family:var(--font); 
 #editor-canvas .ctrl-el.selected { outline:2px solid var(--text); outline-offset:2px; z-index:10; }
 #editor-canvas .ctrl-el.ctrl-button { background:linear-gradient(180deg,#2a2a2a,var(--bg-card)); }
 #editor-canvas .ctrl-el.ctrl-stick { background:transparent; border:3px solid var(--bg-card); }
-#editor-canvas .ctrl-el.ctrl-trigger { background:linear-gradient(180deg,#2a2a2a,var(--bg-card)); }
+      #editor-canvas .ctrl-el.ctrl-trigger { background:linear-gradient(180deg,#2a2a2a,var(--bg-card)); }
+      #editor-canvas .ctrl-el.ctrl-touchpad { border:1px dashed rgba(125,255,155,0.3); background:repeating-linear-gradient(45deg,transparent,transparent 6px,rgba(125,255,155,0.03) 6px,rgba(125,255,155,0.03) 12px); }
 .resize-h { position:absolute; width:16px; height:16px; z-index:20; opacity:0; pointer-events:none; }
 .ctrl-el.selected .resize-h { opacity:1; pointer-events:auto; }
 .resize-h::after { content:''; position:absolute; width:8px; height:8px; background:var(--text); }
@@ -338,6 +339,7 @@ html, body { width:100%; height:100%; overflow:hidden; font-family:var(--font); 
             <option value="button">Button</option>
             <option value="analog_stick">Analog Stick</option>
             <option value="trigger">Trigger</option>
+            <option value="touchpad">Touchpad</option>
           </select>
         </div>
         <div class="form-row">
@@ -671,7 +673,7 @@ html, body { width:100%; height:100%; overflow:hidden; font-family:var(--font); 
     } else {
       editorEmpty.classList.add('hidden');
       canvasEl.innerHTML = controls.map(ctrl => {
-        const cls = ctrl.type === 'analog_stick' ? 'ctrl-stick' : ctrl.type === 'trigger' ? 'ctrl-trigger' : 'ctrl-button';
+        const cls = ctrl.type === 'analog_stick' ? 'ctrl-stick' : ctrl.type === 'trigger' ? 'ctrl-trigger' : ctrl.type === 'touchpad' ? 'ctrl-touchpad' : 'ctrl-button';
         const sel = ctrl.id === selectedCtrlId ? ' selected' : '';
         const label = esc(ctrl.name || '');
         // Normalize: if w/h < 1 treat as fraction, else pixels
@@ -781,6 +783,7 @@ html, body { width:100%; height:100%; overflow:hidden; font-family:var(--font); 
           <option value="button" ${ctrl.type === 'button' ? 'selected' : ''}>Button</option>
           <option value="analog_stick" ${ctrl.type === 'analog_stick' ? 'selected' : ''}>Analog Stick</option>
           <option value="trigger" ${ctrl.type === 'trigger' ? 'selected' : ''}>Trigger</option>
+          <option value="touchpad" ${ctrl.type === 'touchpad' ? 'selected' : ''}>Touchpad</option>
         </select>
       </div>
     `;
@@ -789,6 +792,40 @@ html, body { width:100%; height:100%; overflow:hidden; font-family:var(--font); 
     keySel.addEventListener('change', () => {
       debounceUpdate(selectedCtrlId, { keybind: keySel.value });
     });
+
+    // Touchpad-specific properties
+    if (ctrl.type === 'touchpad') {
+      const touchpadSection = document.createElement('div');
+      touchpadSection.style.marginTop = '12px';
+      touchpadSection.style.borderTop = '2px solid var(--border)';
+      touchpadSection.style.paddingTop = '12px';
+      // Get all analog sticks for the mapped-to dropdown
+      const sticks = (getCurrentPage()?.buttons || []).filter(b => b.type === 'analog_stick');
+      const mappedTo = ctrl.mappedTo || ctrl.keybind || 'gamepad_rs';
+      touchpadSection.innerHTML = `
+        <div class="form-group">
+          <label class="form-label">Mapped Stick</label>
+          <select class="form-select" id="prop-mapped-stick">
+            ${sticks.length === 0 ? '<option value="gamepad_rs">gamepad_rs (default)</option>' :
+              sticks.map(s => `<option value="${s.keybind}" ${s.keybind === mappedTo ? 'selected' : ''}>${s.name || s.keybind}</option>`).join('')}
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Sensitivity (${ctrl.sensitivity ?? 1})</label>
+          <input class="form-input" id="prop-sensitivity" type="range" min="0.25" max="3" step="0.25" value="${ctrl.sensitivity ?? 1}">
+        </div>
+      `;
+      propsContent.appendChild(touchpadSection);
+      touchpadSection.querySelector('#prop-mapped-stick')?.addEventListener('change', (e) => {
+        const val = e.target.value;
+        debounceUpdate(selectedCtrlId, { mappedTo: val, keybind: val });
+      });
+      touchpadSection.querySelector('#prop-sensitivity')?.addEventListener('input', (e) => {
+        const val = parseFloat(e.target.value);
+        e.target.previousElementSibling.textContent = `Sensitivity (${val})`;
+        debounceUpdate(selectedCtrlId, { sensitivity: val });
+      });
+    }
 
     // Duplicate / Delete
     $('btn-duplicate').onclick = () => {
@@ -900,14 +937,19 @@ html, body { width:100%; height:100%; overflow:hidden; font-family:var(--font); 
     e.preventDefault();
     const page = getCurrentPage();
     if (!page) return;
+    const type = $('add-type').value;
     const data = {
       name: $('add-name').value,
-      keybind: $('add-key').value,
-      type: $('add-type').value,
+      keybind: type === 'touchpad' ? 'gamepad_rs' : ($('add-key').value || ''),
+      type,
       width: parseInt($('add-w').value) || 60,
       height: parseInt($('add-h').value) || 60,
       x: 0.4, y: 0.4,
     };
+    if (type === 'touchpad') {
+      data.mappedTo = 'gamepad_rs';
+      data.sensitivity = 1;
+    }
     sendWS({ type: 'add_button', pageId: page.id, data });
     closeModal('modal-add-ctrl');
     $('form-add-ctrl').reset();

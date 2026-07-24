@@ -9,10 +9,10 @@ $venvPython = Join-Path $ProjectRoot ".venv\Scripts\python.exe"
 if (-not (Test-Path $venvPython)) {
     Write-Host "Virtual environment not found."
     Write-Host "Run setup.ps1 first, or start manually:"
-    Write-Host "    python server.py"
+    Write-Host "    python gui.py"
     exit 1
 }
 
 Write-Host "Starting TouchKeys server..."
 Write-Host "(Press Ctrl+C to stop)"
-& $venvPython (Join-Path $ProjectRoot "server.py")
+& $venvPython (Join-Path $ProjectRoot "gui.py")

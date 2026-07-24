@@ -76,7 +76,22 @@ Traditional phone-as-gamepad solutions require installing proprietary apps, deal
 
 ## Quick Start
 
-### Prerequisites
+### One-click Setup
+
+Right-click `setup.ps1` → **Run with PowerShell**. That's it.
+
+The script automatically:
+1. Checks for Python 3.9+ — downloads and installs it silently if missing
+2. Creates a virtual environment (`.venv/`)
+3. Installs all dependencies from `requirements.txt`
+4. Offers to launch the server
+
+If PowerShell blocks execution, run this once:
+```powershell
+Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
+```
+
+### Manual Setup
 
 | Requirement | Notes |
 |-------------|-------|
@@ -85,34 +100,15 @@ Traditional phone-as-gamepad solutions require installing proprietary apps, deal
 | **WiFi network** | Phone and PC must be on the same LAN |
 | **Modern phone browser** | Chrome, Safari, Edge, Firefox — any browser from the last 3 years |
 
-### Installation
-
-```bash
-# Clone the repository
-git clone https://github.com/your-username/touchkeys.git
-cd touchkeys
-
-# (Recommended) Create a virtual environment
-python -m venv venv
-.\venv\Scripts\activate
-
-# Install Python dependencies
+```powershell
+# Clone or extract the project, then:
+python -m venv .venv
+.venv\Scripts\activate
 pip install -r requirements.txt
-```
-
-### Running
-
-**Option A: Standalone server (recommended)**
-
-```bash
 python server.py
 ```
 
-**Option B: With desktop monitor GUI**
-
-```bash
-python gui.py
-```
+Or double-click `start.ps1` after the first setup.
 
 The server prints a URL like:
 ```
@@ -340,6 +336,8 @@ TouchKeys/
 ├── requirements.txt          # Python dependencies
 ├── layout.json               # Saved control layout (auto-generated)
 ├── settings.json             # Application settings (auto-generated)
+├── setup.ps1                 # One-click setup: installs Python + deps + launches server
+├── start.ps1                 # Quick-launch server using existing .venv
 ├── .gitignore                # Git ignore rules
 ├── .server.lock              # Single-instance lock file (auto-generated)
 ├── IMPROVEMENTS.md           # Development notes and ideas
@@ -531,6 +529,17 @@ To add a new message handler:
 # No formal test suite yet — contributions welcome!
 # Manual test: start server, connect phone, verify joy.cpl
 ```
+
+### Setup Scripts
+
+Two PowerShell scripts are provided for convenience:
+
+| Script | When to use |
+|--------|-------------|
+| `setup.ps1` | **First run** — installs Python (if missing), creates `.venv`, installs deps, launches server |
+| `start.ps1` | **Subsequent runs** — quick-launch the server using the existing `.venv` |
+
+Right-click either script → **Run with PowerShell**.
 
 ---
 

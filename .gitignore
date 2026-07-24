@@ -30,5 +30,8 @@ layout.json.bak
 *.log
 .server.lock
 
+# Virtual environment
+.venv/
+
 # Runtime artifacts
 settings.json

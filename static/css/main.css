@@ -279,15 +279,16 @@ input, textarea, select {
   height: 100%;
   background: transparent;
   position: relative;
+  border: 2px dashed rgba(255,255,255,0.15);
 }
 
 .analog-ring {
   position: absolute;
-  border: 2px solid var(--accent);
+  border: 3px solid var(--accent);
   border-radius: 50%;
-  background: transparent;
+  background: rgba(125, 255, 155, 0.06);
   pointer-events: none;
-  box-shadow: 0 0 8px var(--accent), inset 0 0 8px var(--accent);
+  box-shadow: 0 0 12px var(--accent), inset 0 0 12px var(--accent);
   display: none;
 }
 
@@ -297,12 +298,12 @@ input, textarea, select {
 
 .analog-dot {
   position: absolute;
-  width: 25%;
-  height: 25%;
+  width: 20%;
+  height: 20%;
   background: var(--accent);
   border-radius: 50%;
   pointer-events: none;
-  box-shadow: 0 0 6px var(--accent);
+  box-shadow: 0 0 10px var(--accent);
   transform: translate(-50%, -50%);
   display: none;
 }

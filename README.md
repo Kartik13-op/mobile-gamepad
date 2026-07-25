@@ -1,5 +1,7 @@
 <div align="center">
 
+<img src="static/favicon.png" width="80" alt="TouchKeys logo">
+
 # TouchKeys — Mobile Gamepad
 
 ### Turn any phone or tablet into a virtual Xbox 360 gamepad for your PC

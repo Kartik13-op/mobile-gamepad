@@ -78,8 +78,9 @@ class EventRouter:
     # ------------------------------------------------------------------
 
     async def _on_keydown(self, client_id: str, msg: Dict[str, Any]) -> None:
-        if not self.connections.is_active_controller(client_id):
-            logger.debug("Ignored keydown from non-active client %s", client_id)
+        slot = self.connections.get_gamepad_slot(client_id)
+        if slot is None:
+            logger.debug("Ignored keydown from unslotted client %s", client_id)
             return
         key = str(msg.get("key", "")).lower().strip()
         if key:
@@ -87,15 +88,17 @@ class EventRouter:
             if key in pressed:
                 return
             pressed.add(key)
-            self.keyboard.ensure_controller()
-            self.keyboard.press_key(key)
+            self.keyboard.ensure_controller(slot)
+            self.keyboard.press_key(slot, key)
             asyncio.create_task(self.connections.broadcast({
                 "type": "input", "subtype": "keydown", "key": key,
+                "clientId": client_id, "slot": slot,
             }, exclude=client_id))
 
     async def _on_keyup(self, client_id: str, msg: Dict[str, Any]) -> None:
-        if not self.connections.is_active_controller(client_id):
-            logger.debug("Ignored keyup from non-active client %s", client_id)
+        slot = self.connections.get_gamepad_slot(client_id)
+        if slot is None:
+            logger.debug("Ignored keyup from unslotted client %s", client_id)
             return
         key = str(msg.get("key", "")).lower().strip()
         if key:
@@ -103,14 +106,16 @@ class EventRouter:
             if key not in pressed:
                 return
             pressed.discard(key)
-            self.keyboard.release_key(key)
+            self.keyboard.release_key(slot, key)
             asyncio.create_task(self.connections.broadcast({
                 "type": "input", "subtype": "keyup", "key": key,
+                "clientId": client_id, "slot": slot,
             }, exclude=client_id))
 
     async def _on_analog(self, client_id: str, msg: Dict[str, Any]) -> None:
-        if not self.connections.is_active_controller(client_id):
-            logger.debug("Ignored analog from non-active client %s", client_id)
+        slot = self.connections.get_gamepad_slot(client_id)
+        if slot is None:
+            logger.debug("Ignored analog from unslotted client %s", client_id)
             return
         key = str(msg.get("key", "")).lower().strip()
         try:
@@ -132,10 +137,11 @@ class EventRouter:
                 if tiny_move and is_neutral and last_is_neutral:
                     return
             analog[key] = (x, y, now)
-            self.keyboard.ensure_controller()
-            self.keyboard.move_analog(key, x, y)
+            self.keyboard.ensure_controller(slot)
+            self.keyboard.move_analog(slot, key, x, y)
             asyncio.create_task(self.connections.broadcast({
                 "type": "input", "subtype": "analog", "key": key, "x": x, "y": y,
+                "clientId": client_id, "slot": slot,
             }, exclude=client_id))
 
     # ------------------------------------------------------------------

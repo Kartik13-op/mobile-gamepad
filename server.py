@@ -106,8 +106,6 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     ip = get_local_ip()
     logger.info("TouchKeys server starting...")
     logger.info("Open on your phone -> http://%s:8000", ip)
-    keyboard.ensure_controller()
-    logger.info("Virtual Xbox 360 gamepad ready")
     yield
     keyboard.release_all()
     keyboard.shutdown()
@@ -164,10 +162,12 @@ async def remove_client(client_id: str) -> dict:
     if not connections.has_client(client_id):
         raise HTTPException(status_code=404, detail="Client not found")
     was_active = connections.is_active_controller(client_id)
+    slot = connections.get_gamepad_slot(client_id)
     event_router.release_client(client_id)
     promoted_client = await connections.remove_client(client_id)
-    if was_active:
-        keyboard.release_all()
+    if slot is not None:
+        keyboard.release_all(slot)
+        keyboard.free_slot(slot)
     if promoted_client:
         await connections.send(promoted_client.client_id, {
             "type": "controller_activated",
@@ -187,7 +187,7 @@ async def get_debug() -> dict:
     return {
         "controller_count": keyboard.controller_count,
         "connections": connections.count,
-        "pressed_keys": list(keyboard.pressed_keys),
+        "pressed_keys": list(keyboard.pressed_keys()),
     }
 
 
@@ -203,6 +203,7 @@ async def websocket_endpoint(websocket: WebSocket) -> None:
     role = websocket.query_params.get("role", "controller")
     client = await connections.connect(client_id, websocket, can_control=(role != "monitor"))
 
+    slot = client.gamepad_slot
     try:
         await connections.send(client_id, {
             "type": "session",
@@ -210,6 +211,7 @@ async def websocket_endpoint(websocket: WebSocket) -> None:
             "deviceName": client.device_name,
             "ip": get_local_ip(),
             "isActive": client.is_active_controller,
+            "gamepadSlot": slot,
         })
         await connections.send(client_id, {
             "type": "layout",
@@ -225,6 +227,7 @@ async def websocket_endpoint(websocket: WebSocket) -> None:
                 "type": "controller_changed",
                 "activeClientId": client_id,
                 "deviceName": client.device_name,
+                "slot": slot,
             }, exclude=client_id)
 
         while True:
@@ -238,6 +241,7 @@ async def websocket_endpoint(websocket: WebSocket) -> None:
                         "clientId": client_id,
                         "deviceName": device_name,
                         "isActive": connections.is_active_controller(client_id),
+                        "gamepadSlot": slot,
                     })
                 continue
 
@@ -250,20 +254,23 @@ async def websocket_endpoint(websocket: WebSocket) -> None:
     finally:
         was_active_controller = connections.is_active_controller(client_id)
         event_router.release_client(client_id)
-        if was_active_controller or connections.count <= 1:
-            keyboard.release_all()
+        if slot is not None:
+            keyboard.release_all(slot)
+            keyboard.free_slot(slot)
         promoted_client = await connections.disconnect(client_id)
         
-        # If a waiting client was promoted to active, notify it
         if promoted_client:
+            pslot = promoted_client.gamepad_slot
             await connections.send(promoted_client.client_id, {
                 "type": "controller_activated",
                 "message": f"You are now the active controller",
+                "slot": pslot,
             })
             await connections.broadcast({
                 "type": "controller_changed",
                 "activeClientId": promoted_client.client_id,
                 "deviceName": promoted_client.device_name,
+                "slot": pslot,
             }, exclude=promoted_client.client_id)
 
 

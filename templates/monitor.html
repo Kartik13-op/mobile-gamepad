@@ -128,21 +128,6 @@ html, body { width:100%; height:100%; overflow:hidden; font-family:var(--font); 
 .editor-page-tab.active { color:var(--text); background:var(--bg-card); }
 .editor-page-add { padding:4px 8px; font-size:12px; font-weight:700; font-family:var(--font); color:var(--text-muted); background:none; border:1px dashed var(--border); cursor:pointer; }
 
-/* Input Monitor */
-#monitor-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(60px,1fr)); gap:8px; margin-bottom:24px; }
-.mon-btn { height:60px; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:700; letter-spacing:1px; background:var(--bg-card); border:2px solid var(--border); transition:background 0.05s; }
-.mon-btn.active { background:var(--text); color:var(--bg-base); border-color:var(--text); }
-#monitor-sticks { display:flex; gap:24px; margin-bottom:24px; }
-.stick-wrap { text-align:center; }
-.stick-wrap canvas { border:2px solid var(--border); background:var(--bg-elevated); }
-.stick-wrap .slbl { font-size:10px; font-weight:700; color:var(--text-dim); margin-top:4px; letter-spacing:1px; }
-#monitor-triggers { display:flex; gap:16px; }
-.trigger-wrap { flex:1; }
-.trigger-wrap .tlbl { font-size:10px; font-weight:700; color:var(--text-dim); margin-bottom:4px; letter-spacing:1px; }
-.trigger-bar { height:24px; background:var(--bg-elevated); border:2px solid var(--border); position:relative; }
-.trigger-fill { height:100%; background:var(--text); width:0%; transition:width 0.05s; }
-.trigger-val { position:absolute; right:8px; top:50%; transform:translateY(-50%); font-size:10px; font-weight:700; color:var(--text-dim); }
-
 /* Section title */
 .section-title { font-size:14px; font-weight:900; letter-spacing:2px; margin-bottom:16px; }
 .section-sub { font-size:10px; color:var(--text-dim); letter-spacing:1px; margin-bottom:16px; }
@@ -197,7 +182,6 @@ html, body { width:100%; height:100%; overflow:hidden; font-family:var(--font); 
         <button class="sb-tab active" data-tab="dashboard"><span class="ico">&#9632;</span> DASHBOARD</button>
         <button class="sb-tab" data-tab="devices"><span class="ico">&#9679;</span> DEVICES</button>
         <button class="sb-tab" data-tab="editor"><span class="ico">&#9998;</span> LAYOUT</button>
-        <button class="sb-tab" data-tab="monitor"><span class="ico">&#9654;</span> INPUT</button>
       </nav>
       <div class="sb-conn">
         <span class="conn-dot off" id="conn-dot"></span>
@@ -291,17 +275,6 @@ html, body { width:100%; height:100%; overflow:hidden; font-family:var(--font); 
         </div>
       </section>
 
-      <!-- Input Monitor -->
-      <section class="tab-page" id="tab-monitor">
-        <div class="section-title">INPUT MONITOR</div>
-        <div class="section-sub">Live input visualization from the active controller</div>
-        <div id="monitor-content">
-          <div class="empty-state">
-            <div class="ico">&#9654;</div>
-            <div class="txt">Waiting for input...</div>
-          </div>
-        </div>
-      </section>
     </main>
   </div>
   <footer id="status-bar">
@@ -396,8 +369,6 @@ html, body { width:100%; height:100%; overflow:hidden; font-family:var(--font); 
   let selectedCtrlId = null;
   let sessionId = null;
   let keysList = [];
-  let inputState = {};
-  let prevInputState = {};
   let reconnectTimer = null;
   let pingTimer = null;
   let statsTimer = null;
@@ -435,7 +406,6 @@ html, body { width:100%; height:100%; overflow:hidden; font-family:var(--font); 
       const tab = document.getElementById('tab-' + btn.dataset.tab);
       if (tab) tab.classList.add('active');
       if (btn.dataset.tab === 'editor') renderEditor();
-      if (btn.dataset.tab === 'monitor') renderMonitor();
     });
   });
 
@@ -495,24 +465,16 @@ html, body { width:100%; height:100%; overflow:hidden; font-family:var(--font); 
         renderEditor();
         updateStatusBar();
         break;
-      case 'input':
-        if (msg.subtype === 'keydown') { inputState[msg.key] = { pressed: true, time: Date.now() }; }
-        else if (msg.subtype === 'keyup') { inputState[msg.key] = { pressed: false, time: Date.now() }; }
-        else if (msg.subtype === 'analog') {
-          inputState['analog:' + msg.key] = { x: msg.x, y: msg.y, time: Date.now() };
-        }
-        renderMonitor();
-        break;
       case 'controller_changed':
+        updateStatusBar();
+        break;
+      case 'device_updated':
         updateStatusBar();
         break;
       case 'active_page':
         activePageIdx = msg.index;
         if (layoutData) layoutData.activePageIndex = msg.index;
         renderEditor();
-        updateStatusBar();
-        break;
-      case 'device_updated':
         updateStatusBar();
         break;
     }
@@ -793,6 +755,27 @@ html, body { width:100%; height:100%; overflow:hidden; font-family:var(--font); 
       debounceUpdate(selectedCtrlId, { keybind: keySel.value });
     });
 
+    // Trigger-specific properties
+    if (ctrl.type === 'trigger') {
+      const trigSection = document.createElement('div');
+      trigSection.style.marginTop = '12px';
+      trigSection.style.borderTop = '2px solid var(--border)';
+      trigSection.style.paddingTop = '12px';
+      trigSection.innerHTML = `
+        <div class="form-group">
+          <label class="form-label">Trigger Mode</label>
+          <select class="form-select" id="prop-trigger-mode">
+            <option value="analog" ${(ctrl.triggerMode || 'analog') === 'analog' ? 'selected' : ''}>Analog (drag)</option>
+            <option value="digital" ${ctrl.triggerMode === 'digital' ? 'selected' : ''}>Digital (tap = 1.0)</option>
+          </select>
+        </div>
+      `;
+      propsContent.appendChild(trigSection);
+      trigSection.querySelector('#prop-trigger-mode')?.addEventListener('change', (e) => {
+        debounceUpdate(selectedCtrlId, { triggerMode: e.target.value });
+      });
+    }
+
     // Touchpad-specific properties
     if (ctrl.type === 'touchpad') {
       const touchpadSection = document.createElement('div');
@@ -950,6 +933,9 @@ html, body { width:100%; height:100%; overflow:hidden; font-family:var(--font); 
       data.mappedTo = 'gamepad_rs';
       data.sensitivity = 1;
     }
+    if (type === 'trigger') {
+      data.triggerMode = 'analog';
+    }
     sendWS({ type: 'add_button', pageId: page.id, data });
     closeModal('modal-add-ctrl');
     $('form-add-ctrl').reset();
@@ -959,99 +945,6 @@ html, body { width:100%; height:100%; overflow:hidden; font-family:var(--font); 
   $('btn-undo').onclick = () => sendWS({ type: 'undo' });
   $('btn-redo').onclick = () => sendWS({ type: 'redo' });
   $('btn-save-layout').onclick = () => sendWS({ type: 'save_layout', data: layoutData });
-
-  // === INPUT MONITOR ===
-  const MONITOR_BTNS = [
-    'gamepad_a','gamepad_b','gamepad_x','gamepad_y',
-    'gamepad_lb','gamepad_rb','gamepad_back','gamepad_start',
-    'gamepad_dpad_up','gamepad_dpad_down','gamepad_dpad_left','gamepad_dpad_right',
-    'gamepad_ls','gamepad_rs','gamepad_guide'
-  ];
-  const MONITOR_STICKS = ['gamepad_ls','gamepad_rs'];
-  const MONITOR_TRIGGERS = ['gamepad_lt','gamepad_rt'];
-  let _monitorBuilt = false;
-
-  function buildMonitorDOM() {
-    const wrap = $('monitor-content');
-    if (!wrap) return;
-    let html = '';
-    // Buttons
-    html += '<div class="section-sub">Buttons</div><div id="monitor-grid">';
-    MONITOR_BTNS.forEach(key => {
-      html += `<div class="mon-btn" data-key="${key}">${key.replace('gamepad_','')}</div>`;
-    });
-    html += '</div>';
-    // Sticks
-    html += '<div class="section-sub">Analog Sticks</div><div id="monitor-sticks">';
-    MONITOR_STICKS.forEach(key => {
-      html += `<div class="stick-wrap">
-        <canvas width="120" height="120" data-key="${key}"></canvas>
-        <div class="slbl">${key}</div>
-      </div>`;
-    });
-    html += '</div>';
-    // Triggers
-    html += '<div class="section-sub">Triggers</div><div id="monitor-triggers">';
-    MONITOR_TRIGGERS.forEach(key => {
-      html += `<div class="trigger-wrap">
-        <div class="tlbl">${key}</div>
-        <div class="trigger-bar">
-          <div class="trigger-fill"></div>
-          <span class="trigger-val">0%</span>
-        </div>
-      </div>`;
-    });
-    html += '</div>';
-    wrap.innerHTML = html;
-    _monitorBuilt = true;
-  }
-
-  function updateMonitor() {
-    if (!_monitorBuilt) buildMonitorDOM();
-    // Update buttons by toggling class
-    MONITOR_BTNS.forEach(key => {
-      const el = document.querySelector(`.mon-btn[data-key="${key}"]`);
-      if (!el) return;
-      el.classList.toggle('active', !!(inputState[key] && inputState[key].pressed));
-    });
-    // Update triggers
-    MONITOR_TRIGGERS.forEach(key => {
-      const pressed = inputState[key]?.pressed || false;
-      const analog = inputState['analog:' + key];
-      const rawVal = analog ? analog.x : (pressed ? 1 : 0);
-      const val = Math.max(0, Math.min(1, rawVal));
-      const fill = document.querySelector(`.trigger-wrap:nth-child(${MONITOR_TRIGGERS.indexOf(key)+1}) .trigger-fill`);
-      const valEl = document.querySelector(`.trigger-wrap:nth-child(${MONITOR_TRIGGERS.indexOf(key)+1}) .trigger-val`);
-      if (fill) fill.style.width = (val*100)+'%';
-      if (valEl) valEl.textContent = (val*100).toFixed(0)+'%';
-    });
-    // Draw sticks
-    MONITOR_STICKS.forEach(key => {
-      const canvas = document.querySelector(`canvas[data-key="${key}"]`);
-      if (!canvas) return;
-      const ctx = canvas.getContext('2d');
-      const w = canvas.width, h = canvas.height;
-      const cx = w/2, cy = h/2, radius = cx - 10;
-      const state = inputState['analog:' + key] || inputState[key];
-      const x = state && state.x != null ? state.x : 0;
-      const y = state && state.y != null ? state.y : 0; // phone sends -1 up, +1 down — canvas matches
-      const px = cx + x * radius;
-      const py = cy + y * radius;
-
-      ctx.clearRect(0, 0, w, h);
-      ctx.strokeStyle = '#333'; ctx.lineWidth = 1;
-      ctx.beginPath(); ctx.moveTo(cx,0); ctx.lineTo(cx,h); ctx.stroke();
-      ctx.beginPath(); ctx.moveTo(0,cy); ctx.lineTo(w,cy); ctx.stroke();
-      ctx.strokeStyle = '#555'; ctx.lineWidth = 2;
-      ctx.beginPath(); ctx.arc(cx, cy, radius, 0, Math.PI*2); ctx.stroke();
-      ctx.fillStyle = '#fff';
-      ctx.beginPath(); ctx.arc(px, py, 6, 0, Math.PI*2); ctx.fill();
-      ctx.fillStyle = '#888'; ctx.font = '9px Inter'; ctx.textAlign = 'center';
-      ctx.fillText('('+x.toFixed(2)+', '+y.toFixed(2)+')', cx, h-4);
-    });
-  }
-
-  function renderMonitor() { updateMonitor(); }
 
   // --- Status bar ---
   function updateStatusBar() {

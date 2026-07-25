@@ -303,17 +303,25 @@ export class GamepadController {
   _startTrigger(touchId, el, cx, cy) {
     const keybind = el.dataset.keybind;
     if (!keybind) return;
+    const mode = el.dataset.triggerMode || 'analog';
 
     el.classList.add('pressed');
     ws.send({ type: 'keydown', key: keybind });
 
+    if (mode === 'digital') {
+      // Digital tap — instant 1.0, no drag tracking
+      ws.send({ type: 'analog', key: keybind, x: 1.0, y: 0 });
+      this._activeTriggers.set(touchId, {
+        el, keybind, mode, startX: cx, startY: cy,
+        lastSentValue: 1.0, lastSendTime: 0,
+      });
+      return;
+    }
+
     this._activeTriggers.set(touchId, {
-      el,
-      keybind,
-      startX: cx,
-      startY: cy,
-      lastSentValue: 0,
-      lastSendTime: 0,
+      el, keybind, mode,
+      startX: cx, startY: cy,
+      lastSentValue: 0, lastSendTime: 0,
     });
 
     this._sendTriggerValue(touchId, 0);
@@ -321,7 +329,7 @@ export class GamepadController {
 
   _moveTrigger(touchId, cx, cy) {
     const trig = this._activeTriggers.get(touchId);
-    if (!trig) return;
+    if (!trig || trig.mode === 'digital') return;
 
     const dist = Math.sqrt(
       (cx - trig.startX) ** 2 + (cy - trig.startY) ** 2

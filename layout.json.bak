@@ -452,7 +452,8 @@
           "opacity": 0.8,
           "fontSize": 11,
           "layer": 1,
-          "visible": true
+          "visible": true,
+          "triggerMode": "digital"
         },
         {
           "id": "b43",
@@ -641,8 +642,8 @@
           "name": "VIew",
           "type": "touchpad",
           "keybind": "gamepad_rs",
-          "x": 0.4995737782077765,
-          "y": 0.14411260685602137,
+          "x": 0.5029207959626597,
+          "y": 0.12967793339661746,
           "width": 372,
           "height": 202,
           "opacity": 1.0,

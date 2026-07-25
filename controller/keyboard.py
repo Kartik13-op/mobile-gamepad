@@ -1,9 +1,9 @@
-"""Single virtual Xbox 360 gamepad using vgamepad (ViGEmBus)."""
+"""Multiple virtual Xbox 360 gamepads using vgamepad (ViGEmBus)."""
 
 from __future__ import annotations
 
 import logging
-from typing import Dict, Set
+from typing import Dict, Optional, Set
 
 import vgamepad as vg
 
@@ -35,71 +35,91 @@ _ALL_KEYS.update(XUSB_MAP.keys(), _TRIGGER_KEYS)
 _STICK_RANGE = 32767
 _TRIGGER_RANGE = 255
 
+MAX_SLOTS = 4
+
 
 class KeyboardController:
-    """Single virtual Xbox 360 gamepad for all pages."""
+    """Multiple virtual Xbox 360 gamepads (up to 4 slots)."""
 
     def __init__(self) -> None:
-        self._dev: vg.VX360Gamepad | None = None
-        self._pressed: Set[str] = set()
+        self._devs: Dict[int, vg.VX360Gamepad] = {}
+        self._pressed: Dict[int, Set[str]] = {}
 
     # ------------------------------------------------------------------
     # Initialization
     # ------------------------------------------------------------------
 
-    def ensure_controller(self) -> vg.VX360Gamepad:
-        if self._dev is None:
+    def ensure_controller(self, slot: int) -> vg.VX360Gamepad:
+        if slot not in self._devs:
             pad = vg.VX360Gamepad()
             pad.reset()
             pad.update()
-            self._dev = pad
-            logger.info("Created virtual Xbox 360 gamepad")
-        return self._dev
+            self._devs[slot] = pad
+            self._pressed[slot] = set()
+            logger.info("Created virtual Xbox 360 gamepad for slot %d", slot)
+        return self._devs[slot]
+
+    def free_slot(self, slot: int) -> None:
+        """Release and remove a gamepad for a specific slot."""
+        dev = self._devs.pop(slot, None)
+        self._pressed.pop(slot, None)
+        if dev is not None:
+            try:
+                dev.reset()
+                dev.update()
+            except Exception:
+                pass
+            logger.info("Freed gamepad slot %d", slot)
 
     @property
     def controller_count(self) -> int:
-        return 1 if self._dev is not None else 0
+        return len(self._devs)
+
+    def allocated_slots(self) -> Set[int]:
+        return set(self._devs.keys())
 
     # ------------------------------------------------------------------
     # Input
     # ------------------------------------------------------------------
 
-    def press_key(self, key_name: str) -> bool:
-        dev = self._dev
+    def press_key(self, slot: int, key_name: str) -> bool:
+        dev = self._devs.get(slot)
         if dev is None:
             return False
         normalized = key_name.lower().strip()
-        if normalized in self._pressed:
+        pressed = self._pressed[slot]
+        if normalized in pressed:
             return True
         btn = XUSB_MAP.get(normalized)
         if btn is not None:
             dev.press_button(button=btn)
             dev.update()
-            self._pressed.add(normalized)
-            logger.info("PRESS %s (btn 0x%04X)", normalized, btn)
+            pressed.add(normalized)
+            logger.info("[Slot %d] PRESS %s (btn 0x%04X)", slot, normalized, btn)
             return True
         if normalized in _TRIGGER_KEYS:
             if normalized == "gamepad_lt":
-                dev.left_trigger(value=0)
+                dev.left_trigger(value=_TRIGGER_RANGE)
             else:
-                dev.right_trigger(value=0)
+                dev.right_trigger(value=_TRIGGER_RANGE)
             dev.update()
-            self._pressed.add(normalized)
+            pressed.add(normalized)
             return True
         logger.warning("Unknown gamepad input: '%s'", key_name)
         return False
 
-    def release_key(self, key_name: str) -> bool:
-        dev = self._dev
+    def release_key(self, slot: int, key_name: str) -> bool:
+        dev = self._devs.get(slot)
         if dev is None:
             return False
         normalized = key_name.lower().strip()
+        pressed = self._pressed[slot]
         btn = XUSB_MAP.get(normalized)
         if btn is not None:
             dev.release_button(button=btn)
             dev.update()
-            self._pressed.discard(normalized)
-            logger.info("RELEASE %s", normalized)
+            pressed.discard(normalized)
+            logger.info("[Slot %d] RELEASE %s", slot, normalized)
             return True
         if normalized in _TRIGGER_KEYS:
             if normalized == "gamepad_lt":
@@ -107,13 +127,13 @@ class KeyboardController:
             else:
                 dev.right_trigger(value=0)
             dev.update()
-            self._pressed.discard(normalized)
+            pressed.discard(normalized)
             return True
         logger.warning("Unknown gamepad input: '%s'", key_name)
         return False
 
-    def move_analog(self, stick_name: str, x: float, y: float) -> None:
-        dev = self._dev
+    def move_analog(self, slot: int, stick_name: str, x: float, y: float) -> None:
+        dev = self._devs.get(slot)
         if dev is None:
             return
         normalized = stick_name.lower().strip()
@@ -141,28 +161,40 @@ class KeyboardController:
             dev.update()
             return
 
-    def release_all(self) -> None:
-        dev = self._dev
-        if dev is None:
+    def release_all(self, slot: Optional[int] = None) -> None:
+        if slot is not None:
+            dev = self._devs.get(slot)
+            if dev is not None:
+                try:
+                    dev.reset()
+                    dev.update()
+                except Exception:
+                    pass
+                self._pressed[slot].clear()
             return
-        try:
-            dev.reset()
-            dev.update()
-        except Exception:
-            pass
-        self._pressed.clear()
+        for s, dev in self._devs.items():
+            try:
+                dev.reset()
+                dev.update()
+            except Exception:
+                pass
+            self._pressed[s].clear()
 
     def shutdown(self) -> None:
-        self.release_all()
-        self._dev = None
+        for slot in list(self._devs.keys()):
+            self.free_slot(slot)
 
     # ------------------------------------------------------------------
     # State queries
     # ------------------------------------------------------------------
 
-    @property
-    def pressed_keys(self) -> Set[str]:
-        return self._pressed.copy()
+    def pressed_keys(self, slot: Optional[int] = None) -> Set[str]:
+        if slot is not None:
+            return self._pressed.get(slot, set()).copy()
+        result: Set[str] = set()
+        for s in self._pressed.values():
+            result.update(s)
+        return result
 
     @staticmethod
     def supported_keys() -> list[str]:

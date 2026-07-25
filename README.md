@@ -36,8 +36,9 @@ Traditional phone-as-gamepad solutions require installing proprietary apps, deal
 
 ### Gamepad Emulation
 - **Complete Xbox 360 controller** — A, B, X, Y, D-pad (up/down/left/right), LB, RB, LT, RT, LS, RS, BACK, START, HOME (Guide)
-- **Analog triggers** — touch-and-drag for smooth 0–1 analog range; games see real trigger axis input
+- **Analog triggers** — touch-and-drag for smooth 0–1 analog range; games see real trigger axis input. Also supports **Digital mode** (tap = instant 1.0) for FPS games
 - **Dual analog sticks** — with configurable dead zone (default 15%), 16 ms throttle, and change-threshold filtering for jitter-free control
+- **Multi-controller support** — up to 4 phones can connect simultaneously, each appearing as a separate Xbox 360 controller (slots 0–3) in `joy.cpl`
 - **Virtual controller via ViGEmBus** — appears as a genuine Xbox 360 controller in `joy.cpl` and every XInput-compatible game
 
 ### Dynamic Joysticks
@@ -66,12 +67,11 @@ Traditional phone-as-gamepad solutions require installing proprietary apps, deal
 - **Save / Load / Import / Export** — layouts persist as `layout.json`; share layouts as JSON files
 
 ### Server & Monitoring
-- **Desktop monitor** — live dashboard at `/monitor` showing stick crosshairs, trigger bars, button states, and connected devices
+- **Desktop monitor** — live dashboard at `/monitor` showing dashboard stats, device list, and layout editor
 - **Layout Editor** — drag-and-drop canvas with resize handles, property sliders (x, y, w, h, opacity, layer, font size), page tabs with add/delete, undo/redo, add-button modal. All changes sync live to connected phones.
-- **Input Monitor** — 15-button grid with live press highlighting, dual analog stick canvases with crosshairs and coordinate display, analog trigger bars with fill percentage
 - **REST API** — programmatic access to server state, connections, and diagnostics
-- **Multi-client** — one active controller; monitors and passive clients can observe live input
-- **Auto-promotion** — when the active controller disconnects, the next waiting client takes over instantly
+- **Multi-controller** — up to 4 phones can each be an independent Xbox 360 gamepad. Each phone gets its own gamepad slot (0–3) on connect.
+- **Auto-promotion** — when a controller disconnects, its gamepad slot is freed and the next waiting client takes over
 
 ---
 
@@ -139,7 +139,7 @@ The dashboard displays a QR code encoding the server URL. Scan it with your phon
 | **A, B, X, Y** | Tap (press), release | `keydown` / `keyup` | Button press/release |
 | **D-pad (▲▼◄►)** | Tap | `keydown` / `keyup` | D-pad press/release |
 | **LB, RB** | Tap | `keydown` / `keyup` | Shoulder button |
-| **LT, RT** | Touch + drag up/down | `analog` (x = 0–1) | Trigger axis |
+| **LT, RT** | Touch + drag (analog mode) or tap (digital mode) | `analog` (x = 0–1) | Trigger axis — digital mode sends instant 1.0 on touch, 0 on release |
 | **LS, RS** | Touch anywhere + drag | `analog` (x = -1..1, y = -1..1) | Joystick axis |
 | **Touchpad** | Drag (velocity-based, acceleration) | `analog` (x = -1..1, y = -1..1) | Mapped joystick axis (additive) |
 | **BACK, START** | Tap | `keydown` / `keyup` | Back / Start |
@@ -168,9 +168,8 @@ Open `http://<server-ip>:8000/monitor` on any desktop browser for a full control
 | Tab | Features |
 |-----|----------|
 | **Dashboard** | QR code for one-scan phone connection, live stat cards (server status, client count, active controller, active device), quick actions (ping, disconnect all), usage guide |
-| **Devices** | Live list of connected clients with role tags (CONTROLLER / CONNECTED / MONITOR), force-disconnect (KICK) per device, server info panel |
+| **Devices** | Live list of connected clients with role tags (CONTROLLER / CONNECTED / MONITOR), gamepad slot assignment (P0–P3), force-disconnect (KICK) per device, server info panel |
 | **Layout Editor** | Drag-and-drop canvas with resize handles, property sliders (x, y, w, h, opacity, layer, font size), page tabs with add/delete, undo/redo, add-button modal. All changes sync live to connected phones over WebSocket. |
-| **Input Monitor** | 15-button grid with live press highlighting, dual analog stick canvases with crosshairs and coordinate display, analog trigger bars with fill percentage |
 
 ### Button Logic
 
@@ -256,7 +255,7 @@ The server reads and writes `layout.json` in the project root. This file contain
 |------|-----------|----------|
 | `button` | `.ctrl-btn` | Momentary press; flashes white on touch |
 | `analog_stick` | `.ctrl-analog` | Circular drag zone with dynamic centering; returns to center on release |
-| `trigger` | `.ctrl-trigger` | Linear drag; analog value proportional to drag distance from initial touch point |
+| `trigger` | `.ctrl-trigger` | Linear drag (analog mode) or tap-and-release (digital mode). `triggerMode` property toggles between `analog` (drag for smooth 0–1) and `digital` (tap = instant 1.0) |
 | `touchpad` | `.ctrl-touchpad` | Velocity-based drag mapped to an analog stick with acceleration curve. Works like a laptop trackpad for camera control. Output is additive with the mapped stick's own touch input. |
 
 ### Control Properties
@@ -275,6 +274,7 @@ The server reads and writes `layout.json` in the project root. This file contain
 | `fontSize` | number | Label font size in CSS pixels |
 | `layer` | number | Z-index layer for stacking order |
 | `visible` | boolean | Whether the control is shown |
+| `triggerMode` | string | (Trigger only) `analog` (drag for smooth range) or `digital` (tap = instant 1.0). Default `analog` |
 | `mappedTo` | string | (Touchpad only) Keybind of the analog stick this touchpad controls |
 | `sensitivity` | number | (Touchpad only) Velocity multiplier (0.25–3.0, default 1.0) |
 
@@ -362,7 +362,7 @@ TouchKeys/
 │
 ├── templates/                # Jinja2 / server-rendered HTML
 │   ├── index.html            # Mobile SPA shell (loads JS/CSS from static/)
-│   └── monitor.html          # Desktop control center (dashboard, layout editor, input monitor)
+│   └── monitor.html          # Desktop control center (dashboard, layout editor, device list)
 │
 ├── static/
 │   ├── css/
@@ -400,7 +400,7 @@ TouchKeys/
 | **LayoutManager** | `layout.py` | CRUD operations on layout data, undo/redo stack (unlimited history), page management, version migration |
 | **ConfigManager** | `config.py` | Reads/writes application settings, provides defaults for unset keys |
 | **StorageManager** | `storage.py` | Atomic JSON file read/write with file locking to prevent corruption |
-| **ConnectionManager** | `network.py` | Tracks connected WebSocket clients, manages active controller promotion/demotion, detects LAN IP |
+| **ConnectionManager** | `network.py` | Tracks connected WebSocket clients, manages gamepad slot assignment (0–3), detects LAN IP |
 
 ---
 
@@ -603,9 +603,10 @@ The phone needs nothing but a modern web browser with:
 - [x] Multi-page layouts
 - [x] Desktop monitor
 - [x] Touchpad element (velocity-based mouse-like analog stick control)
+- [x] Trigger digital mode (tap = instant 1.0 for FPS games)
+- [x] Multi Virtual Controller Support (up to 4 simultaneous gamepads)
 - [ ] Mapping device Gyro into different analog inputs
 - [ ] Keyboard & mouse input support
-- [ ] Multi Virtual Controller Support
 - [ ] Macro / rapid-fire support
 - [ ] Bundle whole project into a simple `.exe` file
 
@@ -628,7 +629,6 @@ Contributions are welcome! Here's how to help:
 - Add macOS support (via virtual gamepad kernel extension)
 - Translate the client UI
 - Macro / rapid-fire scripting
-- Multi-controller support (multiple virtual gamepads)
 - Gyro-to-stick mapping
 
 ---

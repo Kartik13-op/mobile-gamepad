@@ -135,6 +135,7 @@ export class LayoutManager {
     el.dataset.id = ctrl.id;
     el.dataset.keybind = ctrl.keybind || '';
     el.dataset.controlType = 'trigger';
+    el.dataset.triggerMode = ctrl.triggerMode || 'analog';
     el.innerHTML = ctrl.name || '';
     this._applyBaseStyles(el, ctrl);
     this._workspace.appendChild(el);

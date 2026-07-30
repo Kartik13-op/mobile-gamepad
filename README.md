@@ -592,7 +592,13 @@ The phone needs nothing but a modern web browser with:
 # Important Disclaimers
 
 ## Anti-Cheat Warning
-Some strict kernel-level anti-cheat systems may block virtual gamepad runtimes or flag them, which could risk gaming accounts. You use this program entirely at your own risk; the author accepts no responsibility for any account bans or restrictions. However, during testing, games like Minecraft Bedrock, Fall Guys, and Rocket League ran without any problems.
+Some strict kernel-level anti-cheat systems may block virtual gamepad runtimes or flag them, which could risk gaming accounts. You use this program entirely at your own risk; the author accepts no responsibility for any account bans or restrictions.
+
+# Games Tested and Feedback
+- Fall Guys with its default Easy Anti Cheat work seamlessly and felt easy and precise to control.
+- Rocket League ran flawlessly on both, with Easy Anti Cheat turned on or off. the game is however harder to control on mobile than dedicated keyboard-mouse or physical game controller. Also ran the game on splitscreen mode by connecting 2 mobile phones at a time. Using only 2 or 3 fingers still on an intermmediate side difficulty.
+- Minecraft Bedrock work on both one player and splitscreen if more than one controllers were connected.
+- Roblox worked easily too.
 
 
 # Problems and Limitations Faced

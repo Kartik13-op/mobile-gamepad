@@ -20,7 +20,6 @@
 
 ---
 
-## Why TouchKeys?
 
 Traditional phone-as-gamepad solutions require installing proprietary apps, dealing with bloatware, or paying for premium features. TouchKeys is different:
 
@@ -596,6 +595,20 @@ The phone needs nothing but a modern web browser with:
 | Connection limit | Unlimited (practical: 50+ clients) |
 
 ---
+
+# Important Disclaimers
+## Anti-Cheat Warning
+Some strict kernel-level anti-cheat systems may block virtual gamepad runtimes or flag them, which could risk gaming accounts. You use this program entirely at your own risk; the author accepts no responsibility for any account bans or restrictions. However, during testing, games like Minecraft Bedrock, Fall Guys, and Rocket League ran without any problems.
+
+
+# Problems and Limitations Faced
+
+## Why Gyro Support Was Omitted
+Gyroscope and motion sensor capabilities were extensively experimented with. However, because the web app runs over local HTTP:
+- Modern mobile browsers (such as Safari on iOS and Chrome on Android) strictly block motion/sensor data on insecure HTTP origins.
+- Attempting to serve via HTTPS using self-signed certificates caused browsers to outright block access due to privacy and security warnings.
+- Hosting the server on external cloud platforms to get a valid HTTPS URL introduces massive input latency due to round-trip routing, as well as severe security risks that would require complex authentication layers.
+- The alternative—building native iOS (`.ipa`) and Android (`.apk`) apps—would require navigating Apple App Store and Google Play developer fees, review guidelines, and distribution requirements, completely ruining the core philosophy of TouchKeys: **zero-install, scan a QR code, and play instantly via browser with a simple one-click PC setup.**
 
 ## Roadmap
 

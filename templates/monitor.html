@@ -12,7 +12,7 @@
   --bg-base: #000; --bg-surface: #0a0a0a; --bg-elevated: #111;
   --bg-card: #1a1a1a; --bg-card-hover: #222;
   --text: #fff; --text-dim: #888; --text-muted: #444;
-  --border: #222; --accent: #7dff9b; --danger: #ff4444;
+  --border: #222; --accent: #fff; --danger: #ff4444;
   --font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
   --sidebar-w: 200px;
 }
@@ -29,7 +29,7 @@ html, body { width:100%; height:100%; overflow:hidden; font-family:var(--font); 
 .sb-tab .ico { font-size:16px; width:20px; text-align:center; }
 .sb-conn { padding:12px 16px; border-top:2px solid var(--border); font-size:10px; display:flex; align-items:center; gap:6px; }
 .conn-dot { width:8px; height:8px; flex-shrink:0; background:var(--text-muted); }
-.conn-dot.on { background:var(--accent); box-shadow:0 0 6px var(--accent); }
+.conn-dot.on { background:var(--text); }
 .conn-dot.off { background:var(--danger); }
 
 /* Main layout */
@@ -50,7 +50,7 @@ html, body { width:100%; height:100%; overflow:hidden; font-family:var(--font); 
 .stat-card { background:var(--bg-elevated); border:2px solid var(--border); padding:16px; text-align:center; }
 .stat-card .num { font-size:32px; font-weight:900; letter-spacing:1px; }
 .stat-card .lbl { font-size:9px; font-weight:700; letter-spacing:1px; color:var(--text-dim); margin-top:4px; }
-.stat-card .num.green { color:var(--accent); }
+.stat-card .num.green { color:var(--text); }
 .stat-card .num.red { color:var(--danger); }
 
 /* QR */
@@ -83,7 +83,7 @@ html, body { width:100%; height:100%; overflow:hidden; font-family:var(--font); 
 .device-item .name { font-weight:700; font-size:13px; }
 .device-item .meta { font-size:10px; color:var(--text-dim); margin-top:2px; }
 .tag { display:inline-block; padding:2px 8px; font-size:9px; font-weight:700; letter-spacing:1px; }
-.tag-active { background:var(--accent); color:var(--bg-base); }
+.tag-active { background:var(--text); color:var(--bg-base); }
 .tag-monitor { background:var(--text-dim); color:var(--bg-base); }
 .tag-connected { background:var(--bg-card-hover); color:var(--text); }
 
@@ -97,7 +97,7 @@ html, body { width:100%; height:100%; overflow:hidden; font-family:var(--font); 
 #editor-canvas .ctrl-el.ctrl-button { background:linear-gradient(180deg,#2a2a2a,var(--bg-card)); }
 #editor-canvas .ctrl-el.ctrl-stick { background:transparent; border:3px solid var(--bg-card); }
       #editor-canvas .ctrl-el.ctrl-trigger { background:linear-gradient(180deg,#2a2a2a,var(--bg-card)); }
-      #editor-canvas .ctrl-el.ctrl-touchpad { border:1px dashed rgba(125,255,155,0.3); background:repeating-linear-gradient(45deg,transparent,transparent 6px,rgba(125,255,155,0.03) 6px,rgba(125,255,155,0.03) 12px); }
+      #editor-canvas .ctrl-el.ctrl-touchpad { border:1px dashed rgba(255,255,255,0.3); background:repeating-linear-gradient(45deg,transparent,transparent 6px,rgba(255,255,255,0.03) 6px,rgba(255,255,255,0.03) 12px); }
 .resize-h { position:absolute; width:16px; height:16px; z-index:20; opacity:0; pointer-events:none; }
 .ctrl-el.selected .resize-h { opacity:1; pointer-events:auto; }
 .resize-h::after { content:''; position:absolute; width:8px; height:8px; background:var(--text); }

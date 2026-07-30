@@ -15,7 +15,7 @@
   --text-secondary:#888888;
   --text-muted:    #444444;
   --border:        #222222;
-  --accent:        #7dff9b;
+  --accent:        #ffffff;
   --font:          'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
   --grid-size:     20px;
 }
@@ -106,8 +106,8 @@ input, textarea, select {
 }
 
 .connection-badge:not(.disconnected) {
-  color: #08140b;
-  background: #7dff9b;
+  color: var(--bg-base);
+  background: var(--text-primary);
 }
 
 .device-info {
@@ -145,13 +145,11 @@ input, textarea, select {
 }
 
 .device-status.active {
-  background: #00ff00;
-  box-shadow: 0 0 3px #00ff00;
+  background: var(--text-primary);
 }
 
 .device-status.waiting {
-  background: #ffaa00;
-  box-shadow: 0 0 3px #ffaa00;
+  background: var(--text-secondary);
 }
 
 .toolbar-divider {
@@ -285,11 +283,10 @@ input, textarea, select {
 
 .analog-ring {
   position: absolute;
-  border: 3px solid var(--accent);
+  border: 2px solid var(--text-primary);
   border-radius: 50%;
-  background: rgba(125, 255, 155, 0.06);
+  background: transparent;
   pointer-events: none;
-  box-shadow: 0 0 12px var(--accent), inset 0 0 12px var(--accent);
   display: none;
 }
 
@@ -301,10 +298,9 @@ input, textarea, select {
   position: absolute;
   width: 20%;
   height: 20%;
-  background: var(--accent);
+  background: var(--text-primary);
   border-radius: 50%;
   pointer-events: none;
-  box-shadow: 0 0 10px var(--accent);
   transform: translate(-50%, -50%);
   display: none;
 }
@@ -366,10 +362,9 @@ input, textarea, select {
   position: absolute;
   width: 24px;
   height: 24px;
-  background: var(--accent);
+  background: var(--text-primary);
   border-radius: 50%;
   pointer-events: none;
-  box-shadow: 0 0 10px var(--accent);
   transform: translate(-50%, -50%);
   transition: transform 0.1s ease-out;
 }
@@ -452,9 +447,7 @@ input, textarea, select {
   content: '';
   position: absolute;
   inset: 0;
-  border: 2px solid transparent;
-  background:
-    radial-gradient(circle at 50% 50%, rgba(125,255,155,0.06) 0%, transparent 70%);
+  border: 1px solid transparent;
   pointer-events: none;
 }
 .ctrl-touchpad .touchpad-label {
@@ -468,10 +461,7 @@ input, textarea, select {
   margin-bottom: 2px;
 }
 .ctrl-touchpad.active {
-  border-color: rgba(125,255,155,0.3);
-}
-.ctrl-touchpad.active::after {
-  border-color: rgba(125,255,155,0.15);
+  border-color: var(--text-primary);
 }
 
 /* --- Page Tabs --- */

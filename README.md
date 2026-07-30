@@ -62,7 +62,8 @@ Traditional phone-as-gamepad solutions require installing proprietary apps, deal
 
 ### Layout System
 - **Fully customizable** — every control is positionable by ratio (0–1) relative to viewport
-- **Four control types** — buttons (momentary), analog sticks (2-axis drag), analog triggers (1-axis drag), and touchpads (velocity-based mouse-like aim)
+- **Five control types** — buttons (momentary), analog sticks (2-axis drag), analog triggers (1-axis drag), touchpads (velocity-based mouse-like aim), and sliders (1-axis drag)
+- **Sliders** — linear drag mapped to a single axis (stick X/Y or triggers). Supports vertical or horizontal orientation. Centered behavior for sticks, edge behavior for triggers.
 - **Touchpad** — maps finger velocity to analog stick output with acceleration curve. Works like a laptop trackpad for FPS camera control. Configurable sensitivity and mapped stick.
 - **Multiple pages** — create different layouts for different games, all sharing one virtual controller
 - **Undo / Redo** — unlimited history for layout edits via the desktop monitor
@@ -259,6 +260,7 @@ The server reads and writes `layout.json` in the project root. This file contain
 | `analog_stick` | `.ctrl-analog` | Circular drag zone with dynamic centering; returns to center on release |
 | `trigger` | `.ctrl-trigger` | Linear drag (analog mode) or tap-and-release (digital mode). `triggerMode` property toggles between `analog` (drag for smooth 0–1) and `digital` (tap = instant 1.0) |
 | `touchpad` | `.ctrl-touchpad` | Velocity-based drag mapped to an analog stick with acceleration curve. Works like a laptop trackpad for camera control. Output is additive with the mapped stick's own touch input. |
+| `slider` | `.ctrl-slider` | Linear drag for a single axis. Supports horizontal/vertical orientation. |
 
 ### Control Properties
 
@@ -266,8 +268,8 @@ The server reads and writes `layout.json` in the project root. This file contain
 |----------|------|-------------|
 | `id` | string | Unique identifier (server-generated) |
 | `name` | string | Display label shown on the control |
-| `keybind` | string | Gamepad action this control maps to (see keybind reference). For touchpads, this is the target stick's keybind. |
-| `type` | string | One of `button`, `analog_stick`, `trigger`, `touchpad` |
+| `keybind` | string | Gamepad action this control maps to (see keybind reference). For touchpads and sliders, this is the target stick or trigger's keybind. |
+| `type` | string | One of `button`, `analog_stick`, `trigger`, `touchpad`, `slider` |
 | `x` | number | Horizontal position ratio (0 = left, 1 = right edge) |
 | `y` | number | Vertical position ratio (0 = top, 1 = bottom edge) |
 | `width` | number | Width in CSS pixels |
@@ -276,7 +278,10 @@ The server reads and writes `layout.json` in the project root. This file contain
 | `fontSize` | number | Label font size in CSS pixels |
 | `layer` | number | Z-index layer for stacking order |
 | `visible` | boolean | Whether the control is shown |
+| `deadzone` | number | (Analog stick only) Inner dead zone (default 0.15). Configurable per-control. |
 | `triggerMode` | string | (Trigger only) `analog` (drag for smooth range) or `digital` (tap = instant 1.0). Default `analog` |
+| `orientation` | string | (Slider only) `horizontal` or `vertical`. |
+| `mappedAxis` | string | (Slider only) The specific axis mapped (e.g., `left_stick_x`, `left_trigger`). |
 | `mappedTo` | string | (Touchpad only) Keybind of the analog stick this touchpad controls |
 | `sensitivity` | number | (Touchpad only) Velocity multiplier (0.25–3.0, default 1.0) |
 

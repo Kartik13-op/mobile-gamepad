@@ -313,6 +313,7 @@ html, body { width:100%; height:100%; overflow:hidden; font-family:var(--font); 
             <option value="button">Button</option>
             <option value="analog_stick">Analog Stick</option>
             <option value="trigger">Trigger</option>
+            <option value="slider">Slider</option>
             <option value="touchpad">Touchpad</option>
           </select>
         </div>
@@ -636,16 +637,30 @@ html, body { width:100%; height:100%; overflow:hidden; font-family:var(--font); 
     } else {
       editorEmpty.classList.add('hidden');
       canvasEl.innerHTML = controls.map(ctrl => {
-        const cls = ctrl.type === 'analog_stick' ? 'ctrl-stick' : ctrl.type === 'trigger' ? 'ctrl-trigger' : ctrl.type === 'touchpad' ? 'ctrl-touchpad' : 'ctrl-button';
+        let cls = 'ctrl-button';
+        if (ctrl.type === 'analog_stick') cls = 'ctrl-stick';
+        else if (ctrl.type === 'trigger') cls = 'ctrl-trigger';
+        else if (ctrl.type === 'touchpad') cls = 'ctrl-touchpad';
+        else if (ctrl.type === 'slider') cls = 'ctrl-slider-edit';
+        
         const sel = ctrl.id === selectedCtrlId ? ' selected' : '';
         const label = esc(ctrl.name || '');
-        // Normalize: if w/h < 1 treat as fraction, else pixels
         const pw = ctrl.width < 1 ? Math.round(ctrl.width * cw) : Math.round(ctrl.width);
         const ph = ctrl.height < 1 ? Math.round(ctrl.height * ch) : Math.round(ctrl.height);
         const px = Math.round(ctrl.x * cw);
         const py = Math.round(ctrl.y * ch);
+        
+        let sliderExtras = '';
+        if (ctrl.type === 'slider') {
+          const isVert = ctrl.orientation === 'vertical';
+          sliderExtras = `<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;opacity:0.3;">
+            <div style="background:var(--text);${isVert ? 'width:4px;height:80%' : 'height:4px;width:80%'}"></div>
+          </div>`;
+        }
+
         return `<div class="ctrl-el ${cls}${sel}" data-id="${ctrl.id}" style="left:${px}px;top:${py}px;width:${pw}px;height:${ph}px;opacity:${ctrl.opacity};z-index:${ctrl.layer||0};">
-          <span style="font-size:${ctrl.fontSize||12}px;">${label}</span>
+          ${sliderExtras}
+          <span style="font-size:${ctrl.fontSize||12}px;z-index:2;">${label}</span>
           <span class="resize-h nw"></span><span class="resize-h ne"></span>
           <span class="resize-h sw"></span><span class="resize-h se"></span>
         </div>`;
@@ -695,7 +710,7 @@ html, body { width:100%; height:100%; overflow:hidden; font-family:var(--font); 
     }
     propActions.style.display = '';
     const fields = [
-      { key:'name', label:'Label', min:1, max:20, step:1 },
+      { key:'name', label:'Label' },
       { key:'x', label:'X', min:0, max:1, step:0.01 },
       { key:'y', label:'Y', min:0, max:1, step:0.01 },
       { key:'width', label:'W', min:20, max:300, step:1 },
@@ -704,13 +719,35 @@ html, body { width:100%; height:100%; overflow:hidden; font-family:var(--font); 
       { key:'fontSize', label:'F', min:6, max:64, step:1 },
       { key:'layer', label:'Z', min:0, max:100, step:1 },
     ];
-    propsContent.innerHTML = fields.map(f =>
-      `<div class="range-row">
+    propsContent.innerHTML = fields.map(f => {
+      if (f.key === 'name') {
+        return `<div class="form-group">
+          <label class="form-label">Label</label>
+          <input class="form-input" type="text" value="${esc(ctrl[f.key] ?? '')}" data-key="name" id="prop-name-input">
+        </div>`;
+      }
+      return `<div class="range-row">
         <label>${f.label}</label>
         <input type="range" min="${f.min}" max="${f.max}" step="${f.step}" value="${ctrl[f.key] ?? ''}" data-key="${f.key}">
         <span class="rv">${f.key === 'x' || f.key === 'y' ? (ctrl[f.key]*100).toFixed(0)+'%' : ctrl[f.key]}</span>
-      </div>`
-    ).join('');
+      </div>`;
+    }).join('');
+
+    // Label text input
+    const nameInput = propsContent.querySelector('#prop-name-input');
+    if (nameInput) {
+      nameInput.addEventListener('input', () => {
+        const val = nameInput.value;
+        const page = getCurrentPage();
+        if (!page || !selectedCtrlId) return;
+        const ctrl = page.buttons.find(b => b.id === selectedCtrlId);
+        if (ctrl) {
+          ctrl.name = val;
+        }
+        renderEditor();
+        debounceUpdate(selectedCtrlId, { name: val });
+      });
+    }
 
     propsContent.querySelectorAll('input[type="range"]').forEach(inp => {
       inp.addEventListener('input', () => {
@@ -718,7 +755,6 @@ html, body { width:100%; height:100%; overflow:hidden; font-family:var(--font); 
         const val = parseFloat(inp.value);
         const page = getCurrentPage();
         if (!page || !selectedCtrlId) return;
-        // Update locally first for responsiveness
         const ctrl = page.buttons.find(b => b.id === selectedCtrlId);
         if (ctrl) {
           ctrl[key] = val;
@@ -746,6 +782,7 @@ html, body { width:100%; height:100%; overflow:hidden; font-family:var(--font); 
           <option value="button" ${ctrl.type === 'button' ? 'selected' : ''}>Button</option>
           <option value="analog_stick" ${ctrl.type === 'analog_stick' ? 'selected' : ''}>Analog Stick</option>
           <option value="trigger" ${ctrl.type === 'trigger' ? 'selected' : ''}>Trigger</option>
+          <option value="slider" ${ctrl.type === 'slider' ? 'selected' : ''}>Slider</option>
           <option value="touchpad" ${ctrl.type === 'touchpad' ? 'selected' : ''}>Touchpad</option>
         </select>
       </div>
@@ -774,6 +811,62 @@ html, body { width:100%; height:100%; overflow:hidden; font-family:var(--font); 
       propsContent.appendChild(trigSection);
       trigSection.querySelector('#prop-trigger-mode')?.addEventListener('change', (e) => {
         debounceUpdate(selectedCtrlId, { triggerMode: e.target.value });
+      });
+    }
+
+    // Analog Stick-specific properties
+    if (ctrl.type === 'analog_stick') {
+      const stickSection = document.createElement('div');
+      stickSection.style.marginTop = '12px';
+      stickSection.style.borderTop = '2px solid var(--border)';
+      stickSection.style.paddingTop = '12px';
+      stickSection.innerHTML = `
+        <div class="form-group">
+          <label class="form-label">Dead Zone (${ctrl.deadzone ?? 0.15})</label>
+          <input class="form-input" id="prop-deadzone" type="range" min="0" max="0.5" step="0.01" value="${ctrl.deadzone ?? 0.15}">
+        </div>
+      `;
+      propsContent.appendChild(stickSection);
+      stickSection.querySelector('#prop-deadzone')?.addEventListener('input', (e) => {
+        const val = parseFloat(e.target.value);
+        e.target.previousElementSibling.textContent = `Dead Zone (${val.toFixed(2)})`;
+        debounceUpdate(selectedCtrlId, { deadzone: val });
+      });
+    }
+
+    // Slider-specific properties
+    if (ctrl.type === 'slider') {
+      const sliderSection = document.createElement('div');
+      sliderSection.style.marginTop = '12px';
+      sliderSection.style.borderTop = '2px solid var(--border)';
+      sliderSection.style.paddingTop = '12px';
+      sliderSection.innerHTML = `
+        <div class="form-group">
+          <label class="form-label">Orientation</label>
+          <select class="form-select" id="prop-slider-orient">
+            <option value="horizontal" ${ctrl.orientation === 'horizontal' ? 'selected' : ''}>Horizontal</option>
+            <option value="vertical" ${ctrl.orientation === 'vertical' ? 'selected' : ''}>Vertical</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Mapped Axis</label>
+          <select class="form-select" id="prop-slider-axis">
+            <option value="left_stick_x" ${ctrl.mappedAxis === 'left_stick_x' ? 'selected' : ''}>Left Stick X</option>
+            <option value="left_stick_y" ${ctrl.mappedAxis === 'left_stick_y' ? 'selected' : ''}>Left Stick Y</option>
+            <option value="right_stick_x" ${ctrl.mappedAxis === 'right_stick_x' ? 'selected' : ''}>Right Stick X</option>
+            <option value="right_stick_y" ${ctrl.mappedAxis === 'right_stick_y' ? 'selected' : ''}>Right Stick Y</option>
+            <option value="left_trigger" ${ctrl.mappedAxis === 'left_trigger' ? 'selected' : ''}>Left Trigger</option>
+            <option value="right_trigger" ${ctrl.mappedAxis === 'right_trigger' ? 'selected' : ''}>Right Trigger</option>
+          </select>
+        </div>
+      `;
+      propsContent.appendChild(sliderSection);
+      sliderSection.querySelector('#prop-slider-orient')?.addEventListener('change', (e) => {
+        debounceUpdate(selectedCtrlId, { orientation: e.target.value });
+        setTimeout(renderEditor, 50);
+      });
+      sliderSection.querySelector('#prop-slider-axis')?.addEventListener('change', (e) => {
+        debounceUpdate(selectedCtrlId, { mappedAxis: e.target.value });
       });
     }
 
@@ -936,6 +1029,12 @@ html, body { width:100%; height:100%; overflow:hidden; font-family:var(--font); 
     }
     if (type === 'trigger') {
       data.triggerMode = 'analog';
+    }
+    if (type === 'slider') {
+      data.orientation = 'horizontal';
+      data.mappedAxis = 'left_stick_x';
+      data.width = 120;
+      data.height = 40;
     }
     sendWS({ type: 'add_button', pageId: page.id, data });
     closeModal('modal-add-ctrl');

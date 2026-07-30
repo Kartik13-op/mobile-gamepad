@@ -13,6 +13,7 @@ export class GamepadController {
     this._workspace = null;
 
     this._activeSticks = new Map();
+    this._activeSliders = new Map();
     this._activeTriggers = new Map();
     this._touchpadStates = new Map();
     this._touchpadOffsets = new Map();
@@ -79,6 +80,8 @@ export class GamepadController {
       const type = el.dataset.controlType;
       if (type === 'analog_stick') {
         this._startStick(touch.identifier, el, touch.clientX, touch.clientY);
+      } else if (type === 'slider') {
+        this._startSlider(touch.identifier, el, touch.clientX, touch.clientY);
       } else if (type === 'trigger') {
         this._startTrigger(touch.identifier, el, touch.clientX, touch.clientY);
       } else if (type === 'touchpad') {
@@ -105,6 +108,10 @@ export class GamepadController {
     for (const touch of e.changedTouches) {
       if (this._activeSticks.has(touch.identifier)) {
         this._endStick(touch.identifier);
+        continue;
+      }
+      if (this._activeSliders.has(touch.identifier)) {
+        this._endSlider(touch.identifier);
         continue;
       }
       if (this._activeTriggers.has(touch.identifier)) {
@@ -141,6 +148,10 @@ export class GamepadController {
     for (const touch of e.changedTouches) {
       if (this._activeSticks.has(touch.identifier)) {
         this._moveStick(touch.identifier, touch.clientX, touch.clientY);
+        continue;
+      }
+      if (this._activeSliders.has(touch.identifier)) {
+        this._moveSlider(touch.identifier, touch.clientX, touch.clientY);
         continue;
       }
       if (this._activeTriggers.has(touch.identifier)) {
@@ -242,10 +253,11 @@ export class GamepadController {
     const rawX = dist > 0 ? nx / maxDist : 0;
     const rawY = dist > 0 ? ny / maxDist : 0;
 
+    const deadzone = parseFloat(stick.el.dataset.deadzone) || 0.15;
     let finalX = 0, finalY = 0;
     const magnitude = Math.sqrt(rawX * rawX + rawY * rawY);
-    if (magnitude > ANALOG_DEAD_ZONE) {
-      const scaled = (magnitude - ANALOG_DEAD_ZONE) / (1 - ANALOG_DEAD_ZONE);
+    if (magnitude > deadzone) {
+      const scaled = (magnitude - deadzone) / (1 - deadzone);
       const factor = scaled / magnitude;
       finalX = rawX * factor;
       finalY = rawY * factor;
@@ -289,6 +301,106 @@ export class GamepadController {
     }
 
     this._activeSticks.delete(touchId);
+  }
+
+  // -----------------------------------------------------------------
+  // Slider
+  // -----------------------------------------------------------------
+
+  _startSlider(touchId, el, cx, cy) {
+    const thumb = el.querySelector('.slider-thumb');
+    const mappedAxis = el.dataset.mappedAxis;
+    const isTrigger = mappedAxis.includes('trigger');
+    const isVert = el.dataset.orientation === 'vertical';
+
+    this._activeSliders.set(touchId, {
+      el,
+      thumb,
+      isTrigger,
+      isVert,
+      mappedAxis,
+      keybind: el.dataset.keybind,
+      lastSentValue: null,
+      lastSendTime: 0,
+    });
+
+    this._moveSlider(touchId, cx, cy);
+  }
+
+  _moveSlider(touchId, cx, cy) {
+    const slider = this._activeSliders.get(touchId);
+    if (!slider) return;
+
+    const rect = slider.el.getBoundingClientRect();
+    let fraction = 0;
+
+    if (slider.isVert) {
+      fraction = (cy - rect.top) / rect.height;
+      // Invert vertical so bottom is 0/min and top is 1/max (or -1 to 1)
+      fraction = 1 - fraction;
+    } else {
+      fraction = (cx - rect.left) / rect.width;
+    }
+
+    fraction = Math.max(0, Math.min(1, fraction));
+
+    let value = 0;
+    if (slider.isTrigger) {
+      value = fraction;
+    } else {
+      value = (fraction - 0.5) * 2;
+    }
+
+    // Update thumb visual
+    if (slider.isVert) {
+      slider.thumb.style.top = `${(1 - fraction) * 100}%`;
+      slider.thumb.style.left = '50%';
+    } else {
+      slider.thumb.style.left = `${fraction * 100}%`;
+      slider.thumb.style.top = '50%';
+    }
+
+    this._sendSliderValue(touchId, value);
+  }
+
+  _sendSliderValue(touchId, value) {
+    const slider = this._activeSliders.get(touchId);
+    if (!slider) return;
+
+    const now = performance.now();
+    if (now - slider.lastSendTime < ANALOG_THROTTLE_MS) return;
+    slider.lastSendTime = now;
+
+    const snapped = Math.round(value * 1000) / 1000;
+    if (snapped === slider.lastSentValue) return;
+    slider.lastSentValue = snapped;
+
+    const isY = slider.mappedAxis.endsWith('_y');
+    ws.send({
+      type: 'analog',
+      key: slider.keybind,
+      x: isY ? 0 : snapped,
+      y: isY ? snapped : 0,
+    });
+  }
+
+  _endSlider(touchId) {
+    const slider = this._activeSliders.get(touchId);
+    if (!slider) return;
+
+    if (!slider.isTrigger) {
+      // Return to center for sticks
+      slider.thumb.style.top = '50%';
+      slider.thumb.style.left = '50%';
+      ws.send({
+        type: 'analog',
+        key: slider.keybind,
+        x: 0,
+        y: 0,
+      });
+    }
+
+    this._activeSliders.delete(touchId);
   }
 
   _resetSticks() {
@@ -508,6 +620,8 @@ export class GamepadController {
     const type = el.dataset.controlType;
     if (type === 'analog_stick') {
       this._startStick(-1, el, e.clientX, e.clientY);
+    } else if (type === 'slider') {
+      this._startSlider(-1, el, e.clientX, e.clientY);
     } else if (type === 'trigger') {
       this._startTrigger(-1, el, e.clientX, e.clientY);
     } else {
@@ -524,6 +638,10 @@ export class GamepadController {
     if (performance.now() - this._lastTouchAt < 700) return;
     if (this._activeSticks.has(-1)) {
       this._endStick(-1);
+      return;
+    }
+    if (this._activeSliders.has(-1)) {
+      this._endSlider(-1);
       return;
     }
     if (this._activeTriggers.has(-1)) {
@@ -544,6 +662,8 @@ export class GamepadController {
     if (performance.now() - this._lastTouchAt < 700) return;
     if (this._activeSticks.has(-1)) {
       this._moveStick(-1, e.clientX, e.clientY);
+    } else if (this._activeSliders.has(-1)) {
+      this._moveSlider(-1, e.clientX, e.clientY);
     } else if (this._activeTriggers.has(-1)) {
       this._moveTrigger(-1, e.clientX, e.clientY);
     }
@@ -570,10 +690,12 @@ export class GamepadController {
       if (el.classList.contains('ctrl-trigger')) return el;
       if (el.classList.contains('ctrl-analog')) return el;
       if (el.classList.contains('ctrl-touchpad')) return el;
+      if (el.classList.contains('ctrl-slider')) return el;
       if (el.closest('.ctrl-btn')) return el.closest('.ctrl-btn');
       if (el.closest('.ctrl-trigger')) return el.closest('.ctrl-trigger');
       if (el.closest('.ctrl-analog')) return el.closest('.ctrl-analog');
       if (el.closest('.ctrl-touchpad')) return el.closest('.ctrl-touchpad');
+      if (el.closest('.ctrl-slider')) return el.closest('.ctrl-slider');
     }
     return null;
   }

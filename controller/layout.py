@@ -26,6 +26,9 @@ DEFAULT_CONTROL: Dict[str, Any] = {
     "fontSize": 16,
     "layer": 0,
     "visible": True,
+    "deadzone": 0.15,
+    "orientation": "horizontal",
+    "mappedAxis": "left_stick_x",
 }
 
 

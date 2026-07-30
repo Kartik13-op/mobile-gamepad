@@ -53,7 +53,7 @@ export class LayoutManager {
 
   _renderControls() {
     if (!this._workspace) return;
-    this._workspace.querySelectorAll('.ctrl-btn, .ctrl-analog, .ctrl-trigger, .ctrl-touchpad').forEach(el => el.remove());
+    this._workspace.querySelectorAll('.ctrl-btn, .ctrl-analog, .ctrl-trigger, .ctrl-touchpad, .ctrl-slider').forEach(el => el.remove());
 
     let emptyState = this._workspace.querySelector('.empty-state');
     const controls = this.activeControls;
@@ -86,6 +86,8 @@ export class LayoutManager {
       this._createAnalogStick(ctrl);
     } else if (type === 'trigger') {
       this._createTrigger(ctrl);
+    } else if (type === 'slider') {
+      this._createSlider(ctrl);
     } else if (type === 'touchpad') {
       this._createTouchpad(ctrl);
     } else {
@@ -113,6 +115,7 @@ export class LayoutManager {
     el.dataset.id = ctrl.id;
     el.dataset.keybind = ctrl.keybind || '';
     el.dataset.controlType = 'analog_stick';
+    el.dataset.deadzone = ctrl.deadzone ?? 0.15;
     const sz = Math.min(ctrl.width || 60, ctrl.height || 60);
     el.innerHTML = `
       <div class="analog-outer">
@@ -139,6 +142,41 @@ export class LayoutManager {
     el.innerHTML = ctrl.name || '';
     this._applyBaseStyles(el, ctrl);
     this._workspace.appendChild(el);
+  }
+
+  _createSlider(ctrl) {
+    const el = document.createElement('div');
+    el.className = 'ctrl-slider';
+    el.dataset.id = ctrl.id;
+    el.dataset.controlType = 'slider';
+    el.dataset.orientation = ctrl.orientation || 'horizontal';
+    el.dataset.mappedAxis = ctrl.mappedAxis || 'left_stick_x';
+    
+    // Determine gamepad key from mapped axis
+    let key = 'gamepad_ls';
+    if (el.dataset.mappedAxis.startsWith('right_stick')) key = 'gamepad_rs';
+    else if (el.dataset.mappedAxis === 'left_trigger') key = 'gamepad_lt';
+    else if (el.dataset.mappedAxis === 'right_trigger') key = 'gamepad_rt';
+    el.dataset.keybind = key;
+
+    el.innerHTML = `
+      <div class="slider-track">
+        <div class="slider-thumb"></div>
+      </div>
+      <span class="btn-label">${ctrl.name || ''}</span>
+    `;
+    this._applyBaseStyles(el, ctrl);
+    this._workspace.appendChild(el);
+
+    // Initial thumb position (center for stick, edge for trigger)
+    const thumb = el.querySelector('.slider-thumb');
+    const isTrigger = el.dataset.mappedAxis.includes('trigger');
+    const isVert = el.dataset.orientation === 'vertical';
+    if (isTrigger) {
+      if (isVert) thumb.style.top = '100%'; else thumb.style.left = '0%';
+    } else {
+      thumb.style.top = '50%'; thumb.style.left = '50%';
+    }
   }
 
   _createTouchpad(ctrl) {

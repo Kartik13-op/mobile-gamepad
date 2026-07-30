@@ -337,15 +337,19 @@ XInput API → Game sees Xbox 360 controller state
 | `id` | UUID | Unique identifier |
 | `name` | string | Display label |
 | `keybind` | string | Gamepad input (e.g., `gamepad_a`, `gamepad_ls`) |
-| `type` | enum | `button`, `analog_stick`, `trigger` |
+| `type` | enum | `button`, `analog_stick`, `trigger`, `touchpad`, `slider` |
 | `x` | float | Horizontal position ratio (0 = left, 1 = right) |
 | `y` | float | Vertical position ratio (0 = top, 1 = bottom) |
-| `width` | float | Width ratio relative to viewport width |
-| `height` | float | Height ratio relative to viewport height |
+| `width` | float | Width in pixels |
+| `height` | float | Height in pixels |
 | `opacity` | float | 0–1 opacity |
 | `fontSize` | int | Label font size in pixels |
 | `layer` | int | Z-index stacking order |
 | `visible` | bool | Show/hide toggle |
+| `deadzone` | float | Inner dead zone threshold for analog sticks (default 0.15) |
+| `triggerMode` | string | `analog` or `digital` for triggers |
+| `orientation` | string | `horizontal` or `vertical` for sliders |
+| `mappedAxis` | string | Mapped axis for sliders (e.g. `left_stick_x`, `left_trigger`) |
 
 ### Coordinate Calculation
 

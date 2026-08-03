@@ -1,6 +1,6 @@
 {
   "version": "2.0",
-  "activePageIndex": 5,
+  "activePageIndex": 0,
   "pages": [
     {
       "id": "p1",
@@ -25,8 +25,8 @@
           "name": "RT",
           "type": "trigger",
           "keybind": "gamepad_rt",
-          "x": 0.7057210953547111,
-          "y": 0.02,
+          "x": 0.7562118922085634,
+          "y": 0.023582343054389124,
           "width": 156,
           "height": 71,
           "opacity": 0.8,
@@ -116,7 +116,8 @@
           "opacity": 0.85,
           "fontSize": 12,
           "layer": 2,
-          "visible": true
+          "visible": true,
+          "deadzone": 0
         },
         {
           "id": "b10",
@@ -193,8 +194,8 @@
           "name": "X",
           "type": "button",
           "keybind": "gamepad_x",
-          "x": 0.39609635481220934,
-          "y": 0.2558256098916079,
+          "x": 0.246335516686376,
+          "y": 0.2576167814188025,
           "width": 176,
           "height": 90,
           "opacity": 0.9,
@@ -235,14 +236,15 @@
           "name": "RS",
           "type": "analog_stick",
           "keybind": "gamepad_rs",
-          "x": 0.4326334231101117,
+          "x": 0.43347017754883255,
           "y": 0.43411831908586385,
           "width": 293,
           "height": 234,
           "opacity": 1,
           "fontSize": 15,
           "layer": 5,
-          "visible": true
+          "visible": true,
+          "deadzone": 0
         }
       ]
     },
@@ -402,7 +404,8 @@
           "opacity": 1,
           "fontSize": 16,
           "layer": 0,
-          "visible": true
+          "visible": true,
+          "deadzone": 0
         },
         {
           "id": "375d71d05683",
@@ -495,7 +498,8 @@
           "opacity": 0.85,
           "fontSize": 12,
           "layer": 2,
-          "visible": true
+          "visible": true,
+          "deadzone": 0
         },
         {
           "id": "b47",
@@ -775,7 +779,7 @@
           "name": "LS",
           "type": "analog_stick",
           "keybind": "gamepad_ls",
-          "x": 0.050549381586172636,
+          "x": 0.049712627147451824,
           "y": 0.5040714935382603,
           "width": 240,
           "height": 220,
@@ -783,7 +787,8 @@
           "fontSize": 12,
           "layer": 2,
           "visible": true,
-          "id": "f533a141e751"
+          "id": "f533a141e751",
+          "deadzone": 0
         },
         {
           "name": "RS",
@@ -797,7 +802,8 @@
           "fontSize": 12,
           "layer": 2,
           "visible": true,
-          "id": "de01b8f1a4a4"
+          "id": "de01b8f1a4a4",
+          "deadzone": 0
         },
         {
           "name": "▲",
@@ -1020,15 +1026,16 @@
           "name": "LS",
           "type": "analog_stick",
           "keybind": "gamepad_ls",
-          "x": 0.05556990821849751,
-          "y": 0.3859696197795009,
+          "x": 0.056406662657218325,
+          "y": 0.38728186282126487,
           "width": 297,
           "height": 254,
           "opacity": 0.9,
           "fontSize": 12,
           "layer": 2,
           "visible": true,
-          "id": "33bdb7d0e8bd"
+          "id": "33bdb7d0e8bd",
+          "deadzone": 0
         },
         {
           "name": "RS",
@@ -1042,7 +1049,8 @@
           "fontSize": 12,
           "layer": 2,
           "visible": true,
-          "id": "c0b7393968ac"
+          "id": "c0b7393968ac",
+          "deadzone": 0
         },
         {
           "name": "▲",
@@ -1208,8 +1216,8 @@
           "name": "RB",
           "type": "button",
           "keybind": "gamepad_rb",
-          "x": 0.7723243469393092,
-          "y": 0.4374691650116792,
+          "x": 0.7706508380618675,
+          "y": 0.4348446789281512,
           "width": 254,
           "height": 107,
           "opacity": 0.8,
@@ -1258,7 +1266,8 @@
           "fontSize": 12,
           "layer": 2,
           "visible": true,
-          "id": "94798d843adb"
+          "id": "94798d843adb",
+          "deadzone": 0
         },
         {
           "name": "RS",
@@ -1272,7 +1281,8 @@
           "fontSize": 12,
           "layer": 2,
           "visible": true,
-          "id": "27cd25c3617d"
+          "id": "27cd25c3617d",
+          "deadzone": 0
         },
         {
           "name": "▲",

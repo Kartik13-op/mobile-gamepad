@@ -9,8 +9,9 @@
       1. Checks for Python 3.9+ (in PATH or registered)
       2. Downloads and installs Python 3.13 silently if not found
       3. Creates a virtual environment in .venv/
-      4. Installs all packages from requirements.txt
-      5. Optionally starts the gamepad server
+    4. Installs all packages from requirements.txt
+    5. Installs the bundled ViGEmBus driver from installers/
+    6. Optionally starts the gamepad server
 
 .NOTES
     Run this in the TouchKeys project root folder.
@@ -142,7 +143,31 @@ try {
     exit 1
 }
 
-# ---- Step 4: Launch server ----
+# ---- Step 4: Install bundled driver dependency ----
+
+Write-Host ""
+Write-Host "  [..] Installing bundled driver dependency..."
+
+$driverInstaller = Join-Path $ProjectRoot "installers\ViGEmBus_1.22.0_x64_x86_arm64.exe"
+
+if (-not (Test-Path $driverInstaller)) {
+    Write-Host "  [!] Missing installer: $driverInstaller"
+    exit 1
+}
+
+try {
+    $proc = Start-Process -FilePath $driverInstaller -ArgumentList "/quiet /norestart" -Wait -PassThru
+    if ($proc.ExitCode -ne 0) {
+        Write-Host "  [!] ViGEmBus installer failed (exit code: $($proc.ExitCode))."
+        exit 1
+    }
+    Write-Host "  [OK] ViGEmBus installed"
+} catch {
+    Write-Host "  [!] ViGEmBus installation failed: $_"
+    exit 1
+}
+
+# ---- Step 5: Launch server ----
 
 Write-Host ""
 Write-Host "=============================================="
@@ -156,11 +181,11 @@ if ($launch -eq "" -or $launch -eq "y" -or $launch -eq "Y") {
     Write-Host "  Starting TouchKeys server..."
     Write-Host "  (Press Ctrl+C to stop)"
     Write-Host ""
-    & $venvPython server.py
+    & $venvPython gui.py
 } else {
     Write-Host ""
     Write-Host "  To start later:"
-    Write-Host "      .venv\Scripts\python server.py"
+    Write-Host "      .venv\Scripts\python.exe gui.py"
     Write-Host "  or double-click start.ps1"
     Write-Host ""
 }

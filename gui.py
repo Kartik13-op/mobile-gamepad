@@ -4,8 +4,8 @@ Usage:
     python gui.py
 
 This starts the backend server in a background thread and opens
-the web-based desktop monitor (http://localhost:8000/monitor)
-in your default browser. Press Ctrl+C to stop.
+the web-based desktop monitor (http://localhost:8000/monitor) in
+a native desktop window. Press Ctrl+C to stop.
 """
 
 from __future__ import annotations
@@ -15,10 +15,14 @@ import logging
 import sys
 import threading
 import time
-import webbrowser
 from pathlib import Path
 
 import uvicorn
+
+try:
+    import webview
+except ImportError:
+    webview = None
 
 # Import the FastAPI app from server.py
 from server import app, get_local_ip
@@ -92,16 +96,24 @@ def main() -> None:
         print(f"  Monitor page  -> http://localhost:{PORT}/monitor")
         print(f"  Phone URL     -> http://{ip}:{PORT}")
         print()
-        print("  Opening desktop monitor in your browser...")
-        webbrowser.open(f"http://localhost:{PORT}/monitor")
+        monitor_url = f"http://localhost:{PORT}/monitor"
+        monitor_in_native_window = open_monitor(monitor_url)
+        if monitor_in_native_window:
+            print("  Opening desktop monitor window...")
+        else:
+            print("  Opening the monitor in your browser...")
         print()
-        print("  Press Ctrl+C to stop the server.")
+        if monitor_in_native_window:
+            print("  Close the monitor window or press Ctrl+C to stop the server.")
+        else:
+            print("  Press Ctrl+C to stop the server.")
         print("==============================================")
         print()
 
         try:
-            while True:
-                time.sleep(1)
+            if not monitor_in_native_window:
+                while True:
+                    time.sleep(1)
         except KeyboardInterrupt:
             print("\n  Shutting down...")
         finally:
@@ -110,6 +122,33 @@ def main() -> None:
         print("  [ERROR] Server failed to start in time.")
         server.stop()
         sys.exit(1)
+
+
+def open_monitor(url: str) -> bool:
+    """Open the monitor in a native window, with a browser fallback."""
+    if webview is None:
+        import webbrowser
+        webbrowser.open(url)
+        return False
+
+    try:
+        webview.create_window(
+            "TouchKeys Monitor",
+            url,
+            width=2046,
+            height=1080,
+            min_size=(1024, 700),
+            resizable=True,
+            confirm_close=True,
+        )
+        webview.start()
+        return True
+    except Exception as exc:
+        logger.warning("pywebview could not start (%s); falling back to the browser.", exc)
+        import webbrowser
+
+        webbrowser.open(url)
+        return False
 
 
 if __name__ == "__main__":

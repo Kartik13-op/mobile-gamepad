@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TouchKeys — Transform Your Phone Into a PC Gamepad & Keyboard</title>
+    <meta name="description" content="TouchKeys is a lightweight, zero-latency desktop app that turns your smartphone into a virtual PC gamepad and wireless keyboard over Wi-Fi. Features custom layouts, multiple device slots, and ViGEmBus integration.">
+    <meta name="keywords" content="PC gamepad app, virtual controller for PC, phone as gamepad, touch keyboard PC, ViGEmBus controller, WebSocket game controller, TouchKeys">
+    <meta name="robots" content="index, follow">
+    <link rel="icon" type="image/png" href="static/favicon.png">
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --card-bg: #1e293b;
+            --accent: #38bdf8;
+            --accent-hover: #0ea5e9;
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --border: #334155;
+            --code-bg: #090d16;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            line-height: 1.6;
+            padding: 0;
+        }
+        header {
+            background: linear-gradient(to bottom, #1e293b, #0f172a);
+            border-bottom: 1px solid var(--border);
+            padding: 3rem 1rem;
+            text-align: center;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 2rem 1rem;
+        }
+        h1 {
+            font-size: 2.75rem;
+            margin-bottom: 1rem;
+            color: var(--text-primary);
+        }
+        h1 span { color: var(--accent); }
+        p.subtitle {
+            font-size: 1.25rem;
+            color: var(--text-secondary);
+            margin-bottom: 2rem;
+            max-width: 700px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        .btn {
+            display: inline-block;
+            background-color: var(--accent);
+            color: #0f172a;
+            font-weight: 600;
+            padding: 0.85rem 2rem;
+            border-radius: 8px;
+            text-decoration: none;
+            transition: background 0.2s, transform 0.1s;
+            box-shadow: 0 4px 14px rgba(56, 189, 248, 0.3);
+        }
+        .btn:hover {
+            background-color: var(--accent-hover);
+            transform: translateY(-2px);
+        }
+        section {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        h2 {
+            font-size: 1.75rem;
+            margin-bottom: 1rem;
+            color: var(--accent);
+            border-bottom: 2px solid var(--border);
+            padding-bottom: 0.5rem;
+        }
+        h3 {
+            font-size: 1.25rem;
+            margin: 1.5rem 0 0.5rem 0;
+            color: var(--text-primary);
+        }
+        p, li {
+            color: var(--text-secondary);
+            margin-bottom: 1rem;
+        }
+        ul {
+            margin-left: 1.5rem;
+        }
+        code {
+            background-color: var(--code-bg);
+            color: #38bdf8;
+            padding: 0.2rem 0.4rem;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 0.9em;
+        }
+        pre {
+            background-color: var(--code-bg);
+            border: 1px solid var(--border);
+            padding: 1rem;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin: 1rem 0;
+            color: #e2e8f0;
+            font-family: monospace;
+        }
+        footer {
+            text-align: center;
+            padding: 3rem 1rem;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            border-top: 1px solid var(--border);
+        }
+        @media (max-width: 768px) {
+            h1 { font-size: 2rem; }
+            section { padding: 1.25rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="container">
+            <h1>TouchKeys <span>Mobile Controller</span></h1>
+            <p class="subtitle">Transform your smartphone or tablet into a wireless PC gamepad and custom touch keyboard with zero configuration and ultra-low latency.</p>
+            <a href="https://github.com/your-username/TouchKeys/releases" class="btn">Download Standalone App (.exe)</a>
+        </div>
+    </header>
+
+    <div class="container">
+        <section id="overview">
+            <h2>Overview</h2>
+            <p>TouchKeys is a high-performance desktop application designed for Windows that bridges mobile devices and PC games. By running a local FastAPI WebSocket server, TouchKeys instantly streams touch and sensor inputs from any smartphone web browser directly into virtual Xbox/PlayStation gamepad inputs on your PC.</p>
+            <p>Whether you want a portable controller for couch gaming, a macro pad for simulation games, or an extra gamepad for multiplayer sessions without buying additional hardware, TouchKeys delivers a seamless experience.</p>
+        </section>
+
+        <section id="features">
+            <h2>Key Features</h2>
+            <ul>
+                <li><strong>Zero Installation on Mobile:</strong> No app stores or downloads required on your phone. Just scan the QR code or type your PC's local IP address into any mobile browser.</li>
+                <li><strong>True Gamepad Emulation:</strong> Powered by the ViGEmBus driver and <code>vgamepad</code>, Windows detects your phone as a genuine hardware Xbox 360 controller compatible with 100% of controller-enabled PC games.</li>
+                <li><strong>Ultra-Low Latency WebSockets:</strong> Persistent bidirectional WebSocket connection ensures instant input response with zero perceptible lag over local Wi-Fi.</li>
+                <li><strong>Custom Layout Editor:</strong> Build and customize buttons, analog sticks, D-pads, triggers, and macros with a visual drag-and-drop editor.</li>
+                <li><strong>Desktop Live Monitor:</strong> Watch live controller states and connected client sessions in real-time from your PC monitor.</li>
+                <li><strong>100% Standalone Executable:</strong> Single `.exe` package bundling Python, dependencies, DLLs, and web assets. No Python installation needed on the host PC.</li>
+            </ul>
+        </section>
+
+        <section id="installation">
+            <h2>Quick Start & Setup Guide</h2>
+            <h3>Step 1: Install the ViGEmBus Driver</h3>
+            <p>TouchKeys requires the ViGEmBus kernel driver to emulate virtual gamepads on Windows. If not already installed, run the bundled driver installer:</p>
+            <pre>installers\ViGEmBus_1.22.0_x64_x86_arm64.exe</pre>
+
+            <h3>Step 2: Run the Application</h3>
+            <p>Download the standalone <code>TouchKeys - Mobile Controller.exe</code> and double-click to launch. The app starts a local server and opens the desktop monitor window automatically.</p>
+
+            <h3>Step 3: Connect Your Phone</h3>
+            <p>Make sure your phone and PC are connected to the same Wi-Fi network. Open the URL displayed in the console or desktop window (e.g., <code>http://192.168.x.x:8000</code>) on your mobile browser.</p>
+        </section>
+
+        <section id="documentation">
+            <h2>Technical Documentation & Architecture</h2>
+            <p>TouchKeys is built using a modern, decoupled client-server architecture:</p>
+            <ul>
+                <li><strong>Backend:</strong> Python 3.13, FastAPI, Uvicorn (ASGI async server), and <code>vgamepad</code> interfacing with the ViGEmBus driver via ctypes.</li>
+                <li><strong>Frontend:</strong> Vanilla JavaScript, HTML5, CSS3, and WebSockets providing a responsive mobile controller interface and live monitor dashboard.</li>
+                <li><strong>Packaging:</strong> Bundled using PyInstaller into a single binary executable (`--onefile`) with isolated user data paths for configurations (`settings.json`) and layouts (`layout.json`).</li>
+            </ul>
+
+            <h3>API Endpoints</h3>
+            <ul>
+                <li><code>GET /</code> — Serves the mobile controller interface (<code>mobile.html</code>).</li>
+                <li><code>GET /monitor</code> — Serves the desktop live input monitor.</li>
+                <li><code>GET /api/ip</code> — Returns the local network IP address.</li>
+                <li><code>GET /api/keys</code> — Returns supported keyboard scan codes.</li>
+                <li><code>GET /api/clients</code> — Returns active connected client sessions.</li>
+                <li><code>WS /ws</code> — Bidirectional WebSocket channel for low-latency touch/axis events and layout synchronization.</li>
+            </ul>
+        </section>
+
+        <section id="faq">
+            <h2>Frequently Asked Questions (FAQ)</h2>
+            <h3>Do I need Python installed on my PC?</h3>
+            <p>No! The standalone <code>TouchKeys - Mobile Controller.exe</code> includes a complete embedded Python runtime and all required packages.</p>
+            <h3>Can I use multiple phones at the same time?</h3>
+            <p>Yes, TouchKeys supports multi-client device slots and automatic controller promotion.</p>
+            <h3>Why is my controller not recognized in games?</h3>
+            <p>Ensure that the ViGEmBus driver is installed and that your game supports XInput (Xbox controllers).</p>
+        </section>
+    </div>
+
+    <footer>
+        <p>&copy; 2026 TouchKeys Project. Open-source under MIT License.</p>
+    </footer>
+
+</body>
+</html>

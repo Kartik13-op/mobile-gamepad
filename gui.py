@@ -37,7 +37,11 @@ HOST = "0.0.0.0"
 PORT = 8000
 
 # Clean up any stale lock file from a previous run
-lock_file = Path(__file__).parent / ".server.lock"
+if getattr(sys, "frozen", False):
+    DATA_DIR = Path(sys.executable).parent
+else:
+    DATA_DIR = Path(__file__).parent
+lock_file = DATA_DIR / ".server.lock"
 lock_file.unlink(missing_ok=True)
 
 

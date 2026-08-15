@@ -11,7 +11,7 @@ TouchKeys is a **client-server system** that transforms a phone browser into a v
 │                           PHONE BROWSER (Client)                            │
 │                                                                             │
 │  ┌──────────────────────────────────────────────────────────────────────┐  │
-│  │                        index.html (SPA)                              │  │
+│  │                        mobile.html (SPA)                             │  │
 │  │                                                                       │  │
 │  │  ┌────────────────┐  ┌──────────────────┐  ┌──────────────────────┐  │  │
 │  │  │  EventBus       │  │  WebSocketManager │  │  GamepadController   │  │  │
@@ -129,7 +129,7 @@ TouchKeys is a **client-server system** that transforms a phone browser into a v
 
 ### 2. Client-Side Components (Browser)
 
-All client code is inlined in `templates/index.html` for zero external dependencies.
+All client code is inlined in `templates/mobile.html` for zero external dependencies.
 
 #### `TK.EventBus` — Pub/Sub Event System
 - Lightweight publish-subscribe bus decoupling all client modules.

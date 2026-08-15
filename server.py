@@ -38,14 +38,20 @@ logger = logging.getLogger("touchkeys")
 # Paths
 # ---------------------------------------------------------------------------
 
-BASE_DIR = Path(__file__).resolve().parent
+if getattr(sys, "frozen", False):
+    BASE_DIR = Path(sys._MEIPASS)
+    DATA_DIR = Path(sys.executable).parent
+else:
+    BASE_DIR = Path(__file__).resolve().parent
+    DATA_DIR = BASE_DIR
+
 TEMPLATE_DIR = BASE_DIR / "templates"
 
 # ---------------------------------------------------------------------------
 # Core managers (module-level singletons)
 # ---------------------------------------------------------------------------
 
-storage = StorageManager(BASE_DIR)
+storage = StorageManager(DATA_DIR)
 config_manager = ConfigManager(storage)
 keyboard = KeyboardController()
 layout_manager = LayoutManager(storage)
@@ -56,7 +62,7 @@ event_router = EventRouter(keyboard, layout_manager, config_manager, connections
 # Single-instance lock
 # ---------------------------------------------------------------------------
 
-_LOCK_FILE = BASE_DIR / ".server.lock"
+_LOCK_FILE = DATA_DIR / ".server.lock"
 
 
 def _acquire_lock() -> bool:
@@ -126,7 +132,7 @@ app.mount("/static", StaticFiles(directory=str(BASE_DIR / "static")), name="stat
 @app.get("/", response_class=HTMLResponse)
 async def index() -> HTMLResponse:
     """Serve the main controller page."""
-    html_path = TEMPLATE_DIR / "index.html"
+    html_path = TEMPLATE_DIR / "mobile.html"
     return HTMLResponse(content=html_path.read_text(encoding="utf-8"))
 
 

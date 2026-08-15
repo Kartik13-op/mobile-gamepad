@@ -92,7 +92,7 @@ python -m venv .venv
 pip install -r requirements.txt
 python gui.py
 ```
-1. start.ps1 will run necessary gui.py that opens desktop-side monitor page in a new window.
+1. double-tap [`TouchKeys - Mobile Controller.exe`](TouchKeys - Mobile Controller.exe')which opens the softwatre into a dedicated window.
 2. scan the QR code with your phone's camera or type the displayed url in your phone's browser. Best: pin this page on your phone's homescreen to open it like native app on full screen.
 3. You would see popups like "Active Controller" and new device is visible on monitor page, whose layouts can be editted/tested.
 

@@ -39,6 +39,7 @@ class EventRouter:
             "keydown": self._on_keydown,
             "keyup": self._on_keyup,
             "analog": self._on_analog,
+            "mouse": self._on_mouse,
             "ping": self._on_ping,
             "save_layout": self._on_save_layout,
             "load_layout": self._on_load_layout,
@@ -143,6 +144,17 @@ class EventRouter:
                 "type": "input", "subtype": "analog", "key": key, "x": x, "y": y,
                 "clientId": client_id, "slot": slot,
             }, exclude=client_id))
+
+    async def _on_mouse(self, client_id: str, msg: Dict[str, Any]) -> None:
+        """Route mouse-cursor touchpad gestures to the pyautogui pipeline."""
+        slot = self.connections.get_gamepad_slot(client_id)
+        if slot is None:
+            logger.debug("Ignored mouse from unslotted client %s", client_id)
+            return
+        action = msg.get("action")
+        if not action:
+            return
+        self.keyboard.mouse.handle(action, msg)
 
     # ------------------------------------------------------------------
     # Heartbeat

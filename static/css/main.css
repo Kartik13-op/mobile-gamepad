@@ -464,6 +464,20 @@ input, textarea, select {
   border-color: var(--text-primary);
 }
 
+.ctrl-touchpad.mouse-mode {
+  border-style: solid;
+  border-color: rgba(255,255,255,0.35);
+}
+
+.ctrl-touchpad.mouse-mode .touchpad-icon {
+  opacity: 0.45;
+}
+
+.ctrl-touchpad.mouse-mode.active {
+  border-color: var(--text-primary);
+  box-shadow: 0 0 0 2px rgba(255,255,255,0.12);
+}
+
 /* --- Page Tabs --- */
 .page-tabs {
   display: flex;

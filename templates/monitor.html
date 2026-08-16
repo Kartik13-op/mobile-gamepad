@@ -594,9 +594,22 @@ html, body { height:100vh; overflow:hidden; background:var(--bg-base); color:var
     try {
       const k = await (await fetch('/api/keys')).json();
       keysList = k.keys || [];
-      const sel = document.getElementById('add-key');
-      sel.innerHTML = '<option value="">None</option>' + keysList.map(key => `<option value="${key}">${key}</option>`).join('');
+      document.getElementById('add-key').innerHTML = keyOptionsHtml('');
     } catch(e) {}
+  }
+
+  // Grouped options for key selects: Gamepad keys + Keyboard keys
+  function keyOptionsHtml(selected) {
+    const gamepad = keysList.filter(k => k.startsWith('gamepad_'));
+    const keyboard = keysList.filter(k => k.startsWith('key_'));
+    let html = '<option value="">None</option>';
+    if (gamepad.length) {
+      html += `<optgroup label="Gamepad">${gamepad.map(k => `<option value="${k}" ${k === selected ? 'selected' : ''}>${k}</option>`).join('')}</optgroup>`;
+    }
+    if (keyboard.length) {
+      html += `<optgroup label="Keyboard">${keyboard.map(k => `<option value="${k}" ${k === selected ? 'selected' : ''}>${k}</option>`).join('')}</optgroup>`;
+    }
+    return html;
   }
 
   // === LAYOUT EDITOR ===
@@ -790,10 +803,9 @@ html, body { height:100vh; overflow:hidden; background:var(--bg-base); color:var
     extra.style.marginTop = '12px';
     extra.innerHTML = `
       <div class="form-group">
-        <label class="form-label">Key</label>
+        <label class="form-label">Key (Gamepad / Keyboard)</label>
         <select class="form-select" id="prop-key">
-          <option value="">None</option>
-          ${keysList.map(k => `<option value="${k}" ${k === ctrl.keybind ? 'selected' : ''}>${k}</option>`).join('')}
+          ${keyOptionsHtml(ctrl.keybind || '')}
         </select>
       </div>
       <div class="form-group">
@@ -896,11 +908,20 @@ html, body { height:100vh; overflow:hidden; background:var(--bg-base); color:var
       touchpadSection.style.marginTop = '12px';
       touchpadSection.style.borderTop = '2px solid var(--border)';
       touchpadSection.style.paddingTop = '12px';
+      const mode = ctrl.mode || 'joystick';
+      const smoothness = ctrl.smoothness ?? 0;
       // Get all analog sticks for the mapped-to dropdown
       const sticks = (getCurrentPage()?.buttons || []).filter(b => b.type === 'analog_stick');
       const mappedTo = ctrl.mappedTo || ctrl.keybind || 'gamepad_rs';
       touchpadSection.innerHTML = `
         <div class="form-group">
+          <label class="form-label">Mode</label>
+          <select class="form-select" id="prop-touchpad-mode">
+            <option value="joystick" ${mode === 'joystick' ? 'selected' : ''}>Joystick Aim (mapped stick)</option>
+            <option value="mouse" ${mode === 'mouse' ? 'selected' : ''}>Mouse Cursor (PC pointer)</option>
+          </select>
+        </div>
+        <div class="form-group" id="touchpad-mapped-wrap" ${mode === 'mouse' ? 'style="display:none;"' : ''}>
           <label class="form-label">Mapped Stick</label>
           <select class="form-select" id="prop-mapped-stick">
             ${sticks.length === 0 ? '<option value="gamepad_rs">gamepad_rs (default)</option>' :
@@ -911,8 +932,32 @@ html, body { height:100vh; overflow:hidden; background:var(--bg-base); color:var
           <label class="form-label">Sensitivity (${ctrl.sensitivity ?? 1})</label>
           <input class="form-input" id="prop-sensitivity" type="range" min="0.25" max="3" step="0.25" value="${ctrl.sensitivity ?? 1}">
         </div>
+        <div class="form-group">
+          <label class="form-label">Smooth Dampening (${Math.round(smoothness * 100)}%)</label>
+          <input class="form-input" id="prop-smoothness" type="range" min="0" max="1" step="0.01" value="${smoothness}">
+        </div>
+        <div id="touchpad-mouse-hint" style="font-size:10px;color:var(--text-dim);line-height:1.7;${mode === 'mouse' ? '' : 'display:none;'}">
+          <strong style="color:var(--text);">Mouse gestures</strong><br>
+          &#9679; Single finger drag &mdash; move cursor<br>
+          &#9679; Single finger tap &mdash; left click<br>
+          &#9679; Two finger tap &mdash; right click<br>
+          &#9679; Two finger drag &mdash; scroll
+        </div>
       `;
       propsContent.appendChild(touchpadSection);
+      const mappedWrap = touchpadSection.querySelector('#touchpad-mapped-wrap');
+      const hint = touchpadSection.querySelector('#touchpad-mouse-hint');
+      touchpadSection.querySelector('#prop-touchpad-mode')?.addEventListener('change', (e) => {
+        const val = e.target.value;
+        if (val === 'mouse') {
+          mappedWrap.style.display = 'none';
+          hint.style.display = '';
+        } else {
+          mappedWrap.style.display = '';
+          hint.style.display = 'none';
+        }
+        debounceUpdate(selectedCtrlId, { mode: val });
+      });
       touchpadSection.querySelector('#prop-mapped-stick')?.addEventListener('change', (e) => {
         const val = e.target.value;
         debounceUpdate(selectedCtrlId, { mappedTo: val, keybind: val });
@@ -921,6 +966,11 @@ html, body { height:100vh; overflow:hidden; background:var(--bg-base); color:var
         const val = parseFloat(e.target.value);
         e.target.previousElementSibling.textContent = `Sensitivity (${val})`;
         debounceUpdate(selectedCtrlId, { sensitivity: val });
+      });
+      touchpadSection.querySelector('#prop-smoothness')?.addEventListener('input', (e) => {
+        const val = parseFloat(e.target.value);
+        e.target.previousElementSibling.textContent = `Smooth Dampening (${Math.round(val * 100)}%)`;
+        debounceUpdate(selectedCtrlId, { smoothness: val });
       });
     }
 
@@ -1046,6 +1096,8 @@ html, body { height:100vh; overflow:hidden; background:var(--bg-base); color:var
     if (type === 'touchpad') {
       data.mappedTo = 'gamepad_rs';
       data.sensitivity = 1;
+      data.mode = 'joystick';
+      data.smoothness = 0;
     }
     if (type === 'trigger') {
       data.triggerMode = 'analog';

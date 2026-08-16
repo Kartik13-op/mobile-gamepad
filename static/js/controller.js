@@ -17,6 +17,7 @@ export class GamepadController {
     this._activeTriggers = new Map();
     this._touchpadStates = new Map();
     this._touchpadOffsets = new Map();
+    this._mousePad = null;
     this._lastTouchAt = 0;
 
     // Workspace listeners
@@ -496,37 +497,83 @@ export class GamepadController {
   _resetTouchpads() {
     for (const [id, tp] of this._touchpadStates) {
       if (tp.decayTimer) { clearTimeout(tp.decayTimer); tp.decayTimer = null; }
+      if (tp.decayRaf) { cancelAnimationFrame(tp.decayRaf); tp.decayRaf = null; }
       tp.el.classList.remove('active');
-      ws.send({ type: 'analog', key: tp.keybind, x: 0, y: 0 });
+      if (tp.mode !== 'mouse') {
+        this._touchpadOffsets.delete(tp.keybind);
+        ws.send({ type: 'analog', key: tp.keybind, x: 0, y: 0 });
+      }
     }
     this._touchpadOffsets.clear();
     this._touchpadStates.clear();
+    this._mousePad = null;
   }
 
   // -----------------------------------------------------------------
-  // Touchpad (additive mouse-like aim)
+  // Touchpad (additive mouse-like aim / mouse cursor)
   // -----------------------------------------------------------------
 
   _startTouchpad(touchId, el, cx, cy) {
     const keybind = el.dataset.keybind;
     if (!keybind) return;
+    const mode = el.dataset.mode || 'joystick';
+    const sensitivity = parseFloat(el.dataset.sensitivity) || 1;
+    const smoothness = parseFloat(el.dataset.smoothness) || 0;
+
+    if (mode === 'mouse') {
+      const pad = this._getMousePad(el, sensitivity);
+      pad.touches.set(touchId, {
+        startX: cx, startY: cy,
+        lastX: cx, lastY: cy,
+        startTime: performance.now(),
+        moved: false,
+      });
+      if (pad.touches.size >= 2) pad.twoTapArmed = true;
+      this._touchpadStates.set(touchId, {
+        el, keybind, mode, mousePad: pad, lastSendTime: 0,
+      });
+      el.classList.add('active');
+      return;
+    }
+
     this._touchpadStates.set(touchId, {
-      el, keybind,
-      sensitivity: parseFloat(el.dataset.sensitivity) || 1,
+      el, keybind, mode,
+      sensitivity, smoothness,
       lastX: cx, lastY: cy,
       lastTime: performance.now(),
+      smoothX: 0, smoothY: 0,
       lastSentX: 0, lastSentY: 0, lastSendTime: 0,
-      decayTimer: null,
+      decayTimer: null, decayRaf: null,
     });
     this._touchpadOffsets.set(keybind, { x: 0, y: 0 });
     el.classList.add('active');
-    this._sendTouchpad(touchId, 0, 0);
+    const tp = this._touchpadStates.get(touchId);
+    this._sendTouchpadValue(tp, 0, 0);
     this._resendStick(keybind);
+  }
+
+  _getMousePad(el, sensitivity) {
+    if (this._mousePad && this._mousePad.el === el) return this._mousePad;
+    this._mousePad = {
+      el,
+      touches: new Map(),
+      twoTapArmed: false,
+      lastCentroidX: null,
+      lastCentroidY: null,
+      sensitivity,
+      lastSendTime: 0,
+    };
+    return this._mousePad;
   }
 
   _moveTouchpad(touchId, cx, cy) {
     const tp = this._touchpadStates.get(touchId);
     if (!tp) return;
+    if (tp.mode === 'mouse') {
+      this._moveMouse(touchId, tp, cx, cy);
+      return;
+    }
+
     const now = performance.now();
     const dt = Math.max(1, now - tp.lastTime);
     const vx = (cx - tp.lastX) / dt;
@@ -542,36 +589,70 @@ export class GamepadController {
     tp.lastX = cx;
     tp.lastY = cy;
     tp.lastTime = now;
+
+    // Smooth dampening — low-pass filter on the velocity-derived deviation
+    if (tp.smoothness > 0) {
+      const alpha = 1 - Math.min(0.95, tp.smoothness * 0.95);
+      tp.smoothX += (outX - tp.smoothX) * alpha;
+      tp.smoothY += (outY - tp.smoothY) * alpha;
+      outX = tp.smoothX;
+      outY = tp.smoothY;
+    } else {
+      tp.smoothX = outX;
+      tp.smoothY = outY;
+    }
+
     // Schedule decay to 0 if the finger stops moving
     if (tp.decayTimer) clearTimeout(tp.decayTimer);
+    if (tp.decayRaf) cancelAnimationFrame(tp.decayRaf);
     tp.decayTimer = setTimeout(() => {
-      this._touchpadOffsets.set(tp.keybind, { x: 0, y: 0 });
-      this._sendTouchpad(touchId, 0, 0);
       tp.decayTimer = null;
+      this._decayTouchpad(touchId, tp);
     }, 40);
+
     this._touchpadOffsets.set(tp.keybind, { x: outX, y: outY });
-    this._sendTouchpad(touchId, outX, outY);
+    this._sendTouchpadValue(tp, outX, outY);
+  }
+
+  _decayTouchpad(touchId, tp) {
+    const step = () => {
+      const decay = Math.max(0.08, (1 - tp.smoothness) * 0.2 + 0.2);
+      tp.smoothX -= tp.smoothX * decay;
+      tp.smoothY -= tp.smoothY * decay;
+      if (Math.abs(tp.smoothX) < 0.002 && Math.abs(tp.smoothY) < 0.002) {
+        tp.smoothX = 0;
+        tp.smoothY = 0;
+        tp.decayRaf = null;
+        this._touchpadOffsets.set(tp.keybind, { x: 0, y: 0 });
+        this._sendTouchpadValue(tp, 0, 0);
+        return;
+      }
+      this._touchpadOffsets.set(tp.keybind, { x: tp.smoothX, y: tp.smoothY });
+      this._sendTouchpadValue(tp, tp.smoothX, tp.smoothY);
+      tp.decayRaf = requestAnimationFrame(step);
+    };
+    tp.decayRaf = requestAnimationFrame(step);
   }
 
   _endTouchpad(touchId) {
     const tp = this._touchpadStates.get(touchId);
     if (!tp) return;
+    if (tp.mode === 'mouse') {
+      this._endMouse(touchId, tp);
+      return;
+    }
     if (tp.decayTimer) { clearTimeout(tp.decayTimer); tp.decayTimer = null; }
+    if (tp.decayRaf) { cancelAnimationFrame(tp.decayRaf); tp.decayRaf = null; }
     tp.el.classList.remove('active');
-    this._touchpadOffsets.delete(tp.keybind);
     this._touchpadStates.delete(touchId);
-    // If no active stick touch for this keybind, send zero
+    // Smoothly return the deviation to centre
+    this._decayTouchpad(touchId, tp);
     const hasStick = Array.from(this._activeSticks.values())
       .some(s => s.el.dataset.keybind === tp.keybind);
-    if (!hasStick) {
-      ws.send({ type: 'analog', key: tp.keybind, x: 0, y: 0 });
-    } else {
-      this._resendStick(tp.keybind);
-    }
+    if (hasStick) this._resendStick(tp.keybind);
   }
 
-  _sendTouchpad(touchId, x, y) {
-    const tp = this._touchpadStates.get(touchId);
+  _sendTouchpadValue(tp, x, y) {
     if (!tp) return;
     const now = performance.now();
     if (now - tp.lastSendTime < ANALOG_THROTTLE_MS) return;
@@ -581,16 +662,87 @@ export class GamepadController {
     if (rx === tp.lastSentX && ry === tp.lastSentY) return;
     tp.lastSentX = rx;
     tp.lastSentY = ry;
-    // Check if the mapped stick is also active — if so, let the stick send the combined value
+    // If the mapped stick is also active, let the stick send the combined value
     const hasActiveStick = Array.from(this._activeSticks.values())
       .some(s => s.el.dataset.keybind === tp.keybind);
     if (hasActiveStick) {
-      // The stick's _updateStickPosition will include touchpad offset — force a re-send
       this._resendStick(tp.keybind);
     } else {
-      // Touchpad alone — send directly
       ws.send({ type: 'analog', key: tp.keybind, x: rx, y: ry });
     }
+  }
+
+  // -----------------------------------------------------------------
+  // Touchpad — Mouse Cursor mode gestures
+  // -----------------------------------------------------------------
+
+  _moveMouse(touchId, tp, cx, cy) {
+    const pad = tp.mousePad;
+    if (!pad) return;
+    const t = pad.touches.get(touchId);
+    if (!t) return;
+    const dx = cx - t.lastX;
+    const dy = cy - t.lastY;
+    t.lastX = cx;
+    t.lastY = cy;
+    if (Math.abs(dx) >= 2 || Math.abs(dy) >= 2) t.moved = true;
+
+    if (pad.touches.size === 1) {
+      // Single finger drag -> move the cursor
+      if (t.moved) pad.twoTapArmed = false;
+      this._sendMouseThrottled(pad, 'move', {
+        dx: Math.round(dx * pad.sensitivity),
+        dy: Math.round(dy * pad.sensitivity),
+      });
+    } else {
+      // Two finger drag -> scroll
+      pad.twoTapArmed = false;
+      let sx = 0, sy = 0;
+      for (const tt of pad.touches.values()) { sx += tt.lastX; sy += tt.lastY; }
+      const n = pad.touches.size;
+      const ccx = sx / n;
+      const ccy = sy / n;
+      const dcx = pad.lastCentroidX === null ? 0 : ccx - pad.lastCentroidX;
+      const dcy = pad.lastCentroidY === null ? 0 : ccy - pad.lastCentroidY;
+      pad.lastCentroidX = ccx;
+      pad.lastCentroidY = ccy;
+      this._sendMouseThrottled(pad, 'scroll', {
+        dx: Math.round(dcx * pad.sensitivity),
+        dy: Math.round(dcy * pad.sensitivity),
+      });
+    }
+  }
+
+  _endMouse(touchId, tp) {
+    const pad = tp.mousePad;
+    if (!pad) return;
+    const t = pad.touches.get(touchId);
+    const isTap = t && !t.moved && (performance.now() - t.startTime) < 300;
+    pad.touches.delete(touchId);
+    if (isTap) {
+      if (pad.twoTapArmed && pad.touches.size === 0) {
+        // Both fingers tapped without moving -> right click
+        ws.send({ type: 'mouse', action: 'rightclick' });
+        pad.twoTapArmed = false;
+      } else if (!pad.twoTapArmed) {
+        // Single finger tap -> left click
+        ws.send({ type: 'mouse', action: 'leftclick' });
+      }
+    }
+    if (pad.touches.size === 0) {
+      pad.lastCentroidX = null;
+      pad.lastCentroidY = null;
+      pad.twoTapArmed = false;
+      tp.el.classList.remove('active');
+      this._mousePad = null;
+    }
+  }
+
+  _sendMouseThrottled(pad, action, data) {
+    const now = performance.now();
+    if (now - pad.lastSendTime < ANALOG_THROTTLE_MS) return;
+    pad.lastSendTime = now;
+    ws.send(Object.assign({ type: 'mouse', action }, data));
   }
 
   _resendStick(keybind) {

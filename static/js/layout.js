@@ -185,9 +185,14 @@ export class LayoutManager {
     el.dataset.id = ctrl.id;
     el.dataset.keybind = ctrl.mappedTo || ctrl.keybind || 'gamepad_rs';
     el.dataset.controlType = 'touchpad';
+    el.dataset.mode = ctrl.mode || 'joystick';
     el.dataset.sensitivity = String(ctrl.sensitivity ?? 1);
+    el.dataset.smoothness = String(ctrl.smoothness ?? 0);
+    if ((ctrl.mode || 'joystick') === 'mouse') {
+      el.classList.add('mouse-mode');
+    }
     el.innerHTML = `
-      <span class="touchpad-icon">&#9678;</span>
+      <span class="touchpad-icon">${(ctrl.mode || 'joystick') === 'mouse' ? '&#9794;' : '&#9678;'}</span>
       <span class="touchpad-label">${ctrl.name || 'TOUCHPAD'}</span>
     `;
     this._applyBaseStyles(el, ctrl);

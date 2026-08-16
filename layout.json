@@ -1,6 +1,6 @@
 {
   "version": "2.0",
-  "activePageIndex": 0,
+  "activePageIndex": 2,
   "pages": [
     {
       "id": "p1",
@@ -655,7 +655,8 @@
           "layer": 0,
           "visible": true,
           "mappedTo": "gamepad_rs",
-          "sensitivity": 1
+          "sensitivity": 1,
+          "smoothness": 0.31
         }
       ]
     },
@@ -1384,6 +1385,33 @@
           "deadzone": 0.15,
           "orientation": "horizontal",
           "mappedAxis": "left_stick_x"
+        }
+      ]
+    },
+    {
+      "id": "71a65d6db67f",
+      "name": "PC Control",
+      "buttons": [
+        {
+          "id": "c39a83d59d11",
+          "name": "Cursor",
+          "type": "touchpad",
+          "keybind": "gamepad_rs",
+          "x": 0.05046527669681599,
+          "y": 0.07192278560992206,
+          "width": 548,
+          "height": 319,
+          "opacity": 0.2,
+          "fontSize": 11,
+          "layer": 0,
+          "visible": true,
+          "deadzone": 0.15,
+          "orientation": "horizontal",
+          "mappedAxis": "left_stick_x",
+          "mappedTo": "gamepad_rs",
+          "sensitivity": 1,
+          "mode": "joystick",
+          "smoothness": 0
         }
       ]
     }

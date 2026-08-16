@@ -7,6 +7,8 @@ from typing import Dict, Optional, Set
 
 import vgamepad as vg
 
+from controller.mouse import KEYBOARD_MAP, MouseController
+
 logger = logging.getLogger(__name__)
 
 XUSB_MAP: Dict[str, int] = {
@@ -30,7 +32,7 @@ XUSB_MAP: Dict[str, int] = {
 _TRIGGER_KEYS = frozenset({"gamepad_lt", "gamepad_rt"})
 
 _ALL_KEYS: Set[str] = set()
-_ALL_KEYS.update(XUSB_MAP.keys(), _TRIGGER_KEYS)
+_ALL_KEYS.update(XUSB_MAP.keys(), _TRIGGER_KEYS, KEYBOARD_MAP.keys())
 
 _STICK_RANGE = 32767
 _TRIGGER_RANGE = 255
@@ -39,11 +41,16 @@ MAX_SLOTS = 4
 
 
 class KeyboardController:
-    """Multiple virtual Xbox 360 gamepads (up to 4 slots)."""
+    """Multiple virtual Xbox 360 gamepads (up to 4 slots).
+
+    Also owns the pyautogui-backed ``MouseController`` used for keyboard
+    keys (``key_*``) and mouse cursor simulation (``mouse`` messages).
+    """
 
     def __init__(self) -> None:
         self._devs: Dict[int, vg.VX360Gamepad] = {}
         self._pressed: Dict[int, Set[str]] = {}
+        self.mouse = MouseController()
 
     # ------------------------------------------------------------------
     # Initialization
@@ -90,6 +97,12 @@ class KeyboardController:
         pressed = self._pressed[slot]
         if normalized in pressed:
             return True
+        if normalized.startswith("key_"):
+            if self.mouse.press_keyboard(normalized):
+                pressed.add(normalized)
+                logger.info("[Slot %d] PRESS keyboard %s", slot, normalized)
+                return True
+            return False
         btn = XUSB_MAP.get(normalized)
         if btn is not None:
             dev.press_button(button=btn)
@@ -114,6 +127,12 @@ class KeyboardController:
             return False
         normalized = key_name.lower().strip()
         pressed = self._pressed[slot]
+        if normalized.startswith("key_"):
+            if self.mouse.release_keyboard(normalized):
+                pressed.discard(normalized)
+                logger.info("[Slot %d] RELEASE keyboard %s", slot, normalized)
+                return True
+            return False
         btn = XUSB_MAP.get(normalized)
         if btn is not None:
             dev.release_button(button=btn)
@@ -163,6 +182,7 @@ class KeyboardController:
 
     def release_all(self, slot: Optional[int] = None) -> None:
         if slot is not None:
+            self._release_slot_keys(slot)
             dev = self._devs.get(slot)
             if dev is not None:
                 try:
@@ -170,19 +190,28 @@ class KeyboardController:
                     dev.update()
                 except Exception:
                     pass
-                self._pressed[slot].clear()
             return
-        for s, dev in self._devs.items():
+        for s in list(self._pressed.keys()):
+            self._release_slot_keys(s)
+        for dev in self._devs.values():
             try:
                 dev.reset()
                 dev.update()
             except Exception:
                 pass
-            self._pressed[s].clear()
+
+    def _release_slot_keys(self, slot: int) -> None:
+        """Release every tracked key (gamepad + keyboard) for one slot."""
+        pressed = self._pressed.get(slot, set())
+        for key in list(pressed):
+            if key.startswith("key_"):
+                self.mouse.release_keyboard(key)
+        pressed.clear()
 
     def shutdown(self) -> None:
         for slot in list(self._devs.keys()):
             self.free_slot(slot)
+        self.mouse.release_all_keyboard()
 
     # ------------------------------------------------------------------
     # State queries

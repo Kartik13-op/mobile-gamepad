@@ -82,19 +82,30 @@ Games with supported Xinput shall work perfect.
 
 ### Install and run
 
-The easiest route is to right-click [`setup.ps1`](setup.ps1) and choose **Run with PowerShell**. After setup, use [`start.ps1`](start.ps1) for subsequent launches.
+The easiest route is to right-click [`setup.ps1`](setup.ps1) and choose **Run with PowerShell**. The script:
+
+- Finds Python 3.9 or newer, or installs Python 3.12 for the current user with `winget` if Python is not installed
+- Creates the local `.venv` virtual environment
+- Installs all packages from [`requirements.txt`](requirements.txt)
+- Launches [`installers/ViGEmBus_1.22.0_x64_x86_arm64.exe`](installers/ViGEmBus_1.22.0_x64_x86_arm64.exe) once; approve the Windows administrator prompt and complete the installer
+
+After setup, launch TouchKeys from PowerShell in the project folder:
+
+```powershell
+.venv\Scripts\python.exe gui.py
+```
+
+If PowerShell blocks scripts, run `Set-ExecutionPolicy -Scope Process Bypass` in that PowerShell window and start `setup.ps1` again. If `winget` is unavailable, install Python 3.9 or newer from [python.org](https://www.python.org/downloads/), then rerun the setup script.
 
 For a manual setup:
 
 ```powershell
 python -m venv .venv
-.venv\Scripts\activate
-pip install -r requirements.txt
-python gui.py
+.venv\Scripts\python.exe -m pip install -r requirements.txt
+.venv\Scripts\python.exe gui.py
 ```
-1. double-tap [`TouchKeys - Mobile Controller.exe`](TouchKeys - Mobile Controller.exe')which opens the softwatre into a dedicated window.
-2. scan the QR code with your phone's camera or type the displayed url in your phone's browser. Best: pin this page on your phone's homescreen to open it like native app on full screen.
-3. You would see popups like "Active Controller" and new device is visible on monitor page, whose layouts can be editted/tested.
+
+Manual setup still requires installing the ViGEmBus driver from [`installers/ViGEmBus_1.22.0_x64_x86_arm64.exe`](installers/ViGEmBus_1.22.0_x64_x86_arm64.exe). Then scan the QR code shown by the desktop monitor with your phone, or open the displayed URL in a phone browser.
 
 
 ## Configuration

@@ -157,8 +157,8 @@ TouchKeys currently targets Windows because its virtual controller backend uses 
 - [x] Custom layouts, pages, and undo/redo
 - [x] Desktop monitor and controller tester
 - [x] Up to four simultaneous virtual controllers
-- [ ] Gyroscope-to-stick mapping
-- [ ] Keyboard and mouse input
+- [x] Keyboard and mouse input
+- [ ] Live screen Streaming
 - [ ] Standalone executable distribution
 
 ## Contributing

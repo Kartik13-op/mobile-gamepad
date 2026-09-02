@@ -150,16 +150,21 @@ TouchKeys/
 
 TouchKeys currently targets Windows because its virtual controller backend uses ViGEmBus. Gyroscope input is not included: mobile browsers restrict motion sensors on the local HTTP origin used for the zero-install LAN workflow.
 
-## Roadmap
+### Why Gyro and other sensor data integration was dropped?
 
+The current architecture hosts an 'http://' webpage. Those pages are blocked to accessing sensor data in modern browsers like Safari and Chrome. I had also recently experimented with the gyro pipeline implementations; adding fake crets to enforce https, but none didnt work out.
+
+# Roadmap
+
+- [x] Core Pipeline
 - [x] Xbox 360/XInput emulation
-- [x] Multi-touch and analog controls
+- [x] Multi-touch, analog controls, And other Control Types.
 - [x] Custom layouts, pages, and undo/redo
 - [x] Desktop monitor and controller tester
 - [x] Up to four simultaneous virtual controllers
 - [x] Keyboard and mouse input
 - [ ] Live screen Streaming
-- [ ] Standalone executable distribution
+- [ ] Standalone Production-Level executable distribution
 
 ## Contributing
 

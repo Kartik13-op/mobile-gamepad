@@ -60,12 +60,16 @@ def main() -> int:
         return 1
 
     try:
-        completed = subprocess.run(
+        # The launcher itself is built without a console. CREATE_NO_WINDOW is
+        # also required here because the child is the regular python.exe;
+        # without it Windows creates a second terminal window for gui.py.
+        creation_flags = getattr(subprocess, "CREATE_NO_WINDOW", 0x08000000)
+        subprocess.Popen(
             [*python_command, str(gui_path)],
             cwd=str(project_dir),
-            check=False,
+            creationflags=creation_flags,
         )
-        return completed.returncode
+        return 0
     except OSError as exc:
         _show_error(f"TouchKeys could not start Python:\n{exc}")
         return 1

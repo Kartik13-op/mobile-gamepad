@@ -1,22 +1,17 @@
 # -*- mode: python ; coding: utf-8 -*-
-from PyInstaller.utils.hooks import collect_all
+"""PyInstaller spec for the root TouchKeys launcher executable."""
 
-datas = [('templates', 'templates'), ('static', 'static'), ('controller', 'controller')]
-binaries = []
-hiddenimports = []
-tmp_ret = collect_all('vgamepad')
-datas += tmp_ret[0]; binaries += tmp_ret[1]; hiddenimports += tmp_ret[2]
+from pathlib import Path
 
-tmp_ret = collect_all('pyautogui')
-datas += tmp_ret[0]; binaries += tmp_ret[1]; hiddenimports += tmp_ret[2]
 
+PROJECT_DIR = Path(SPECPATH)
 
 a = Analysis(
-    ['main.py'],
-    pathex=[],
-    binaries=binaries,
-    datas=datas,
-    hiddenimports=hiddenimports,
+    [str(PROJECT_DIR / "launcher.py")],
+    pathex=[str(PROJECT_DIR)],
+    binaries=[],
+    datas=[],
+    hiddenimports=[],
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
@@ -24,6 +19,7 @@ a = Analysis(
     noarchive=False,
     optimize=0,
 )
+
 pyz = PYZ(a.pure)
 
 exe = EXE(
@@ -32,7 +28,7 @@ exe = EXE(
     a.binaries,
     a.datas,
     [],
-    name='main',
+    name="TouchKeys",
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
@@ -45,5 +41,5 @@ exe = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
-    icon=['static/favicon.png'],
+    icon=str(PROJECT_DIR / "static" / "favicon.png"),
 )

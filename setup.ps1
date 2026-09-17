@@ -1,80 +1,105 @@
 [CmdletBinding()]
 param()
 
+# TouchKeys first-time setup. This script is intentionally verbose so that
+# users can see exactly which software is being installed and why.
 $ErrorActionPreference = 'Stop'
-$projectRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
+$projectRoot = (Resolve-Path (Join-Path $PSScriptRoot '.')).Path
+$installerRoot = Join-Path $projectRoot 'installers'
+$pythonManagerInstaller = Join-Path $installerRoot 'python-manager-26.3.msix'
+$driverInstaller = Join-Path $installerRoot 'ViGEmBus_1.22.0_x64_x86_arm64.exe'
 $venvPath = Join-Path $projectRoot '.venv'
 $venvPython = Join-Path $venvPath 'Scripts\python.exe'
 $requirementsPath = Join-Path $projectRoot 'requirements.txt'
-$driverInstaller = Join-Path $projectRoot 'installers\ViGEmBus_1.22.0_x64_x86_arm64.exe'
+$touchKeysExe = Join-Path $projectRoot 'TouchKeys.exe'
+$desktopPath = [Environment]::GetFolderPath('Desktop')
+$shortcutPath = Join-Path $desktopPath 'TouchKeys.lnk'
 
-function Find-Python {
-    $commands = @('py', 'python')
+function Write-Step {
+    param([string]$Message)
+    Write-Host "`n[TouchKeys] $Message" -ForegroundColor Cyan
+}
 
-    foreach ($commandName in $commands) {
-        $command = Get-Command $commandName -ErrorAction SilentlyContinue
-        if ($null -ne $command) {
-            try {
-                $versionOutput = (& $command.Source --version 2>&1 | Out-String).Trim()
-                if ($LASTEXITCODE -eq 0 -and $versionOutput -match 'Python (\d+\.\d+)') {
-                    if ([version]$matches[1] -ge [version]'3.9') {
-                        return $command.Source
-                    }
-                }
-            }
-            catch {
-            }
-        }
+function Test-Command {
+    param([string]$Name)
+    return $null -ne (Get-Command $Name -ErrorAction SilentlyContinue)
+}
+
+function Install-PythonManager {
+    if (-not (Test-Path -LiteralPath $pythonManagerInstaller -PathType Leaf)) {
+        throw "Python Manager installer was not found at $pythonManagerInstaller"
     }
 
-    $knownPaths = @(
-        (Join-Path $env:LocalAppData 'Programs\Python\Python312\python.exe'),
-        (Join-Path $env:LocalAppData 'Programs\Python\Python311\python.exe'),
-        (Join-Path $env:ProgramFiles 'Python312\python.exe'),
-        (Join-Path $env:ProgramFiles 'Python311\python.exe')
-    )
-
-    foreach ($path in $knownPaths) {
-        if (Test-Path $path) {
-            return $path
+    Write-Step 'Installing Python Manager from installers\python-manager-26.3.msix.'
+    try {
+        Add-AppxPackage -Path $pythonManagerInstaller -ErrorAction Stop
+        Write-Host 'Python Manager installed.' -ForegroundColor Green
+    }
+    catch {
+        # Re-running setup is safe when the same/newer MSIX is already present.
+        $message = $_.Exception.Message
+        if ($message -match 'already installed|higher version|same version') {
+            Write-Host 'Python Manager is already installed; continuing.' -ForegroundColor Yellow
+        }
+        else {
+            throw "Python Manager installation failed: $message"
         }
     }
+}
 
+function Resolve-PythonManager {
+    $pyCommand = Get-Command 'py.exe' -ErrorAction SilentlyContinue
+    if ($null -eq $pyCommand) {
+        $windowsAppsPy = Join-Path $env:LOCALAPPDATA 'Microsoft\WindowsApps\py.exe'
+        if (Test-Path -LiteralPath $windowsAppsPy -PathType Leaf) {
+            return $windowsAppsPy
+        }
+    }
+    else {
+        return $pyCommand.Source
+    }
     return $null
 }
 
-Write-Host 'TouchKeys setup' -ForegroundColor Cyan
-
-$pythonCommand = Find-Python
-if ($null -eq $pythonCommand) {
-    $winget = Get-Command winget -ErrorAction SilentlyContinue
-    if ($null -eq $winget) {
-        throw 'Python 3.9 or newer was not found, and winget is unavailable. Install Python from https://www.python.org/downloads/ and run setup.ps1 again.'
+function Install-PythonRuntime {
+    $pythonManager = Resolve-PythonManager
+    if ($null -eq $pythonManager) {
+        throw 'Python Manager was installed but py.exe is not available yet. Restart PowerShell and run setup.ps1 again.'
     }
 
-    Write-Host 'Python was not found. Installing Python 3.12 with winget...' -ForegroundColor Yellow
-    & $winget.Source install --id Python.Python.3.12 --exact --scope user --accept-package-agreements --accept-source-agreements
+    Write-Step 'Installing the Python 3.12 runtime through Python Manager.'
+    & $pythonManager install 3.12
     if ($LASTEXITCODE -ne 0) {
-        throw "Python installation failed with exit code $LASTEXITCODE."
+        throw "Python 3.12 installation failed with exit code $LASTEXITCODE."
     }
 
-    $pythonCommand = Find-Python
-    if ($null -eq $pythonCommand) {
-        throw 'Python was installed, but no Python executable could be located. Restart PowerShell and run setup.ps1 again.'
+    $pythonPath = (& $pythonManager -3.12 -c 'import sys; print(sys.executable)' | Select-Object -Last 1).ToString().Trim()
+    if (-not (Test-Path -LiteralPath $pythonPath -PathType Leaf)) {
+        throw "Python Manager did not return a usable Python executable: $pythonPath"
     }
+    return $pythonPath
 }
 
-Write-Host "Using Python: $pythonCommand"
+Write-Host 'TouchKeys setup' -ForegroundColor Cyan
+Write-Host "Project folder: $projectRoot"
+Write-Host 'This setup installs Python for TouchKeys, creates its private environment, installs dependencies, and installs the ViGEmBus driver required for virtual Xbox controllers.'
+Write-Host 'A Windows administrator prompt is expected only when installing ViGEmBus.' -ForegroundColor Yellow
 
-if (-not (Test-Path $venvPython)) {
-    Write-Host 'Creating the .venv virtual environment...' -ForegroundColor Yellow
-    & $pythonCommand -m venv $venvPath
+Install-PythonManager
+$basePython = Install-PythonRuntime
+
+if (-not (Test-Path -LiteralPath $venvPython -PathType Leaf)) {
+    Write-Step 'Creating TouchKeys private Python environment.'
+    & $basePython -m venv $venvPath
     if ($LASTEXITCODE -ne 0) {
         throw "Virtual environment creation failed with exit code $LASTEXITCODE."
     }
 }
+else {
+    Write-Step 'TouchKeys private Python environment already exists; reusing it.'
+}
 
-Write-Host 'Installing Python dependencies...' -ForegroundColor Yellow
+Write-Step 'Installing or updating TouchKeys Python dependencies from requirements.txt.'
 & $venvPython -m pip install --upgrade pip
 if ($LASTEXITCODE -ne 0) {
     throw "pip upgrade failed with exit code $LASTEXITCODE."
@@ -84,17 +109,34 @@ if ($LASTEXITCODE -ne 0) {
     throw "Dependency installation failed with exit code $LASTEXITCODE."
 }
 
-if (-not (Test-Path $driverInstaller)) {
-    throw "ViGEmBus installer was not found at $driverInstaller."
+if (-not (Test-Path -LiteralPath $driverInstaller -PathType Leaf)) {
+    throw "ViGEmBus installer was not found at $driverInstaller"
 }
 
-Write-Host 'Launching the ViGEmBus driver installer...' -ForegroundColor Yellow
+Write-Step 'Opening the ViGEmBus driver installer.'
+Write-Host 'ViGEmBus is the Windows driver that lets TouchKeys create virtual Xbox 360 controllers.'
+Write-Host 'Please approve the administrator prompt and complete that installer.' -ForegroundColor Yellow
 $driverProcess = Start-Process -FilePath $driverInstaller -Verb RunAs -Wait -PassThru
 if ($driverProcess.ExitCode -ne 0) {
     throw "ViGEmBus installation failed with exit code $($driverProcess.ExitCode)."
 }
 
-Write-Host ''
-Write-Host 'Setup completed successfully.' -ForegroundColor Green
-Write-Host 'Run the application with:' -ForegroundColor Cyan
-Write-Host "  & '$venvPython' '$projectRoot\gui.py'"
+if (Test-Path -LiteralPath $touchKeysExe -PathType Leaf) {
+    Write-Step 'Creating a desktop shortcut.'
+    $shell = New-Object -ComObject WScript.Shell
+    $shortcut = $shell.CreateShortcut($shortcutPath)
+    $shortcut.TargetPath = $touchKeysExe
+    $shortcut.WorkingDirectory = $projectRoot
+    $shortcut.IconLocation = "$touchKeysExe,0"
+    $shortcut.Description = 'Launch the TouchKeys mobile gamepad server and monitor.'
+    $shortcut.Save()
+    Write-Host "Desktop shortcut created: $shortcutPath" -ForegroundColor Green
+}
+else {
+    Write-Host "TouchKeys.exe was not found at $touchKeysExe; no shortcut was created." -ForegroundColor Yellow
+    Write-Host 'Build or copy the root executable, then run setup.ps1 again to create the shortcut.' -ForegroundColor Yellow
+}
+
+Write-Host "`nSetup completed successfully." -ForegroundColor Green
+Write-Host 'Start TouchKeys from the desktop shortcut or by double-clicking TouchKeys.exe.' -ForegroundColor Cyan
+Write-Host 'The first launch may open a terminal window because the launcher starts the Python backend.'

@@ -1,424 +1,164 @@
-# Architecture
+# TouchKeys architecture
 
-TouchKeys is a **client-server system** that transforms a phone browser into a virtual Xbox 360 gamepad. The server runs on a Windows PC and emulates a physical controller via the ViGEmBus kernel driver. The client is a zero-install web application that communicates over WebSocket.
+## Runtime in one view
 
----
+```text
+TouchKeys.exe / launcher.py
+        │
+        └─ finds .venv\Scripts\python.exe (or Python Manager's py.exe)
+             and starts backend\gui.py
+        │
+        ├─ backend\gui.py starts Uvicorn on 0.0.0.0:8000
+        └─ opens http://localhost:8000/monitor in pywebview or a browser
 
-## System Overview
+Phone browser ── HTTP GET / ──> FastAPI ──> mobile.html
+Phone browser ── WS /ws ───────> EventRouter ──> KeyboardController
+                                                    │
+                                      vgamepad VX360Gamepad
+                                                    │
+                                             ViGEmBus driver
+                                                    │
+                                             Windows XInput games
 
-```
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                           PHONE BROWSER (Client)                            │
-│                                                                             │
-│  ┌──────────────────────────────────────────────────────────────────────┐  │
-│  │                        mobile.html (SPA)                             │  │
-│  │                                                                       │  │
-│  │  ┌────────────────┐  ┌──────────────────┐  ┌──────────────────────┐  │  │
-│  │  │  EventBus       │  │  WebSocketManager │  │  GamepadController   │  │  │
-│  │  │  - pub/sub      │◄─┤  - connect/recon  │  │  - touch handlers    │  │  │
-│  │  │  - decoupled    │  │  - heartbeat      │  │  - analog sticks     │  │  │
-│  │  └────────────────┘  │  - latency         │  │  - triggers          │  │  │
-│  │         ▲            └──────────────────┘  │  │  - multi-touch       │  │  │
-│  │         │                                   │  └──────────┬───────────┘  │  │
-│  │  ┌──────┴──────────────┐                   │             │              │  │
-│  │  │   LayoutManager     │◄──────────────────┘             │              │  │
-│  │  │  - render controls  │  WebSocket (wss://)             │              │  │
-│  │  │  - page management  │  ┌──────────────────┐           │              │  │
-│  │  │  - apply styles     │  │  JSON messages   │           │              │  │
-│  │  └─────────────────────┘  │  - keydown/keyup │           │              │  │
-│  │                           │  - analog (x,y)  │◄──────────┘              │  │
-│  │  ┌─────────────────────┐  │  - layout data   │                          │  │
-│  │  │  AppMobile           │  └──────────────────┘                          │  │
-│  │  │  - lifecycle         │                                               │  │
-│  │  │  - UI listeners      │                                               │  │
-│  │  └─────────────────────┘                                               │  │
-│  └──────────────────────────────────────────────────────────────────────┘  │
-└─────────────────────────────────────────────────────────────────────────────┘
-                                      │
-                              WebSocket │ JSON
-                                      │
-                                      ▼
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                          PC SERVER (FastAPI)                                │
-│                                                                             │
-│  ┌──────────────────────────────────────────────────────────────────────┐  │
-│  │                         server.py                                    │  │
-│  │  ┌─────────────┐  ┌──────────────┐  ┌────────────┐  ┌────────────┐  │  │
-│  │  │ EventRouter  │  │ LayoutManager│  │ ConfigMgr  │  │Connection  │  │  │
-│  │  │  - dispatch  │  │  - CRUD      │  │  - settings │  │  Manager   │  │  │
-│  │  │  - handlers  │  │  - undo/redo │  │  - persist  │  │  - clients │  │  │
-│  │  └──────┬───────┘  └──────┬───────┘  └────────────┘  │  - active   │  │  │
-│  │         │                 │                            │  controller │  │  │
-│  │         │                 ▼                            └────────────┘  │  │
-│  │         │           ┌────────────┐                                     │  │
-│  │         │           │ Storage    │                                     │  │
-│  │         │           │  - JSON IO │                                     │  │
-│  │         │           └────────────┘                                     │  │
-│  │         ▼                                                              │  │
-│  │  ┌────────────────┐                                                    │  │
-│  │  │ Keyboard       │                                                    │  │
-│  │  │  Controller    │                                                    │  │
-│  │  │  (vgamepad)    │                                                    │  │
-│  └─────────┬──────────┴──────────────────────────────────────────────────┘  │
-│            │                                                               │
-│            ▼                                                               │
-│  ┌──────────────────┐                                                      │
-│  │    ViGEmBus      │  Kernel-mode driver (part of Windows)                │
-│  │    Driver        │                                                      │
-│  └────────┬─────────┘                                                      │
-│           │                                                               │
-│           ▼                                                               │
-│  ┌──────────────────┐                                                      │
-│  │   XInput (API)   │  Games read controller state via XInput              │
-│  └──────────────────┘                                                      │
-└─────────────────────────────────────────────────────────────────────────────┘
+PC monitor ─── HTTP GET /monitor ──> monitor.html
+PC monitor ─── WS /ws?role=monitor ─> connection/input/layout state
+
+Phone mouse gestures ──────────────> EventRouter ──> pyautogui ──> Windows cursor/keys
 ```
 
----
+The server is a single-process FastAPI application. Its module-level managers are shared by all HTTP requests and WebSocket connections. There is no database, external backend, login system, or separate mobile application.
 
-## Component Breakdown
+## Startup and shutdown
 
-### 1. Server-Side Components
+1. The root `TouchKeys.exe` is built from `launcher.py`. It locates the project directory, prefers `.venv\Scripts\python.exe`, and starts `backend\gui.py`. If no virtual environment exists, it tries Python Manager’s `py -3.12` and then `python`.
+2. `backend\gui.py` selects the runtime data directory, removes a stale launcher lock, and starts a daemon thread with a new asyncio event loop.
+3. The thread runs Uvicorn with `backend.server.app`, bound to `0.0.0.0:8000`.
+4. FastAPI’s lifespan acquires `.server.lock`, logs the LAN URL, and keeps the application alive.
+5. `backend\gui.py` polls `/api/ip`, then opens `/monitor`.
+6. On shutdown, the lifespan releases input, resets/frees virtual devices, releases keyboard keys, and removes `.server.lock`.
 
-#### `server.py` — Entry Point & HTTP Layer
-- **Role**: FastAPI application with HTTP routes and a single WebSocket endpoint.
-- **Lifespan**: Creates core singletons (`KeyboardController`, `LayoutManager`, `ConfigManager`, `ConnectionManager`, `EventRouter`) on startup; cleans up virtual controller on shutdown.
-- **Single-instance lock**: Uses `.server.lock` PID file to prevent multiple server instances.
-- **Routes**:
-  - `GET /` — Mobile gamepad SPA
-  - `GET /monitor` — Desktop live dashboard
-  - `GET /api/ip`, `/api/keys`, `/api/clients`, `/api/debug` — REST API
-  - `DELETE /api/clients/{id}` — Force-disconnect a client
-  - `WebSocket /ws` — Real-time communication channel
+Running `backend\server.py` directly starts Uvicorn in the foreground. The current root executable does not bundle or execute the backend; it launches the installed project Python. `backend.server` nevertheless retains frozen-path handling for possible future packaging. Source assets and data resolve from the project directory.
 
-#### `controller/events.py` — Event Router
-- **Role**: Routes incoming WebSocket messages by their `type` field to typed handler methods.
-- **Message types**: `keydown`, `keyup`, `analog`, `ping`, `save_layout`, `load_layout`, `update_layout`, `add_button`, `update_button`, `delete_button`, `duplicate_button`, `add_page`, `delete_page`, `rename_page`, `set_active_page`, `undo`, `redo`, `export_layout`, `import_layout`, `save_settings`, `load_settings`.
-- **Per-client de-duplication**: Tracks pressed keys and analog values per client to suppress redundant state updates.
-- **Active controller enforcement**: Only the active controller's input events drive the virtual gamepad.
+## Server components
 
-#### `controller/keyboard.py` — Virtual Gamepad Driver
-- **Role**: Thin wrapper around `vgamepad`'s `VX360Gamepad`.
-- **Key mapping**: `XUSB_MAP` dictionary maps string key names (e.g., `gamepad_a`) to `vgamepad` button constants.
-- **Button actions**: `press_button()` / `release_button()` with `dev.update()` to flush state.
-- **Analog sticks**: `left_joystick()` / `right_joystick()` with ±32767 range scaling.
-- **Triggers**: `left_trigger()` / `right_trigger()` with 0–255 range scaling, inverted Y-axis.
-- **Lifecycle**: `ensure_controller()` lazily creates the virtual device; `reset()` zeroes all state.
+### `backend/server.py`
 
-#### `controller/layout.py` — Layout Manager
-- **Role**: CRUD for control layouts with undo/redo support.
-- **Data model**: Layout is a JSON object with `pages[]`, each containing `buttons[]` with typed controls.
-- **Undo/Redo**: Command history stored in-memory with `_push_history()` snapshots; `undo()` / `redo()` restore.
-- **Validation**: `validate_layout()` ensures structural integrity of imported layouts.
-- **Default layout**: Loads from `default_gamepad.json` on first run when no `layout.json` exists.
+Creates the shared `StorageManager`, `ConfigManager`, `KeyboardController`, `LayoutManager`, `ConnectionManager`, and `EventRouter`. It serves `/static`, the two HTML pages, REST diagnostics, and `/ws`.
 
-#### `controller/network.py` — Connection Manager
-- **Role**: Manages WebSocket connections, device names, and active controller promotion.
-- **Active controller**: The first connected device becomes active; subsequent connections are passive until the active one disconnects.
-- **Promotion chain**: When the active controller disconnects, the next waiting client is automatically promoted.
-- **Broadcast**: Sends state updates (layout changes, input events) to all connected clients including monitors.
+| Route | Purpose |
+|---|---|
+| `GET /` | Returns `templates/mobile.html`. |
+| `GET /monitor` | Returns `templates/monitor.html`. |
+| `GET /api/ip` | Returns the IP selected by the UDP socket detection helper. |
+| `GET /api/keys` | Returns supported `gamepad_*`, trigger, and `key_*` names. |
+| `GET /api/clients` | Returns connected client metadata and count. |
+| `DELETE /api/clients/{client_id}` | Closes a client, releases its input/device slot, and promotes a waiting controller when applicable. |
+| `GET /api/debug` | Returns controller count, connection count, and currently pressed keys. |
+| `GET /static/...` | Serves CSS, JavaScript, and the favicon. |
 
-#### `controller/storage.py` — File I/O
-- **Role**: Atomic JSON file reads and writes with backup creation.
-- **Write strategy**: Writes to a `.tmp` file, then atomically renames — prevents corruption on crash.
+The server is bound to all interfaces for LAN access. The default protocol is unencrypted HTTP and WebSocket; the JavaScript selects `wss://` only if the page itself was loaded over HTTPS.
 
-#### `controller/config.py` — Configuration
-- **Role**: Manages app-wide settings (auto-save toggle, etc.) with JSON persistence.
+### `controller/network.py`
 
----
+`ConnectionManager` accepts WebSockets and stores `ClientInfo` records. Controller-role clients receive the first free slot from `0` through `3`; monitor-role clients (`role=monitor`) receive no slot. Clients have generated eight-character IDs and default names, which can be replaced by a `hello` message.
 
-### 2. Client-Side Components (Browser)
+The first slotted client is marked active. If it disconnects, the first remaining controller-role client is promoted. This status is broadcast and shown in the UI.
 
-All client code is inlined in `templates/mobile.html` for zero external dependencies.
+Important current behavior: `EventRouter` checks whether a client has a slot, but does not check `is_active_controller` before applying input. Every slotted controller can therefore send events to its own virtual controller even when the UI says “waiting.” “Active” is a promotion/status label, not an exclusive input lock.
 
-#### `TK.EventBus` — Pub/Sub Event System
-- Lightweight publish-subscribe bus decoupling all client modules.
-- Events: `ws:connected`, `ws:disconnected`, `ws:latency`, `ws:layout`, `ws:session`, `ws:device_updated`, `ws:error`, `ws:save_result`, `ws:export_layout`, `layout:changed`, `layout:rendered`.
+### `controller/events.py`
 
-#### `TK.WebSocketManager` — WebSocket Client
-- **Auto-reconnect**: Exponential backoff from 500ms to 8s base delay.
-- **Heartbeat**: Sends `{type: "ping"}` every 3 seconds; measures round-trip latency.
-- **JSON transport**: All messages serialized as JSON; `_handleMessage()` dispatches typed events to the EventBus.
-- **Lifecycle**: `connect()` → `onopen` → heartbeat starts → `onmessage` → `onclose` → reconnect.
+`EventRouter` dispatches incoming JSON by its `type` field. It keeps per-client pressed-key and analog caches to ignore duplicate key transitions and very small, very frequent analog updates. Input events are broadcast to other clients so the monitor can visualize them.
 
-#### `TK.GamepadController` — Touch Input Handler
-- **Touch classification**: Determines control type (button, analog_stick, trigger) from element dataset.
-- **Button press**: Sends `keydown` on touch start, `keyup` on touch end.
-- **Analog stick**: Tracks touch displacement from center; applies dead-zone (15%), throttle (16ms), and change-threshold (0.04) filtering.
-- **Analog trigger**: Measures drag distance from initial touch point, normalizes to 0–1 range.
-- **Multi-touch**: Maintains `Map` of active touches by touch identifier; supports simultaneous buttons, sticks, and triggers.
-- **Haptic feedback**: `navigator.vibrate(10)` on button press.
+Incoming message types:
 
-#### `TK.LayoutManager` — Layout Renderer
-- **Coordinate system**: All positions and sizes are ratios (0–1) relative to viewport width/height.
-- **Rendering**: Creates DOM elements with absolute positioning and inline styles for precise control.
-- **Control types**: `ctrl-btn` (button), `ctrl-analog` (analog stick), `ctrl-trigger` (trigger).
-- **Responsive**: Uses `window.innerWidth` / `window.innerHeight` at render time; minimum 40px clamp prevents invisible controls.
-- **Page tabs**: Renders tab navigation for multi-page layouts.
+| Type | Main fields | Effect |
+|---|---|---|
+| `hello` | `deviceName` | Sets the client display name; handled by `server.py`. |
+| `keydown` / `keyup` | `key` | Presses/releases gamepad, trigger, or `key_*` keyboard bindings. |
+| `analog` | `key`, `x`, `y` | Updates a stick or trigger using normalized values. |
+| `mouse` | `action`, optional `dx`, `dy` | Sends cursor, scroll, or click actions to `pyautogui`. |
+| `ping` | `timestamp` | Produces `pong` with the original timestamp and server time. |
+| `save_layout` / `load_layout` | optional `data` | Persists or returns the current layout. |
+| `update_layout` | `data` | Replaces the layout and optionally auto-saves it. |
+| `export_layout` / `import_layout` | `data` | Sends or validates/replaces layout JSON. |
+| `undo` / `redo` | — | Changes in-memory layout history and broadcasts the result. |
+| `add_button`, `update_button`, `delete_button`, `duplicate_button` | page/control IDs and data | Mutates controls and broadcasts the layout. |
+| `add_page`, `delete_page`, `rename_page` | page ID/name | Mutates pages and broadcasts the layout. |
+| `set_active_page` | `index` | Changes the shared active page index and broadcasts it. |
+| `save_settings` / `load_settings` | optional `data` | Updates or returns application settings. |
 
-#### `AppMobile` — Application Controller
-- **Orchestration**: Initializes all subsystems in order; sets up WebSocket event handlers; registers UI interaction listeners.
-- **UI state**: Connection badge (ON/OFF), latency display, device name, settings modal, fullscreen toggle.
-- **Browser prevention**: Disables context menu, gesture events (pinch-zoom), and overscroll for a native-app feel.
+Server-to-client messages include `session`, `layout`, `settings`, `pong`, `input`, `controller_changed`, `controller_activated`, `device_updated`, `active_page`, `save_result`, `export_layout`, and `error`.
 
----
+### `controller/keyboard.py`
 
-## WebSocket Protocol
+`KeyboardController` lazily creates one `vg.VX360Gamepad` per assigned slot. Button names map through `XUSB_MAP` to `vgamepad` constants. Sticks are scaled to the signed XInput range `-32767..32767`; browser positive Y is inverted. Triggers use `0..255`. Digital trigger presses set a trigger to maximum and releases set it to zero.
 
-### Message Format
+The class also owns `MouseController`. `key_*` bindings call `pyautogui.keyDown`/`keyUp`; `mouse` messages call relative movement, scrolling, or mouse-button functions. Per-slot pressed sets support disconnect cleanup.
 
-All messages are JSON objects with a `type` field identifying the message kind.
+### `controller/layout.py`
 
-### Client → Server
+The layout is a dictionary with `version`, `activePageIndex`, and `pages`. Each page has an ID, name, and `buttons` array. “Buttons” is historical: entries can be buttons, analog sticks, triggers, sliders, or touchpads.
 
-| Type | Fields | Description |
-|------|--------|-------------|
-| `hello` | `deviceName: string` | Sent after session to register device name |
-| `keydown` | `key: string` | Press a button (e.g., `gamepad_a`) |
-| `keyup` | `key: string` | Release a button |
-| `analog` | `key: string`, `x: float`, `y: float` | Move analog stick (-1..1) or trigger (0..1) |
-| `ping` | `timestamp: int` | Latency measurement |
-| `save_layout` | `data: object` | Persist current layout |
-| `load_layout` | — | Request layout from server |
-| `update_layout` | `data: object` | Broadcast layout update |
-| `add_button` | `pageId: string`, `data: object` | Create a new control |
-| `update_button` | `pageId: string`, `buttonId: string`, `data: object` | Modify a control |
-| `delete_button` | `pageId: string`, `buttonId: string` | Remove a control |
-| `duplicate_button` | `pageId: string`, `buttonId: string` | Clone a control |
-| `add_page` | `name: string` | Create a new page |
-| `delete_page` | `pageId: string` | Remove a page |
-| `rename_page` | `pageId: string`, `name: string` | Rename a page |
-| `set_active_page` | `index: int` | Switch to a page |
-| `undo` | — | Undo last layout change |
-| `redo` | — | Redo last undone change |
-| `export_layout` | — | Download layout as JSON |
-| `import_layout` | `data: object` | Upload and apply a layout |
-| `save_settings` | `data: object` | Persist settings |
-| `load_settings` | — | Request settings |
+Positions are normalized `x`/`y` values from `0` to `1`; width and height are pixels. The manager migrates older pixel positions against an `800×600` reference and older fractional sizes to pixels. Validation checks the required outer page structure; control fields are interpreted mostly by the browser and input code.
 
-### Server → Client
+Mutations push deep-copy snapshots into an in-memory history capped at 50 entries. Undo/redo history is not persisted. New pages load controls from `controller/default_gamepad.json`; a valid checked-in/runtime `layout.json` is loaded first, otherwise a generated default layout is used.
 
-| Type | Fields | Description |
-|------|--------|-------------|
-| `session` | `clientId`, `deviceName`, `ip`, `isActive` | Connection acknowledgment |
-| `layout` | `data: object` | Full layout state |
-| `settings` | `data: object` | Full settings state |
-| `active_page` | `index: int` | Page switch notification |
-| `pong` | `timestamp: int`, `serverTime: int` | Heartbeat response |
-| `connected` | — | WebSocket open event |
-| `disconnected` | — | WebSocket close event |
-| `latency` | `ms: int` | Measured round-trip time |
-| `device_updated` | `clientId`, `deviceName`, `isActive` | Device registration confirmed |
-| `controller_activated` | `message: string` | Promoted to active controller |
-| `controller_changed` | `activeClientId`, `deviceName` | Active controller switched |
-| `save_result` | `success: bool` | Save operation result |
-| `error` | `message: string` | Error notification |
-| `export_layout` | `data: object` | Layout data for download |
-| `input` | `subtype`, `key`, `x`, `y` | Input event broadcast to monitors |
+### `controller/config.py` and `controller/storage.py`
 
-### Connection Lifecycle
+`ConfigManager` loads `settings.json` into `AppConfig`, filters unknown fields, and supports theme, grid, animation, haptic/sound, fullscreen, language, and auto-save settings. Settings are shared by monitor and mobile clients and written as JSON.
 
-```
-Client                     Server
-  │                          │
-  │── WebSocket connect ────→│
-  │                          │
-  │←──── session (clientId) ─│
-  │←──── layout (full) ──────│
-  │←──── settings ───────────│
-  │                          │
-  │── hello (deviceName) ───→│
-  │                          │
-  │←──── device_updated ─────│
-  │                          │
-  │── keydown (gamepad_a) ──→│
-  │── keyup (gamepad_a) ────→│
-  │── analog (ls, x, y) ────→│
-  │                          │
-  │── ping (timestamp) ─────→│
-  │←──── pong (serverTime) ──│
-  │                          │
-  │        ... time passes ...│
-  │                          │
-  │── disconnect ───────────→│
-  │                          │
-  │  (server promotes next)  │
+`StorageManager` resolves filenames beneath the runtime data directory. Before writing an existing file it copies it to `<name>.bak`, writes JSON to `<name>.tmp`, and replaces the destination. Read failures try the backup before returning the caller’s default.
+
+## Browser clients
+
+### Mobile client
+
+`templates/mobile.html` is a shell that loads `/static/js/app.js` as an ES module and `/static/css/main.css`. The modules are:
+
+- `app.js` initializes the UI, layout, controller, WebSocket handlers, and browser-default suppression.
+- `websocket.js` opens `/ws`, sends a ping every three seconds, measures round-trip latency, and reconnects with a 500 ms to 8 s backoff.
+- `layout.js` renders the active page and controls from server layout JSON.
+- `controller.js` tracks multi-touch and pointer input and emits key, normalized analog, trigger, joystick-touchpad, and mouse events.
+- `ui.js` updates connection, device, status, and latency indicators.
+- `utils.js` provides the event bus and utility functions.
+
+The mobile URL is the same origin as the page. An HTTP page uses `ws://host/ws`; an HTTPS page uses `wss://host/ws`.
+
+### Monitor client
+
+`templates/monitor.html` contains its own HTML, CSS, and JavaScript. It connects with `/ws?role=monitor`, receives session/layout/settings/controller-change/input broadcasts, and does not consume a gamepad slot. It also calls REST endpoints for diagnostics, client removal, server IP, and supported key names.
+
+Its four areas are dashboard/QR, connected devices, layout editor, and controller tester. The tester uses the browser’s `navigator.getGamepads()` API; it does not create or emulate a controller itself.
+
+The QR image is fetched from `https://api.qrserver.com/v1/create-qr-code/`; it is not generated locally by the server.
+
+## Input pipeline
+
+```text
+touch/pointer
+   ↓
+controller.js normalizes gesture
+   ├─ keydown/keyup {key}
+   ├─ analog {key, x, y}
+   └─ mouse {action, dx, dy}
+   ↓ JSON over /ws
+EventRouter identifies client → assigned slot
+   ├─ KeyboardController → VX360Gamepad → ViGEmBus → XInput
+   └─ MouseController → pyautogui → Windows keyboard/cursor
 ```
 
----
+Analog values are touch/pointer-derived; there is no implemented gyroscope or motion-sensor pipeline. Browser haptic feedback is a short local `navigator.vibrate()` call when available and is not sent to the PC.
 
-## Input Pipeline
+## Packaging and operational boundaries
 
-```
-Touch Event (phone)
-    │
-    ▼
-GamepadController._handleTouchStart / _handleTouchMove / _handleTouchEnd
-    │
-    ├── Button:  TK.ws.send({ type: "keydown", key: "gamepad_a" })
-    ├── Trigger: TK.ws.send({ type: "analog", key: "gamepad_lt", x: 0.75, y: 0 })
-    └── Stick:   TK.ws.send({ type: "analog", key: "gamepad_ls", x: 0.5, y: -0.3 })
-    │
-    ▼
-WebSocket (JSON over TCP)
-    │
-    ▼
-server.py → EventRouter.route()
-    │
-    ├── keydown → EventRouter._on_keydown()
-    │    ├── Check active controller
-    │    ├── Deduplicate (ignore if already pressed)
-    │    └── keyboard.press_key(key) → vg.press_button() + dev.update()
-    │
-    ├── keyup → EventRouter._on_keyup()
-    │    ├── Check active controller
-    │    ├── Deduplicate (ignore if not pressed)
-    │    └── keyboard.release_key(key) → vg.release_button() + dev.update()
-    │
-    └── analog → EventRouter._on_analog()
-         ├── Check active controller
-         ├── Deduplicate (filter tiny/no-change moves)
-         └── keyboard.move_analog(stick, x, y) → joystick/trigger update + dev.update()
-    │
-    ▼
-ViGEmBus Kernel Driver
-    │
-    ▼
-XInput API → Game sees Xbox 360 controller state
-```
+`launcher.py` is compiled by `main.spec` into the root `TouchKeys.exe`. The resulting executable is a small launcher and intentionally does not bundle the Python runtime or application dependencies. `build.ps1` installs PyInstaller into `.venv`, writes the executable beside this README, and removes generated `build` and `dist` folders after the build. `setup.ps1` installs the runtime dependencies and ViGEmBus for end users.
 
-### Filtering Stages
+The root `index.html` is not part of the FastAPI route table. It is a standalone informational page; the application’s `/` route serves `templates/mobile.html` instead.
 
-| Stage | Location | Purpose |
-|-------|----------|---------|
-| Dead zone (15%) | Client | Suppress near-center stick noise |
-| Throttle (16ms) | Client | Limit analog message rate |
-| Change threshold (0.04) | Client | Skip tiny movements |
-| Tiny-move filter | Server | Skip sub-0.01 changes within 50ms |
-| Deduplication | Server | Ignore redundant keydown/keyup |
-
----
-
-## Layout Format
-
-```json
-{
-  "version": 2,
-  "activePageIndex": 0,
-  "pages": [
-    {
-      "id": "550e8400-e29b-41d4-a716-446655440000",
-      "name": "Standard",
-      "buttons": [
-        {
-          "id": "550e8400-e29b-41d4-a716-446655440001",
-          "name": "A",
-          "keybind": "gamepad_a",
-          "type": "button",
-          "x": 0.50,
-          "y": 0.55,
-          "width": 0.15,
-          "height": 0.15,
-          "opacity": 1.0,
-          "fontSize": 16,
-          "layer": 1,
-          "visible": true
-        }
-      ]
-    }
-  ]
-}
-```
-
-### Field Reference
-
-| Field | Type | Description |
-|-------|------|-------------|
-| `id` | UUID | Unique identifier |
-| `name` | string | Display label |
-| `keybind` | string | Gamepad input (e.g., `gamepad_a`, `gamepad_ls`) |
-| `type` | enum | `button`, `analog_stick`, `trigger`, `touchpad`, `slider` |
-| `x` | float | Horizontal position ratio (0 = left, 1 = right) |
-| `y` | float | Vertical position ratio (0 = top, 1 = bottom) |
-| `width` | float | Width in pixels |
-| `height` | float | Height in pixels |
-| `opacity` | float | 0–1 opacity |
-| `fontSize` | int | Label font size in pixels |
-| `layer` | int | Z-index stacking order |
-| `visible` | bool | Show/hide toggle |
-| `deadzone` | float | Inner dead zone threshold for analog sticks (default 0.15) |
-| `triggerMode` | string | `analog` or `digital` for triggers |
-| `orientation` | string | `horizontal` or `vertical` for sliders |
-| `mappedAxis` | string | Mapped axis for sliders (e.g. `left_stick_x`, `left_trigger`) |
-
-### Coordinate Calculation
-
-```
-// At render time on the client:
-baseWidth  = window.innerWidth
-baseHeight = window.innerHeight
-
-pixelLeft  = ctrl.x      * baseWidth
-pixelTop   = ctrl.y      * baseHeight
-pixelWidth = ctrl.width  * baseWidth
-pixelHeight= ctrl.height * baseHeight
-
-// Minimum control size:
-pixelWidth  = Math.max(pixelWidth,  40)
-pixelHeight = Math.max(pixelHeight, 40)
-```
-
----
-
-## Design Decisions
-
-### Why a Single HTML File?
-
-The mobile client is delivered as a single self-contained HTML file with all CSS and JavaScript inlined. This eliminates:
-- HTTP round-trips for external assets
-- Module loading failures on older or restrictive browsers
-- CORS issues
-- CDN dependency
-
-The trade-off is a larger initial payload (~41KB) vs. the benefit of guaranteed loading on any browser.
-
-### Why WebSocket and Not WebRTC / HTTP Long-Poll?
-
-- **Latency**: WebSocket provides sub-100ms message delivery with minimal overhead.
-- **Bidirectional**: Both input events and layout sync flow over the same connection.
-- **Simplicity**: No STUN/TURN servers, no signaling, no SDP negotiation.
-
-### Why Server-Authoritative Layout?
-
-The server holds the canonical layout state. Clients are rendering engines that display whatever layout the server sends. This ensures:
-- **Consistency**: All clients (phone + monitor) see identical layouts.
-- **Persistence**: Layout changes are saved server-side automatically.
-- **Multi-device**: A phone and monitor can view the same layout simultaneously.
-
-### Why vgamepad / ViGEmBus?
-
-ViGEmBus is the de-facto Windows kernel driver for virtual gamepad emulation. It creates a device that appears as a genuine Xbox 360 controller to any application using XInput. Alternatives (like sending DirectInput or using `pygame`'s joystick API) either lack game compatibility or require additional software.
-
----
-
-## Performance Characteristics
-
-| Metric | Value |
-|--------|-------|
-| Initial page load | ~41 KB (single HTTP request) |
-| WebSocket message size | ~50–100 bytes per input event |
-| Input latency (LAN) | <5ms network + ~1ms processing |
-| Client throttle rate | ~60 Hz (16ms between analog updates) |
-| Max concurrent touches | Device-dependent (typically 5–10) |
-| Server throughput | 10,000+ events/second (single core) |
-| Memory (server) | ~50 MB idle |
-| Memory (client) | ~10–20 MB (browser tab) |
-
----
-
-## Security Considerations
-
-1. **No authentication**: The server is designed for local LAN use. No encryption, no login. Do not expose to the internet.
-2. **Input validation**: Server validates all incoming message types, key names, and numeric ranges. Unknown message types are logged and dropped.
-3. **Active controller isolation**: Only the active controller's input is processed; passive clients cannot inject input.
-4. **No persistent state**: Layout files are stored on the local filesystem with no external database.
+- Windows is required for the ViGEmBus virtual gamepad path.
+- The server has no authentication or authorization and should not be exposed to an untrusted network.
+- Four is the maximum number of controller-role slots. A fifth controller can connect but has no slot and its input is ignored.
+- Virtual devices are created on first input, not merely on WebSocket connection.
+- Layout, settings, and connection state are process-local; there is no database or multi-process state store.
+- Normal shutdown resets devices and releases keys. Unexpected termination may require manual cleanup.

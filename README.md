@@ -83,7 +83,7 @@ Getting TouchKeys running on your Windows PC takes under 2 minutes:
 
 ### Step-by-Step Setup
 
-1. **Download & Extract**: Ensure your project folder contains `TouchKeys.exe`, `setup.ps1`, and the subdirectories (`backend`, `controller`, `static`, `templates`, `installers`).
+1. **Download & Extract**: Ensure your project folder contains `setup.ps1`, `main.spec`, and the subdirectories (`backend`, `controller`, `static`, `templates`, `installers`).
 2. **Run Setup**:
    - Right-click [`setup.ps1`](setup.ps1) and select **Run with PowerShell**.
    - *If PowerShell blocks execution*, open PowerShell in the project folder and run:
@@ -96,6 +96,7 @@ Getting TouchKeys running on your Windows PC takes under 2 minutes:
    - Install Python Manager from `installers\python-manager-26.3.msix`.
    - Provision Python 3.12 into a project-isolated `.venv`.
    - Install required dependencies from [`requirements.txt`](requirements.txt).
+   - Install PyInstaller and build a fresh `TouchKeys.exe` locally from `launcher.py`.
    - Launch the included **ViGEmBus driver installer** from `installers\`.
    - Place a **TouchKeys** shortcut on your Windows Desktop.
 4. **Complete Driver Install**:
@@ -121,7 +122,7 @@ TouchKeys operates as a standalone launcher coupled with a FastAPI backend serve
 
 ```text
 TouchKeys/
-├── TouchKeys.exe                  # Root desktop launcher executable
+├── TouchKeys.exe                  # Locally generated launcher (ignored by Git)
 ├── launcher.py                    # Entry source used to generate TouchKeys.exe
 ├── main.spec                     # PyInstaller specification file
 ├── build.ps1                     # Maintainer launcher build script
@@ -152,7 +153,7 @@ TouchKeys/
 
 `TouchKeys.exe` is a lightweight launcher executable. It locates the local `.venv` environment (or fallback Python installation) and launches `backend\gui.py`. This design keeps all Python source files and frontend assets fully transparent and modifiable without needing complete re-compilation.
 
-To re-build the root launcher after modifying `launcher.py`:
+To re-build the root launcher after modifying `launcher.py` (setup also does this automatically):
 ```powershell
 Set-ExecutionPolicy -Scope Process Bypass
 .\build.ps1

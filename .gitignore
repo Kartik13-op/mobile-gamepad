@@ -5,6 +5,8 @@ __pycache__/
 *.pyc
 *.egg-info/
 build/
+dist/
+TouchKeys.exe
 *.egg
 
 # Virtual environments
@@ -28,6 +30,8 @@ Thumbs.db
 layout.json.bak
 *.log
 .server.lock
+
+# Locally generated launcher/build artifacts
 
 # Virtual environment
 .venv/

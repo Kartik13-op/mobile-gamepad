@@ -11,6 +11,9 @@ $driverInstaller = Join-Path $installerRoot 'ViGEmBus_1.22.0_x64_x86_arm64.exe'
 $venvPath = Join-Path $projectRoot '.venv'
 $venvPython = Join-Path $venvPath 'Scripts\python.exe'
 $requirementsPath = Join-Path $projectRoot 'requirements.txt'
+$specPath = Join-Path $projectRoot 'main.spec'
+$buildPath = Join-Path $projectRoot 'build'
+$distPath = Join-Path $projectRoot 'dist'
 $touchKeysExe = Join-Path $projectRoot 'TouchKeys.exe'
 $desktopPath = [Environment]::GetFolderPath('Desktop')
 $shortcutPath = Join-Path $desktopPath 'TouchKeys.lnk'
@@ -64,7 +67,18 @@ function Resolve-PythonManager {
 function Install-PythonRuntime {
     $pythonManager = Resolve-PythonManager
     if ($null -eq $pythonManager) {
-        throw 'Python Manager was installed but py.exe is not available yet. Restart PowerShell and run setup.ps1 again.'
+        throw 'Python Manager is not available and no Python 3.12 installation was found.'
+    }
+
+    # Reuse Python 3.12 when it is already installed. Python Manager can write
+    # progress text to stdout, so accept only output lines that resolve to a file.
+    $existingOutput = @(& $pythonManager -3.12 -c 'import sys; print(sys.executable)' 2>$null)
+    foreach ($candidate in $existingOutput) {
+        $candidate = ([string]$candidate).Trim()
+        if ($candidate -and (Test-Path -LiteralPath $candidate -PathType Leaf)) {
+            Write-Host "Using existing Python 3.12: $candidate" -ForegroundColor Green
+            return $candidate
+        }
     }
 
     Write-Step 'Installing the Python 3.12 runtime through Python Manager.'
@@ -73,9 +87,17 @@ function Install-PythonRuntime {
         throw "Python 3.12 installation failed with exit code $LASTEXITCODE."
     }
 
-    $pythonPath = (& $pythonManager -3.12 -c 'import sys; print(sys.executable)' | Select-Object -Last 1).ToString().Trim()
-    if (-not (Test-Path -LiteralPath $pythonPath -PathType Leaf)) {
-        throw "Python Manager did not return a usable Python executable: $pythonPath"
+    $pythonOutput = @(& $pythonManager -3.12 -c 'import sys; print(sys.executable)' 2>$null)
+    $pythonPath = $null
+    foreach ($candidate in $pythonOutput) {
+        $candidate = ([string]$candidate).Trim()
+        if ($candidate -and (Test-Path -LiteralPath $candidate -PathType Leaf)) {
+            $pythonPath = $candidate
+            break
+        }
+    }
+    if ($null -eq $pythonPath) {
+        throw "Python Manager did not return a usable Python executable."
     }
     return $pythonPath
 }
@@ -85,7 +107,13 @@ Write-Host "Project folder: $projectRoot"
 Write-Host 'This setup installs Python for TouchKeys, creates its private environment, installs dependencies, and installs the ViGEmBus driver required for virtual Xbox controllers.'
 Write-Host 'A Windows administrator prompt is expected only when installing ViGEmBus.' -ForegroundColor Yellow
 
-Install-PythonManager
+# Install Python Manager only when it is not already available.
+if ($null -eq (Resolve-PythonManager)) {
+    Install-PythonManager
+}
+else {
+    Write-Host 'Python Manager is already available; checking for Python 3.12.' -ForegroundColor Green
+}
 $basePython = Install-PythonRuntime
 
 if (-not (Test-Path -LiteralPath $venvPython -PathType Leaf)) {
@@ -108,6 +136,29 @@ if ($LASTEXITCODE -ne 0) {
 if ($LASTEXITCODE -ne 0) {
     throw "Dependency installation failed with exit code $LASTEXITCODE."
 }
+
+Write-Step 'Building the local TouchKeys.exe launcher.'
+Write-Host 'The executable is built on this computer from the checked-out source.' -ForegroundColor Yellow
+& $venvPython -m pip install pyinstaller
+if ($LASTEXITCODE -ne 0) {
+    throw "PyInstaller installation failed with exit code $LASTEXITCODE."
+}
+
+Remove-Item -LiteralPath $touchKeysExe -Force -ErrorAction SilentlyContinue
+Remove-Item -LiteralPath $buildPath -Recurse -Force -ErrorAction SilentlyContinue
+Remove-Item -LiteralPath $distPath -Recurse -Force -ErrorAction SilentlyContinue
+
+& $venvPython -m PyInstaller $specPath --clean --noconfirm --distpath $projectRoot --workpath $buildPath
+if ($LASTEXITCODE -ne 0) {
+    throw "TouchKeys.exe build failed with exit code $LASTEXITCODE."
+}
+if (-not (Test-Path -LiteralPath $touchKeysExe -PathType Leaf)) {
+    throw "The build completed but $touchKeysExe was not created."
+}
+
+Remove-Item -LiteralPath $buildPath -Recurse -Force -ErrorAction SilentlyContinue
+Remove-Item -LiteralPath $distPath -Recurse -Force -ErrorAction SilentlyContinue
+Write-Host "Created local launcher: $touchKeysExe" -ForegroundColor Green
 
 if (-not (Test-Path -LiteralPath $driverInstaller -PathType Leaf)) {
     throw "ViGEmBus installer was not found at $driverInstaller"
@@ -133,8 +184,7 @@ if (Test-Path -LiteralPath $touchKeysExe -PathType Leaf) {
     Write-Host "Desktop shortcut created: $shortcutPath" -ForegroundColor Green
 }
 else {
-    Write-Host "TouchKeys.exe was not found at $touchKeysExe; no shortcut was created." -ForegroundColor Yellow
-    Write-Host 'Build or copy the root executable, then run setup.ps1 again to create the shortcut.' -ForegroundColor Yellow
+    throw "The local TouchKeys.exe build is missing at $touchKeysExe."
 }
 
 Write-Host "`nSetup completed successfully." -ForegroundColor Green

@@ -4,7 +4,7 @@ Thank you for your interest in contributing to **TouchKeys**! We welcome contrib
 
 ---
 
-## 📜 Code of Conduct
+## Code of Conduct
 
 This project adheres to the [TouchKeys Code of Conduct](CODE_OF_CONDUCT.md). By participating, you are expected to uphold this code. Please report unacceptable behavior to the project maintainers.
 

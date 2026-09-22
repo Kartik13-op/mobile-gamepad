@@ -1,17 +1,32 @@
 # -*- mode: python ; coding: utf-8 -*-
-"""PyInstaller spec for the root TouchKeys launcher executable."""
+"""PyInstaller spec for the standalone TouchKeys application."""
 
 from pathlib import Path
+from PyInstaller.utils.hooks import collect_data_files, collect_submodules
 
 
 PROJECT_DIR = Path(SPECPATH)
+VGAMEPAD_DIR = PROJECT_DIR / ".venv" / "Lib" / "site-packages" / "vgamepad"
 
 a = Analysis(
-    [str(PROJECT_DIR / "launcher.py")],
+    [str(PROJECT_DIR / "backend" / "gui.py")],
     pathex=[str(PROJECT_DIR)],
-    binaries=[],
-    datas=[],
-    hiddenimports=[],
+    datas=[
+        (str(PROJECT_DIR / "templates"), "templates"),
+        (str(PROJECT_DIR / "static"), "static"),
+        (str(PROJECT_DIR / "controller" / "default_gamepad.json"), "controller"),
+        *collect_data_files("webview"),
+    ],
+    binaries=[
+        (str(VGAMEPAD_DIR / "win" / "vigem" / "client" / "x64" / "ViGEmClient.dll"), "vgamepad/win/vigem/client/x64"),
+        (str(VGAMEPAD_DIR / "win" / "vigem" / "client" / "x86" / "ViGEmClient.dll"), "vgamepad/win/vigem/client/x86"),
+    ],
+    hiddenimports=[
+        *collect_submodules("backend"),
+        *collect_submodules("controller"),
+        *collect_submodules("uvicorn"),
+        *collect_submodules("webview"),
+    ],
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],

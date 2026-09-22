@@ -74,36 +74,42 @@ Whether you're missing an extra controller for couch co-op, need custom touch co
 
 ---
 
-## 📥 Installation for Regular Users
+## 📥 Installation and Running
 
-Getting TouchKeys running on your Windows PC takes under 2 minutes:
+Choose the standalone executable for the quickest setup, or use the source package if you want to inspect or modify the project.
 
-> [!NOTE]
-> End users do **not** need to manually install Python prior to setup! The included setup script automatically installs Python 3.12 via Python Manager into a self-contained local environment (`.venv`).
+### Option A — Standalone executable
 
-### Step-by-Step Setup
+1. Download `TouchKeys.exe` from the GitHub release and place it in a new folder.
+2. Install the **ViGEmBus** driver as Administrator. The driver installer is in the source ZIP under `installers\`; maintainers may also attach it as a separate release asset.
+3. Double-click `TouchKeys.exe`. Allow Windows Firewall access on Private networks if prompted.
+4. Connect the phone and PC to the same Wi-Fi network, then scan the displayed QR code or open the displayed `http://192.168.x.x:8000` address.
 
-1. **Download & Extract**: Ensure your project folder contains `setup.ps1`, `main.spec`, and the subdirectories (`backend`, `controller`, `static`, `templates`, `installers`).
-2. **Run Setup**:
-   - Right-click [`setup.ps1`](setup.ps1) and select **Run with PowerShell**.
-   - *If PowerShell blocks execution*, open PowerShell in the project folder and run:
-     ```powershell
-     Set-ExecutionPolicy -Scope Process Bypass
-     .\setup.ps1
-     ```
-3. **Automated Environment Provisioning**:
-   The setup installer will automatically:
-   - Install Python Manager from `installers\python-manager-26.3.msix`.
-   - Provision Python 3.12 into a project-isolated `.venv`.
-   - Install required dependencies from [`requirements.txt`](requirements.txt).
-   - Install PyInstaller and build a fresh `TouchKeys.exe` locally from `launcher.py`.
-   - Launch the included **ViGEmBus driver installer** from `installers\`.
-   - Place a **TouchKeys** shortcut on your Windows Desktop.
-4. **Complete Driver Install**:
-   Accept the Windows Administrator (UAC) prompt to complete the **ViGEmBus** driver installation. *(ViGEmBus allows Windows to present virtual Xbox 360 controllers to your games).*
-5. **Launch & Connect**:
-   - Double-click the **TouchKeys** desktop shortcut or root `TouchKeys.exe`.
-   - Open the displayed LAN URL (e.g., `http://192.168.1.20:8000`) or scan the QR code on the PC monitor screen using your phone camera.
+The standalone executable already contains Python, TouchKeys, the controller code, templates, static assets, and Python dependencies. Python and `.venv` are not required. ViGEmBus remains a separate Windows driver required for virtual Xbox controller output.
+
+### Option B — Source package
+
+1. Download and extract the source ZIP.
+2. Open PowerShell in the extracted project folder.
+3. Run:
+   ```powershell
+   Set-ExecutionPolicy -Scope Process Bypass
+   .\setup.ps1
+   ```
+4. Approve the administrator prompt for ViGEmBus. Setup provisions Python 3.12, creates `.venv`, installs dependencies, builds a local standalone `TouchKeys.exe`, and creates a desktop shortcut.
+5. Launch the generated `TouchKeys.exe`, then connect your phone using the displayed URL or QR code.
+
+To run the source directly after setup:
+
+```powershell
+.\.venv\Scripts\python.exe .\backend\gui.py
+```
+
+To rebuild the executable after changing the source:
+
+```powershell
+.\build.ps1
+```
 
 ---
 
@@ -123,7 +129,7 @@ TouchKeys operates as a standalone launcher coupled with a FastAPI backend serve
 ```text
 TouchKeys/
 ├── TouchKeys.exe                  # Locally generated launcher (ignored by Git)
-├── launcher.py                    # Entry source used to generate TouchKeys.exe
+├── launcher.py                    # Legacy source-based launcher
 ├── main.spec                     # PyInstaller specification file
 ├── build.ps1                     # Maintainer launcher build script
 ├── setup.ps1                     # End-user setup and desktop shortcut generator
@@ -151,9 +157,9 @@ TouchKeys/
 
 ### ⚙️ Launcher vs. Server Execution
 
-`TouchKeys.exe` is a lightweight launcher executable. It locates the local `.venv` environment (or fallback Python installation) and launches `backend\gui.py`. This design keeps all Python source files and frontend assets fully transparent and modifiable without needing complete re-compilation.
+`TouchKeys.exe` is a standalone PyInstaller executable generated locally by setup. It contains the Python runtime, backend, controller code, templates, and static assets, so end users do not need Python or `.venv` after setup. The ViGEmBus driver remains a separate installer because it is a Windows kernel driver.
 
-To re-build the root launcher after modifying `launcher.py` (setup also does this automatically):
+To rebuild the standalone executable after modifying application code (setup also does this automatically):
 ```powershell
 Set-ExecutionPolicy -Scope Process Bypass
 .\build.ps1
@@ -219,8 +225,11 @@ The QR code is generated via <code>api.qrserver.com</code>. If your PC lacks act
 - [x] PC Monitor control center with QR connection & latency diagnostics
 - [x] Support for up to 4 simultaneous virtual controllers
 - [x] Mouse emulation & PC keyboard binding modes
+- [x] Standalone single-file executable distribution
+- [ ] Signed Windows release builds and a guided installer package
+- [ ] Release packaging that bundles or streamlines ViGEmBus driver installation
+- [ ] Automatic update and version-reporting flow
 - [ ] Low-latency WebRTC live PC screen streaming to mobile device
-- [ ] Standalone single-file production executable distribution
 
 ---
 

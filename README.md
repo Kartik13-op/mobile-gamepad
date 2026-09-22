@@ -1,155 +1,245 @@
-# TouchKeys
+<div align="center">
 
-TouchKeys runs a web-based controller on a phone and turns its input into Windows input on the PC. The PC hosts a FastAPI server; a phone on the same LAN opens the mobile page and sends JSON events over a WebSocket. Gamepad events are written to virtual Xbox 360 controllers through `vgamepad` and ViGEmBus. Optional keyboard and mouse events are injected with `pyautogui`.
+  <img src="static/favicon.png" alt="TouchKeys Logo" width="96" height="96" />
 
-The project has two browser interfaces:
+  # TouchKeys 🎮
+  ### Turn your smartphone into a high-performance Windows XInput gamepad & controller.
 
-- `/` is the phone controller.
-- `/monitor` is the PC control center with the QR code, client list, layout editor, diagnostics, and browser gamepad tester.
+  [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+  [![Platform](https://img.shields.io/badge/Platform-Windows%2010%20%7C%2011-0078D4?logo=windows)](https://www.microsoft.com/windows)
+  [![Python](https://img.shields.io/badge/Python-3.12-3776AB?logo=python&logoColor=white)](https://www.python.org/)
+  [![Code of Conduct](https://img.shields.io/badge/Contributor%20Covenant-2.1-4baaaa.svg)](CODE_OF_CONDUCT.md)
+  [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
 
-## Important release behavior
+  [Features](#-features) • [Screenshots](#-screenshots) • [Installation](#-installation-for-regular-users) • [Troubleshooting](#-troubleshooting) • [Contributing](CONTRIBUTING.md)
 
-The root `TouchKeys.exe` is a small launcher, not a bundled Python runtime. It looks for the project’s `.venv` first and then Python Manager’s `py` command, and starts `backend\gui.py`. Run `setup.ps1` once before using the executable.
+</div>
 
-This arrangement is intentional for the current release: the Python source and web assets remain visible in the project folder, while the executable provides a familiar desktop shortcut entry point.
+---
 
-## Features
+## 📌 Overview
 
-- Xbox 360/XInput buttons, D-pad, sticks, triggers, and Guide input on Windows
-- Up to four controller WebSocket clients, assigned slots `0`–`3`
-- Monitor-only WebSocket role that does not consume a controller slot
-- Multiple JSON layout pages
-- Layout editing: add, move, resize, rename, duplicate, delete, undo, redo, import, and export
-- Button, analog-stick, trigger, slider, and touchpad controls
-- Touchpad joystick mode and PC mouse mode: cursor movement, scrolling, left click, and right click
-- Keyboard bindings using `key_*` controls
-- WebSocket heartbeat, latency display, reconnect behavior, and disconnect cleanup
+**TouchKeys** turns any smartphone or tablet into a fully customisable wireless gamepad for Windows PCs. 
 
-TouchKeys is intended for a trusted local network. The server binds to `0.0.0.0:8000`, has no authentication, and uses HTTP/WebSocket by default. It does not provide TLS or Internet-facing access control.
+By running a lightweight Python FastAPI server on your PC, TouchKeys serves an ultra-responsive web-based touchscreen interface over your local Wi-Fi network. Touch inputs sent over real-time WebSockets are mapped directly to virtual **Xbox 360 controllers** (powered by ViGEmBus) or mouse and keyboard events on your PC.
 
-## Installation for regular users
+Whether you're missing an extra controller for couch co-op, need custom touch controls for PC gaming, or want a wireless touchpad for media control, TouchKeys provides a plug-and-play solution without requiring third-party mobile apps.
 
-1. Make sure the project folder contains `TouchKeys.exe`, the `backend`, `controller`, `static`, `templates`, and `installers` folders, and `setup.ps1`.
-2. Right-click [`setup.ps1`](setup.ps1) and select **Run with PowerShell**. If Windows blocks the script, open PowerShell in this folder and run:
+---
 
-   ```powershell
-   Set-ExecutionPolicy -Scope Process Bypass
-   .\setup.ps1
-   ```
+## 🖼️ Screenshots & Showcase
 
-3. The setup window will explain each step. It will:
-   - install the included Python Manager package from `installers\python-manager-26.3.msix`;
-   - install the Python 3.12 runtime through Python Manager;
-   - create the project-local `.venv` environment;
-   - install the packages in [`requirements.txt`](requirements.txt);
-   - open the included ViGEmBus installer from `installers\`;
-   - create a `TouchKeys` shortcut on the current user’s Windows Desktop.
-4. When the ViGEmBus installer appears, approve the Windows administrator prompt and finish that driver installer. ViGEmBus is required because it lets Windows expose the virtual Xbox controller to games.
-5. Double-click the new desktop shortcut or the root `TouchKeys.exe`.
-6. Open the displayed LAN URL, such as `http://192.168.1.20:8000`, on the phone. The monitor also shows a QR code for that URL.
+<div align="center">
 
-The terminal window is expected: the launcher starts the Python server, and its messages help diagnose connection or driver problems. The scripts and launcher are local project files; they do not download the application from an unknown website. The only network package operation is Python’s normal `pip install` from `requirements.txt`.
+### 📱 Mobile Gamepad Interface
+*Customisable, multi-touch layout with dual analog joysticks, D-Pad, triggers, and action buttons.*
 
-### What the PowerShell files do
+![Mobile Gamepad Interface](images/mobile.jpeg)
 
-`setup.ps1` is the end-user setup script. It installs Python Manager from the file shipped in `installers`, asks Python Manager for Python 3.12, creates `.venv`, installs the listed dependencies, runs the bundled ViGEmBus driver installer with Windows’ normal UAC prompt, and creates `Desktop\TouchKeys.lnk` pointing to `TouchKeys.exe`. Re-running it is supported; an existing environment is reused and the shortcut is refreshed.
+<br/>
 
-`build.ps1` is for the project maintainer, not normal users. It installs the build-only PyInstaller package into `.venv`, compiles the small root launcher using [`main.spec`](main.spec), writes `TouchKeys.exe` beside this README, and removes generated `build` and `dist` folders after the build.
+### 🖥️ PC Monitor & Dashboard
+*QR code scanner for instant connection, active client manager, and live latency diagnostics.*
 
-## Requirements
+![PC Monitor Dashboard](images/dashboard.png)
 
-- Windows
-- A phone and PC that can reach each other on the same Wi-Fi/LAN
-- A modern browser on the phone
-- Administrator approval for the one-time ViGEmBus driver installation
+<br/>
 
-End users do not need to install Python manually when following `setup.ps1`; the included Python Manager package performs that part. Python remains present in the project’s `.venv` because the current root executable is a launcher rather than a self-contained Python application.
+### ✏️ Drag-and-Drop Layout Editor
+*Add, move, resize, duplicate, keybind, and re-theme controls right from your browser.*
 
-## Build the launcher
+![Layout Editor](images/editor.png)
 
-Run setup first, then use an elevated or normal PowerShell window in the project folder:
+<br/>
 
+### 🧪 Live Gamepad Input Tester
+*Real-time browser tester to verify button states and analog stick precision.*
+
+![Gamepad Input Tester](images/tester.png)
+
+</div>
+
+---
+
+## ✨ Features
+
+- **🎮 Virtual Xbox 360 Controller**: Full XInput emulation (A/B/X/Y, D-Pad, dual analog joysticks, bumpers, triggers, Start, Back, and Guide).
+- **👥 Multi-Player Co-Op**: Connect up to **4 simultaneous phone controllers** (Slots `0`–`3`) for multiplayer local gaming.
+- **🖱️ Touchpad & Mouse Mode**: High-precision cursor navigation, scrolling, left/right clicks, and custom touchpad joystick modes.
+- **⌨️ Keyboard & Hotkey Bindings**: Map touchscreen controls directly to PC keyboard keys or custom combos.
+- **🎨 Visual Layout Editor**: Full drag-and-drop layout customization (add, move, resize, rename, keybind, undo/redo, import, and export).
+- **⚡ Ultra-Low Latency**: Built on FastAPI and WebSockets with automated heartbeats, minimal latency overhead, and auto-reconnect logic.
+- **📱 Zero App Installation**: Runs directly inside Chrome, Safari, Firefox, or Edge on iOS, Android, or tablet devices.
+- **🖥️ Desktop Control Center**: Dedicated `/monitor` view with QR code generator, client status roster, and integrated gamepad tester.
+
+---
+
+## 📥 Installation for Regular Users
+
+Getting TouchKeys running on your Windows PC takes under 2 minutes:
+
+> [!NOTE]
+> End users do **not** need to manually install Python prior to setup! The included setup script automatically installs Python 3.12 via Python Manager into a self-contained local environment (`.venv`).
+
+### Step-by-Step Setup
+
+1. **Download & Extract**: Ensure your project folder contains `TouchKeys.exe`, `setup.ps1`, and the subdirectories (`backend`, `controller`, `static`, `templates`, `installers`).
+2. **Run Setup**:
+   - Right-click [`setup.ps1`](setup.ps1) and select **Run with PowerShell**.
+   - *If PowerShell blocks execution*, open PowerShell in the project folder and run:
+     ```powershell
+     Set-ExecutionPolicy -Scope Process Bypass
+     .\setup.ps1
+     ```
+3. **Automated Environment Provisioning**:
+   The setup installer will automatically:
+   - Install Python Manager from `installers\python-manager-26.3.msix`.
+   - Provision Python 3.12 into a project-isolated `.venv`.
+   - Install required dependencies from [`requirements.txt`](requirements.txt).
+   - Launch the included **ViGEmBus driver installer** from `installers\`.
+   - Place a **TouchKeys** shortcut on your Windows Desktop.
+4. **Complete Driver Install**:
+   Accept the Windows Administrator (UAC) prompt to complete the **ViGEmBus** driver installation. *(ViGEmBus allows Windows to present virtual Xbox 360 controllers to your games).*
+5. **Launch & Connect**:
+   - Double-click the **TouchKeys** desktop shortcut or root `TouchKeys.exe`.
+   - Open the displayed LAN URL (e.g., `http://192.168.1.20:8000`) or scan the QR code on the PC monitor screen using your phone camera.
+
+---
+
+## 🛠️ System Requirements
+
+- **PC Operating System**: Windows 10 or Windows 11 (64-bit)
+- **Network**: PC and mobile device connected to the same Wi-Fi / Local Area Network (LAN)
+- **Mobile Device**: Modern mobile browser (Safari, Chrome, Firefox, Edge, or Brave)
+- **Permissions**: Administrator rights for the one-time ViGEmBus driver installation
+
+---
+
+## 🧱 Architecture & Repository Structure
+
+TouchKeys operates as a standalone launcher coupled with a FastAPI backend server:
+
+```text
+TouchKeys/
+├── TouchKeys.exe                  # Root desktop launcher executable
+├── launcher.py                    # Entry source used to generate TouchKeys.exe
+├── main.spec                     # PyInstaller specification file
+├── build.ps1                     # Maintainer launcher build script
+├── setup.ps1                     # End-user setup and desktop shortcut generator
+├── backend/
+│   ├── gui.py                    # Starts Uvicorn server & opens monitor window
+│   ├── main.py                   # Server application wrapper
+│   └── server.py                 # FastAPI routes & WebSocket event handler
+├── controller/                   # Virtual XInput handler, layout manager, storage
+├── static/                       # Frontend JS ES modules, styles, and assets
+│   ├── favicon.png               # Application icon asset
+│   ├── css/                      # Controller & monitor stylesheets
+│   └── js/                       # WebSockets, layout engine, & input handlers
+├── templates/                    # Mobile controller & PC monitor HTML templates
+├── installers/                   # Bundled Python Manager & ViGEmBus MSI installers
+├── images/                       # Documentation & README showcase screenshots
+├── layout.json                   # Active controller layout configuration
+├── index.html                    # Standalone web informational page
+├── ARCHITECTURE.md               # Technical architecture documentation
+├── CONTRIBUTING.md               # Contributor & pull request guidelines
+├── SECURITY.md                   # Security disclosures & network recommendations
+├── CODE_OF_CONDUCT.md            # Community code of conduct
+├── LICENSE                       # MIT Open Source License
+└── requirements.txt              # Python package dependencies
+```
+
+### ⚙️ Launcher vs. Server Execution
+
+`TouchKeys.exe` is a lightweight launcher executable. It locates the local `.venv` environment (or fallback Python installation) and launches `backend\gui.py`. This design keeps all Python source files and frontend assets fully transparent and modifiable without needing complete re-compilation.
+
+To re-build the root launcher after modifying `launcher.py`:
 ```powershell
 Set-ExecutionPolicy -Scope Process Bypass
 .\build.ps1
 ```
 
-The result is:
+---
 
-```text
-TouchKeys/
-├── TouchKeys.exe          # root launcher with the TouchKeys icon
-├── backend/
-├── controller/
-├── installers/
-├── static/
-├── templates/
-└── README.md
-```
+## 📂 Configuration & Data Files
 
-The launcher still needs `.venv` and the rest of the project beside it. This is different from a fully bundled PyInstaller application.
+TouchKeys maintains configuration files directly inside the project root:
 
-## Data files
+| File | Description | Source Control |
+| ---- | ----------- | -------------- |
+| [`layout.json`](layout.json) | Active layout configuration, button placements, and keybinds | Tracked in Git |
+| `settings.json` | Application UI preferences and server settings | Ignored (`.gitignore`) |
+| `layout.json.bak` | Automated backup generated prior to layout modification | Ignored (`.gitignore`) |
+| `.server.lock` | Process lock file enforcing single server instance execution | Ignored (`.gitignore`) |
 
-Runtime files are read from the project directory:
+---
 
-- [`layout.json`](layout.json) — active layout, pages, and controls
-- `settings.json` — application/UI settings; ignored by Git
-- `layout.json.bak` — backup made before a layout write; ignored by Git
-- `.server.lock` — temporary single-instance marker; ignored by Git
+## ❓ Troubleshooting
 
-## Troubleshooting
+<details>
+<summary><b>1. Desktop shortcut shows "Python was not found"</b></summary>
+Run <code>.\setup.ps1</code> again in PowerShell and verify that <code>.venv\Scripts\python.exe</code> exists.
+</details>
 
-- The shortcut does nothing or shows “Python was not found”: run `setup.ps1` again and confirm that `.venv\Scripts\python.exe` exists.
-- Phone cannot connect: confirm both devices are on the same network, use the displayed LAN IP, and allow TouchKeys through Windows Firewall on a private network.
-- No virtual controller appears: complete the ViGEmBus installer, then check `joy.cpl`. A virtual controller is created when a controller client sends its first input.
-- Input does not reach the game: check the layout keybind and whether the game accepts XInput, keyboard, or mouse input. Compatibility with every game or anti-cheat system is not guaranteed.
-- QR image is blank: it is requested from `api.qrserver.com`; use the displayed URL manually if that service is unavailable.
-- A stale controller remains after a crash: normal shutdown releases and resets devices, but crash recovery is not automatic.
+<details>
+<summary><b>2. Mobile phone cannot connect to the server page</b></summary>
+Ensure both PC and phone are connected to the exact same Wi-Fi network (not guest Wi-Fi). Verify that Windows Firewall permits traffic on private networks for Python / TouchKeys on port <code>8000</code>.
+</details>
 
-## Repository map
+<details>
+<summary><b>3. Game does not recognize the virtual controller</b></summary>
+Make sure the <b>ViGEmBus</b> driver was installed successfully. Press <code>Win + R</code>, type <code>joy.cpl</code>, and press Enter. A virtual Xbox 360 controller should appear as soon as your mobile phone sends its first input event.
+</details>
 
-```text
-TouchKeys/
-├── TouchKeys.exe                  # Root launcher executable
-├── launcher.py                    # Source used to build TouchKeys.exe
-├── main.spec                     # PyInstaller spec for the launcher
-├── build.ps1                     # Maintainer build script
-├── setup.ps1                     # End-user setup and desktop shortcut
-├── backend/
-│   ├── gui.py                    # Starts Uvicorn and opens the monitor
-│   ├── main.py                   # Direct/PyInstaller app entry wrapper
-│   └── server.py                 # FastAPI routes and WebSocket endpoint
-├── controller/                   # Input, layout, config, storage, networking
-├── templates/                    # Mobile and monitor HTML
-├── static/                       # Mobile ES modules and CSS
-├── installers/                   # Python Manager and ViGEmBus installers
-├── images/                       # Documentation images
-├── layout.json                   # Checked-in example/user layout
-├── index.html                    # Standalone informational page
-└── requirements.txt              # Runtime Python dependencies
-```
+<details>
+<summary><b>4. Controls fail in certain anti-cheat protected games</b></summary>
+Some PC games with aggressive anti-cheat engines (e.g., Vanguard, Easy Anti-Cheat) restrict synthetic mouse or keyboard inputs injected via <code>pyautogui</code>. Virtual Xbox gamepad controls via ViGEmBus are widely supported.
+</details>
 
-### Why Gyro and other sensor data integration was dropped?
+<details>
+<summary><b>5. QR code image does not render on PC monitor</b></summary>
+The QR code is generated via <code>api.qrserver.com</code>. If your PC lacks active internet access, simply type the displayed local IP address (e.g., <code>http://192.168.1.X:8000</code>) directly into your phone browser.
+</details>
 
-The current architecture hosts an 'http://' webpage. Those pages are blocked to accessing sensor data in modern browsers like Safari and Chrome. I had also recently experimented with the gyro pipeline implementations; adding fake crets to enforce https, but none didnt work out.
+---
 
-# Roadmap
+## 🌐 Gyroscope & Sensor Note
 
-- [x] Core Pipeline
-- [x] Xbox 360/XInput emulation
-- [x] Multi-touch, analog controls, And other Control Types.
-- [x] Custom layouts, pages, and undo/redo
-- [x] Desktop monitor and controller tester
-- [x] Up to four simultaneous virtual controllers
-- [x] Keyboard and mouse input
-- [ ] Live screen Streaming
-- [ ] Standalone Production-Level executable distribution
+> [!NOTE]
+> **Why Gyro and Motion Sensor Integration was Dropped**: Modern mobile web browsers (Safari, Chrome) restrict access to hardware sensors (gyroscope, accelerometer) over insecure HTTP (`http://`). While HTTPS experiments with self-signed SSL certificates were evaluated, browser security policies created friction for local LAN usage. Motion controls remain disabled in the current HTTP pipeline for maximum compatibility.
 
-## Contributing
+---
 
-Bug reports, layout ideas, documentation improvements, and pull requests are welcome. Please test changes by connecting a phone and checking the result in `joy.cpl`.
+## 🗺️ Roadmap
 
-## License
+- [x] Core low-latency WebSocket input engine
+- [x] Xbox 360 / XInput emulation via ViGEmBus
+- [x] Multi-touch analog sticks, D-Pad, triggers, and action controls
+- [x] Drag-and-drop browser Layout Editor with Undo/Redo
+- [x] PC Monitor control center with QR connection & latency diagnostics
+- [x] Support for up to 4 simultaneous virtual controllers
+- [x] Mouse emulation & PC keyboard binding modes
+- [ ] Low-latency WebRTC live PC screen streaming to mobile device
+- [ ] Standalone single-file production executable distribution
 
-TouchKeys is released under the [MIT License](LICENSE).
+---
+
+## 🤝 Community & Standards
+
+We welcome community contributions! Please review our community guidelines:
+
+- **[Code of Conduct](CODE_OF_CONDUCT.md)** — Standards for an open and welcoming community.
+- **[Contributing Guide](CONTRIBUTING.md)** — Instructions for submitting bug reports, features, and PRs.
+- **[Security Policy](SECURITY.md)** — Network security model and private vulnerability reporting.
+- **[Architecture Document](ARCHITECTURE.md)** — In-depth technical specs and data flow design.
+
+---
+
+## 📄 License
+
+TouchKeys is open-source software licensed under the **[MIT License](LICENSE)**.
+
+---
+
+<div align="center">
+  Crafted with ❤️ for gamers and tinkers. Happy gaming! 🕹️
+</div>

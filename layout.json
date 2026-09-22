@@ -1,6 +1,6 @@
 {
   "version": "2.0",
-  "activePageIndex": 2,
+  "activePageIndex": 3,
   "pages": [
     {
       "id": "p1",
@@ -646,8 +646,8 @@
           "name": "VIew",
           "type": "touchpad",
           "keybind": "gamepad_rs",
-          "x": 0.5029207959626597,
-          "y": 0.12967793339661746,
+          "x": 0.45810865194943096,
+          "y": 0.10928895397124538,
           "width": 372,
           "height": 202,
           "opacity": 1,
@@ -766,8 +766,8 @@
           "name": "RT",
           "type": "trigger",
           "keybind": "gamepad_rt",
-          "x": 0.7667350887744162,
-          "y": 0.07538373658002423,
+          "x": 0.7796808192671267,
+          "y": 0.0735301929958995,
           "width": 201,
           "height": 111,
           "opacity": 0.8,

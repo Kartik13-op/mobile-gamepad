@@ -226,7 +226,7 @@ input, textarea, select {
   -webkit-user-select: none;
   touch-action: none;
   border: 1px solid rgba(255,255,255,0.12);
-  background: linear-gradient(180deg, #2a2a2a, var(--bg-card));
+  background: var(--bg-card);
   color: var(--text-primary);
   z-index: 1;
   overflow: hidden;
@@ -402,7 +402,7 @@ input, textarea, select {
   -webkit-user-select: none;
   touch-action: none;
   border: 1px solid rgba(255,255,255,0.12);
-  background: linear-gradient(180deg, #2a2a2a, var(--bg-card));
+  background: var(--bg-card);
   color: var(--text-primary);
   z-index: 1;
   font-weight: 700;
@@ -427,12 +427,7 @@ input, textarea, select {
   -webkit-user-select: none;
   touch-action: none;
   border: 1px solid rgba(255,255,255,0.12);
-  background:
-    linear-gradient(45deg, rgba(255,255,255,0.02) 25%, transparent 25%, transparent 75%, rgba(255,255,255,0.02) 75%),
-    linear-gradient(45deg, rgba(255,255,255,0.02) 25%, transparent 25%, transparent 75%, rgba(255,255,255,0.02) 75%);
-  background-size: 12px 12px;
-  background-position: 0 0, 6px 6px;
-  background-color: var(--bg-card);
+  background: var(--bg-card);
   color: var(--text-dim);
   z-index: 1;
   font-size: 9px;

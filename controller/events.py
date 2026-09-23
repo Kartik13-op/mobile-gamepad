@@ -289,7 +289,15 @@ class EventRouter:
 
     async def _on_add_page(self, client_id: str, msg: Dict[str, Any]) -> None:
         name = msg.get("name", "New Page")
-        self.layout.add_page(name)
+        page = self.layout.add_page(name)
+        # Open the page that was just created.  This also makes the change
+        # visible immediately in native pywebview windows, where a browser
+        # refresh is not a practical fallback.
+        pages = self.layout.get_layout().get("pages", [])
+        for index, candidate in enumerate(pages):
+            if candidate.get("id") == page.get("id"):
+                self.layout.set_active_page(index)
+                break
         if self.config.config.autoSave:
             self.layout.save()
         await self.connections.broadcast(

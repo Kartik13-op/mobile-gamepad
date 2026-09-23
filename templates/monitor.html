@@ -118,10 +118,11 @@ html, body { height:100vh; overflow:hidden; background:var(--bg-base); color:var
 #editor-props .ph { font-size:10px; font-weight:700; letter-spacing:1px; color:var(--text-dim); margin-bottom:10px; }
 #editor-props input[type="range"] { width:100%; -webkit-appearance:none; appearance:none; height:4px; background:var(--border); border-radius:2px; outline:none; }
 #editor-props input[type="range"]::-webkit-slider-thumb { -webkit-appearance:none; width:12px; height:12px; background:var(--accent); border-radius:50%; cursor:pointer; }
+#editor-props input[type="range"]::-moz-range-thumb { width:12px; height:12px; background:var(--accent); border:0; border-radius:50%; cursor:pointer; }
 #editor-props .range-row { display:flex; align-items:center; gap:10px; margin-bottom:8px; }
 #editor-props .range-row label { font-size:10px; color:var(--text-dim); width:24px; }
 #editor-props .range-row input[type="range"] { flex:1; }
-#editor-props .range-row .rv { font-size:10px; font-weight:700; width:36px; text-align:right; }
+#editor-props .range-row .rv { width:58px; padding:4px 5px; font-size:10px; font-weight:700; text-align:right; }
 
 /* ---------- Controller Tester ---------- */
 .test-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(340px, 1fr)); gap:20px; }
@@ -184,6 +185,26 @@ html, body { height:100vh; overflow:hidden; background:var(--bg-base); color:var
 ::-webkit-scrollbar-thumb { background:var(--border); }
 ::-webkit-scrollbar-thumb:hover { background:var(--text-muted); }
 .hidden { display:none !important; }
+
+@media (max-width: 900px) {
+  #sidebar { width:160px; }
+  #main { padding:24px; }
+  #editor-layout { height:calc(100vh - 245px); }
+  #editor-props { width:230px; }
+}
+@media (max-width: 680px) {
+  html, body { overflow:auto; }
+  #app > div:first-child { display:block !important; }
+  #sidebar { width:100%; border-right:0; border-bottom:1px solid var(--border); }
+  .sb-brand { padding:16px 20px; }
+  .sb-nav { flex-direction:row; overflow-x:auto; padding:8px; }
+  .sb-tab { white-space:nowrap; }
+  .sb-conn { display:none; }
+  #main { padding:16px; overflow:visible; }
+  #editor-layout { display:flex; flex-direction:column; height:auto; min-height:0; }
+  #editor-canvas-wrap { height:52vh; min-height:320px; }
+  #editor-props { width:100%; max-height:none; }
+}
 
 
 </style>
@@ -762,7 +783,7 @@ html, body { height:100vh; overflow:hidden; background:var(--bg-base); color:var
       return `<div class="range-row">
         <label>${f.label}</label>
         <input type="range" min="${f.min}" max="${f.max}" step="${f.step}" value="${ctrl[f.key] ?? ''}" data-key="${f.key}">
-        <span class="rv">${f.key === 'x' || f.key === 'y' ? (ctrl[f.key]*100).toFixed(0)+'%' : ctrl[f.key]}</span>
+        <input class="form-input rv" type="number" min="${f.min}" max="${f.max}" step="${f.step}" value="${ctrl[f.key] ?? ''}" data-key="${f.key}" aria-label="${f.label} value">
       </div>`;
     }).join('');
 
@@ -782,19 +803,32 @@ html, body { height:100vh; overflow:hidden; background:var(--bg-base); color:var
       });
     }
 
-    propsContent.querySelectorAll('input[type="range"]').forEach(inp => {
+    propsContent.querySelectorAll('.range-row input[data-key]').forEach(inp => {
       inp.addEventListener('input', () => {
         const key = inp.dataset.key;
         const val = parseFloat(inp.value);
+        if (!Number.isFinite(val)) return;
         const page = getCurrentPage();
         if (!page || !selectedCtrlId) return;
         const ctrl = page.buttons.find(b => b.id === selectedCtrlId);
         if (ctrl) {
-          ctrl[key] = val;
-          inp.nextElementSibling.textContent = key === 'x' || key === 'y' ? (val*100).toFixed(0)+'%' : val;
+          const field = propsContent.querySelector(`.range-row input[data-key="${key}"]`);
+          const clamped = Math.max(parseFloat(field.min), Math.min(parseFloat(field.max), val));
+          ctrl[key] = clamped;
+          propsContent.querySelectorAll(`.range-row input[data-key="${key}"]`).forEach(input => {
+            if (input !== document.activeElement) input.value = clamped;
+          });
         }
-        renderEditor();
-        debounceUpdate(selectedCtrlId, { [key]: val });
+        // Keep the property panel alive while dragging; rebuilding it here
+        // loses the native range input's pointer interaction.
+        const el = canvasEl.querySelector(`.ctrl-el[data-id="${selectedCtrlId}"]`);
+        if (el && (key === 'x' || key === 'y' || key === 'width' || key === 'height')) {
+          const pageRect = canvasEl.getBoundingClientRect();
+          const value = ctrl[key];
+          el.style[key === 'x' ? 'left' : key === 'y' ? 'top' : key === 'width' ? 'width' : 'height'] =
+            (key === 'x' || key === 'y') ? `${value * (key === 'x' ? pageRect.width : pageRect.height)}px` : `${value}px`;
+        }
+        debounceUpdate(selectedCtrlId, { [key]: ctrl[key] });
       });
     });
 
@@ -842,6 +876,9 @@ html, body { height:100vh; overflow:hidden; background:var(--bg-base); color:var
       `;
       propsContent.appendChild(trigSection);
       trigSection.querySelector('#prop-trigger-mode')?.addEventListener('change', (e) => {
+        const page = getCurrentPage();
+        const current = page?.buttons.find(b => b.id === selectedCtrlId);
+        if (current) current.triggerMode = e.target.value;
         debounceUpdate(selectedCtrlId, { triggerMode: e.target.value });
       });
     }

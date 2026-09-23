@@ -98,6 +98,7 @@ export class GamepadController {
     let hasTracked = false;
     for (const touch of e.changedTouches) {
       if (this._activeSticks.has(touch.identifier) ||
+          this._activeSliders.has(touch.identifier) ||
           this._activeTriggers.has(touch.identifier) ||
           this._touchpadStates.has(touch.identifier) ||
           this._activeTouches.has(touch.identifier)) {
@@ -138,6 +139,7 @@ export class GamepadController {
     let hasTracked = false;
     for (const touch of e.changedTouches) {
       if (this._activeSticks.has(touch.identifier) ||
+          this._activeSliders.has(touch.identifier) ||
           this._activeTriggers.has(touch.identifier) ||
           this._touchpadStates.has(touch.identifier) ||
           this._activeTouches.has(touch.identifier)) {
@@ -419,11 +421,11 @@ export class GamepadController {
     const mode = el.dataset.triggerMode || 'analog';
 
     el.classList.add('pressed');
-    ws.send({ type: 'keydown', key: keybind });
 
     if (mode === 'digital') {
-      // Digital tap — instant 1.0, no drag tracking
-      ws.send({ type: 'analog', key: keybind, x: 1.0, y: 0 });
+      // Digital mode is a normal press/release. Do not also send an analog
+      // value: that would make the two trigger mechanisms run together.
+      ws.send({ type: 'keydown', key: keybind });
       this._activeTriggers.set(touchId, {
         el, keybind, mode, startX: cx, startY: cy,
         lastSentValue: 1.0, lastSendTime: 0,
@@ -437,6 +439,8 @@ export class GamepadController {
       lastSentValue: 0, lastSendTime: 0,
     });
 
+    // Analog mode owns the trigger value for the duration of the gesture;
+    // sending keydown here would force it to full scale first.
     this._sendTriggerValue(touchId, 0);
   }
 
@@ -476,8 +480,9 @@ export class GamepadController {
     const trig = this._activeTriggers.get(touchId);
     if (!trig) return;
 
-    ws.send({ type: 'keyup', key: trig.keybind });
-    if (trig.lastSentValue !== 0) {
+    if (trig.mode === 'digital') {
+      ws.send({ type: 'keyup', key: trig.keybind });
+    } else if (trig.lastSentValue !== 0) {
       ws.send({ type: 'analog', key: trig.keybind, x: 0, y: 0 });
     }
 

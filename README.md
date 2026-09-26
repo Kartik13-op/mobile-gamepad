@@ -15,6 +15,12 @@
 
 </div>
 
+## 🌐 Project Website
+
+Visit the **[TouchKeys landing page](https://kartik13-op.github.io/mobile-gamepad/)** for the complete product overview, local input pipeline, screenshots, downloads, setup instructions, architecture notes, troubleshooting, and roadmap.
+
+The website is built from the repository's [`docs/`](docs/) folder and is intended to be the visual front door for the project. This README remains the detailed, source-linked reference for contributors and users who prefer a text-first format.
+
 ---
 
 ## 📌 Overview

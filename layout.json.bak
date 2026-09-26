@@ -1,6 +1,6 @@
 {
   "version": "2.0",
-  "activePageIndex": 0,
+  "activePageIndex": 3,
   "pages": [
     {
       "id": "p1",
@@ -96,7 +96,7 @@
           "type": "button",
           "keybind": "gamepad_home",
           "x": 0.4392491059066029,
-          "y": 0.05149699664437073,
+          "y": 0.05335054022849546,
           "width": 54,
           "height": 50,
           "opacity": 0.5,
@@ -668,7 +668,7 @@
           "name": "A",
           "type": "button",
           "keybind": "gamepad_a",
-          "x": 0.8006314881154721,
+          "x": 0.7938641375391479,
           "y": 0.43628597415304105,
           "width": 207,
           "height": 164,
@@ -760,7 +760,8 @@
           "fontSize": 11,
           "layer": 1,
           "visible": true,
-          "id": "dc5d73502621"
+          "id": "dc5d73502621",
+          "triggerMode": "digital"
         },
         {
           "name": "RT",

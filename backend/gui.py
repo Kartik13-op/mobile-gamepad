@@ -16,7 +16,7 @@ import sys
 import threading
 import time
 from pathlib import Path
-
+   
 # When this file is started as ``python backend/gui.py``, Python puts the
 # backend directory on sys.path rather than the project root. Add the root so
 # the sibling ``controller`` package and ``backend`` package are importable.

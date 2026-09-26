@@ -19,11 +19,42 @@
 
 ## 📌 Overview
 
-**TouchKeys** turns any smartphone or tablet into a fully customisable wireless gamepad for Windows PCs. 
+**TouchKeys** turns any smartphone or tablet into a customisable wireless controller for a Windows PC. The phone does not need a special app: it opens a normal webpage hosted by the PC, and that webpage becomes the controller.
 
-By running a lightweight Python FastAPI server on your PC, TouchKeys serves an ultra-responsive web-based touchscreen interface over your local Wi-Fi network. Touch inputs sent over real-time WebSockets are mapped directly to virtual **Xbox 360 controllers** (powered by ViGEmBus) or mouse and keyboard events on your PC.
+### 🔄 How the local Wi-Fi pipeline works
 
-Whether you're missing an extra controller for couch co-op, need custom touch controls for PC gaming, or want a wireless touchpad for media control, TouchKeys provides a plug-and-play solution without requiring third-party mobile apps.
+TouchKeys is designed to keep the entire control path inside your home or office network:
+
+```text
+Windows PC
+  ├─ TouchKeys starts a local FastAPI web server on port 8000
+  ├─ `/monitor` shows the desktop dashboard and connection QR code
+  └─ `/` serves the mobile controller webpage
+          ▲                         │
+          │ HTTP loads the page     │ WebSocket sends live input
+          │                         ▼
+Smartphone or tablet on the same Wi-Fi network
+          │
+          └─ Touches become button, stick, trigger, mouse, or keyboard events
+                                      │
+                                      ▼
+Windows input layer
+  ├─ ViGEmBus creates a virtual Xbox 360 controller for compatible games
+  └─ pyautogui sends configured mouse and keyboard actions
+```
+
+Here is what happens after launch:
+
+1. TouchKeys starts a small web server on the PC and binds it to the local network. It displays the PC's local address, such as `http://192.168.1.20:8000`, and provides the same address as a QR code.
+2. The phone and PC connect to the same Wi-Fi network. Scanning the QR code, or entering the address manually, loads the controller webpage from the PC. No cloud account, internet connection, or mobile installation is required for the controller itself.
+3. The webpage renders the current layout and opens a persistent WebSocket connection back to the PC. This keeps the connection open for fast, two-way communication instead of submitting a new web request for every button press.
+4. Every touch is translated in the browser into a small event: a button press/release, an analog-stick position, a trigger value, a mouse gesture, or a keyboard binding. The server identifies the connected device and assigns it one of controller slots `0`–`3`.
+5. The PC processes the event locally. Gamepad events are sent through `vgamepad` to the ViGEmBus driver, which exposes a virtual Xbox 360 controller to Windows and games. Mouse and keyboard events are sent to Windows through the configured input handler.
+6. The desktop monitor stays connected as another WebSocket client. It receives connection status, layout changes, input activity, and latency information, so the PC can manage connected phones and edit the shared control layout while the controller is in use.
+
+The result is a direct **phone → local Wi-Fi → PC → Windows input** pipeline. Touch data is not routed through a remote server, and the project does not require a database, login system, companion mobile app, or separate backend service. The only Windows-level prerequisite is the one-time ViGEmBus driver installation for virtual Xbox controller output.
+
+TouchKeys is useful for couch co-op, custom controls, accessibility setups, media control, and situations where a physical gamepad is not available.
 
 ---
 

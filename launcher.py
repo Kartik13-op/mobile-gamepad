@@ -13,7 +13,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-
+   
 def _show_error(message: str) -> None:
     """Show an error even when this launcher was built without a console."""
     try:

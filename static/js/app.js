@@ -3,6 +3,7 @@ import { ui } from './ui.js';
 import { ws } from './websocket.js';
 import { layout } from './layout.js';
 import { gamepadController } from './controller.js';
+import { screenStream } from './streaming.js';
 
 class App {
   constructor() {
@@ -16,6 +17,7 @@ class App {
     ui.init();
     layout.init();
     gamepadController.init();
+    screenStream.init();
 
     document.getElementById('screen-gamepad')?.classList.remove('hidden');
 

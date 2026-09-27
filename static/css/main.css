@@ -1,20 +1,20 @@
 ﻿/* ================================================================
-   TouchKeys — Bold Black & White Design System
+   TouchKeys — Frosted Blue Controller Design System
    ================================================================ */
 
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@500;700;900&display=swap');
 
 /* --- Design Tokens --- */
 :root {
-  --bg-base:       #000000;
-  --bg-surface:    #0a0a0a;
-  --bg-elevated:   #111111;
-  --bg-card:       #1a1a1a;
-  --bg-card-hover: #222222;
+  --bg-base:       #05070b;
+  --bg-surface:    #0b0f16;
+  --bg-elevated:   #172235;
+  --bg-card:       #111722;
+  --bg-card-hover: #1a2a42;
   --text-primary:  #ffffff;
-  --text-secondary:#888888;
-  --text-muted:    #444444;
-  --border:        #222222;
+  --text-secondary:#a6b0c0;
+  --text-muted:    #5f6d82;
+  --border:        #2a3951;
   --accent:        #ffffff;
   --font:          'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
   --grid-size:     20px;
@@ -26,7 +26,7 @@
   padding: 0;
   box-sizing: border-box;
   -webkit-tap-highlight-color: transparent;
-  border-radius: 0 !important;
+  border-radius: inherit;
 }
 
 html, body {
@@ -68,8 +68,9 @@ input, textarea, select {
   align-items: center;
   gap: 4px;
   padding: 6px 10px;
-  background: var(--bg-surface);
-  border-bottom: 2px solid var(--border);
+  background: rgba(11,15,22,.78);
+  border-bottom: 1px solid var(--border);
+  backdrop-filter: blur(18px);
   z-index: 100;
   flex-shrink: 0;
   min-height: 48px;
@@ -99,6 +100,8 @@ input, textarea, select {
   background: var(--bg-card);
   color: var(--text-primary);
   letter-spacing: 1px;
+  border-radius: 999px;
+  backdrop-filter: blur(12px);
 }
 
 .connection-badge.disconnected {
@@ -106,8 +109,9 @@ input, textarea, select {
 }
 
 .connection-badge:not(.disconnected) {
-  color: var(--bg-base);
-  background: var(--text-primary);
+  color: var(--text-primary);
+  background: rgba(255,255,255,.18);
+  border-color: var(--accent);
 }
 
 .device-info {
@@ -175,7 +179,9 @@ input, textarea, select {
   line-height: 1;
   background: rgba(255,255,255,0.08);
   color: var(--text-secondary);
-  border: none;
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  backdrop-filter: blur(14px);
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -206,12 +212,19 @@ input, textarea, select {
   background: var(--bg-base);
 }
 
+.screen-stream { position:absolute; inset:0; display:block; width:100%; height:100%; object-fit:contain; background:#000; opacity:0; visibility:hidden; pointer-events:none; transition:opacity .25s ease; z-index:1; }
+.screen-stream.visible { opacity:.78; }
+.screen-stream.visible { visibility:visible; }
+.stream-overlay { position:absolute; top:12px; left:50%; transform:translateX(-50%); z-index:4; padding:6px 10px; border:1px solid rgba(255,255,255,.4); border-radius:999px; color:var(--text-primary); background:rgba(5,7,11,.42); backdrop-filter:blur(14px); font-size:9px; font-weight:700; letter-spacing:1px; pointer-events:none; }
+.stream-live-dot { display:inline-block; width:6px; height:6px; margin-right:5px; border-radius:50%; background:var(--accent); box-shadow:0 0 8px var(--accent); }
+
 .workspace {
   position: relative;
   width: 100%;
   height: 100%;
   touch-action: none;
-  background: var(--bg-base);
+  background: transparent !important;
+  z-index: 2;
 }
 
 /* --- Controls: Buttons --- */
@@ -225,8 +238,10 @@ input, textarea, select {
   user-select: none;
   -webkit-user-select: none;
   touch-action: none;
-  border: 1px solid rgba(255,255,255,0.12);
-  background: var(--bg-card);
+  border: 1px solid rgba(166,176,192,.25);
+  border-radius: 14px;
+  background: rgba(17,23,34,.62);
+  backdrop-filter: blur(16px);
   color: var(--text-primary);
   z-index: 1;
   overflow: hidden;
@@ -251,8 +266,10 @@ input, textarea, select {
 }
 
 .ctrl-btn.pressed {
-  background: var(--text-primary) !important;
-  color: var(--bg-base) !important;
+  background: rgba(255,255,255,.9) !important;
+  color: #06101f !important;
+  border-color: var(--accent) !important;
+  box-shadow: 0 0 20px rgba(255,255,255,.20);
 }
 
 .ctrl-btn.pressed .btn-keybind {
@@ -271,19 +288,25 @@ input, textarea, select {
   -webkit-user-select: none;
   touch-action: none;
   z-index: 1;
+  border-radius: 50%;
+  opacity: .58;
+  transition: opacity .15s ease;
 }
+.ctrl-analog:has(.analog-ring.visible) { opacity: 1; }
 
 .analog-outer {
   width: 100%;
   height: 100%;
   background: transparent;
   position: relative;
-  border: 2px dashed rgba(255,255,255,0.15);
+  border: 2px solid rgba(166,176,192,.24);
+  border-radius: 50%;
+  backdrop-filter: blur(12px);
 }
 
 .analog-ring {
   position: absolute;
-  border: 2px solid var(--text-primary);
+  border: 2px solid var(--accent);
   border-radius: 50%;
   background: transparent;
   pointer-events: none;
@@ -298,7 +321,8 @@ input, textarea, select {
   position: absolute;
   width: 20%;
   height: 20%;
-  background: var(--text-primary);
+  background: var(--accent);
+  box-shadow: 0 0 16px rgba(255,255,255,.5);
   border-radius: 50%;
   pointer-events: none;
   transform: translate(-50%, -50%);
@@ -401,8 +425,10 @@ input, textarea, select {
   user-select: none;
   -webkit-user-select: none;
   touch-action: none;
-  border: 1px solid rgba(255,255,255,0.12);
-  background: var(--bg-card);
+  border: 1px solid rgba(166,176,192,.25);
+  border-radius: 14px;
+  background: rgba(17,23,34,.62);
+  backdrop-filter: blur(16px);
   color: var(--text-primary);
   z-index: 1;
   font-weight: 700;
@@ -411,8 +437,9 @@ input, textarea, select {
 }
 
 .ctrl-trigger.pressed {
-  background: var(--text-primary) !important;
-  color: var(--bg-base) !important;
+  background: rgba(255,255,255,.9) !important;
+  color: #06101f !important;
+  border-color: var(--accent) !important;
 }
 
 .ctrl-trigger .btn-keybind {
@@ -426,8 +453,10 @@ input, textarea, select {
   user-select: none;
   -webkit-user-select: none;
   touch-action: none;
-  border: 1px solid rgba(255,255,255,0.12);
-  background: var(--bg-card);
+  border: 1px solid rgba(166,176,192,.25);
+  border-radius: 16px;
+  background: rgba(17,23,34,.58);
+  backdrop-filter: blur(16px);
   color: var(--text-dim);
   z-index: 1;
   font-size: 9px;
@@ -456,7 +485,8 @@ input, textarea, select {
   margin-bottom: 2px;
 }
 .ctrl-touchpad.active {
-  border-color: var(--text-primary);
+  border-color: var(--accent);
+  background: rgba(255,255,255,.18);
 }
 
 .ctrl-touchpad.mouse-mode {
@@ -480,7 +510,8 @@ input, textarea, select {
   gap: 2px;
   padding: 4px 10px;
   background: var(--bg-surface);
-  border-top: 2px solid var(--border);
+  border-top: 1px solid var(--border);
+  backdrop-filter: blur(18px);
   z-index: 100;
   flex-shrink: 0;
   overflow-x: auto;
@@ -501,8 +532,9 @@ input, textarea, select {
   font-family: var(--font);
   letter-spacing: 1px;
   color: var(--text-secondary);
-  background: transparent;
-  border: none;
+  background: rgba(255,255,255,.04);
+  border: 1px solid transparent;
+  border-radius: 10px;
   cursor: pointer;
   white-space: nowrap;
 }
@@ -513,7 +545,8 @@ input, textarea, select {
 
 .page-tab.active {
   color: var(--text-primary);
-  background: var(--bg-card);
+  background: rgba(255,255,255,.16);
+  border-color: rgba(255,255,255,.38);
 }
 
 /* --- Toast --- */
@@ -538,13 +571,253 @@ input, textarea, select {
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 1px;
-  color: var(--bg-base);
-  background: var(--text-primary);
+  color: var(--text-primary);
+  background: rgba(17,23,34,.88);
+  border: 1px solid var(--accent);
+  border-radius: 999px;
+  backdrop-filter: blur(16px);
   pointer-events: auto;
 }
 
 .toast.leaving {
   opacity: 0;
+}
+
+/* --- Interaction states --- */
+/* Idle controller: crisp white outlines and solid white pressed states. */
+body:not(.streaming-active) .ctrl-btn,
+body:not(.streaming-active) .ctrl-trigger,
+body:not(.streaming-active) .ctrl-touchpad,
+body:not(.streaming-active) .ctrl-slider,
+body:not(.streaming-active) .analog-outer {
+  border-color: #ffffff;
+}
+body:not(.streaming-active) .toolbar,
+body:not(.streaming-active) .page-tabs,
+body:not(.streaming-active) .cog-btn,
+body:not(.streaming-active) .connection-badge,
+body:not(.streaming-active) .device-info,
+body:not(.streaming-active) .page-tab {
+  border-color: #ffffff;
+}
+
+body:not(.streaming-active) .ctrl-btn,
+body:not(.streaming-active) .ctrl-trigger,
+body:not(.streaming-active) .ctrl-touchpad {
+  background: transparent;
+  backdrop-filter: none;
+}
+
+body:not(.streaming-active) .slider-track {
+  background: transparent;
+  border-color: #ffffff;
+}
+
+body:not(.streaming-active) .ctrl-btn.pressed,
+body:not(.streaming-active) .ctrl-trigger.pressed,
+body:not(.streaming-active) .ctrl-touchpad.active {
+  background: #ffffff !important;
+  color: #05070b !important;
+  border-color: #ffffff !important;
+  box-shadow: none;
+}
+
+body:not(.streaming-active) .ctrl-btn.pressed .btn-keybind,
+body:not(.streaming-active) .ctrl-touchpad.active .touchpad-label,
+body:not(.streaming-active) .ctrl-touchpad.active .touchpad-icon {
+  color: #05070b;
+  opacity: .75;
+}
+
+body:not(.streaming-active) .ctrl-analog:has(.analog-ring.visible) .analog-outer {
+  background: #ffffff;
+  border-color: #ffffff;
+}
+body:not(.streaming-active) .ctrl-analog:has(.analog-ring.visible) .analog-ring {
+  border-color: #05070b;
+}
+body:not(.streaming-active) .ctrl-analog:has(.analog-ring.visible) .analog-dot {
+  background: #05070b;
+  box-shadow: none;
+}
+body:not(.streaming-active) .ctrl-slider.active .slider-track {
+  background: #ffffff;
+  border-color: #ffffff;
+}
+body:not(.streaming-active) .ctrl-slider.active .slider-thumb {
+  background: #05070b;
+}
+body:not(.streaming-active) .cog-btn:active,
+body:not(.streaming-active) .page-tab:active {
+  background: #ffffff;
+  color: #05070b;
+}
+
+/* Streaming: controls become borderless and the desktop image gets a deeper glass layer. */
+body.streaming-active .toolbar,
+body.streaming-active .page-tabs,
+body.streaming-active .cog-btn,
+body.streaming-active .ctrl-btn,
+body.streaming-active .ctrl-trigger,
+body.streaming-active .ctrl-touchpad,
+body.streaming-active .analog-outer,
+body.streaming-active .slider-track {
+  backdrop-filter: blur(30px);
+}
+body.streaming-active .ctrl-btn,
+body.streaming-active .ctrl-trigger,
+body.streaming-active .ctrl-touchpad,
+body.streaming-active .ctrl-slider,
+body.streaming-active .analog-outer,
+body.streaming-active .slider-track,
+body.streaming-active .toolbar,
+body.streaming-active .page-tabs,
+body.streaming-active .cog-btn,
+body.streaming-active .connection-badge,
+body.streaming-active .device-info,
+body.streaming-active .page-tab {
+  border-width: 0;
+  border-color: transparent;
+}
+body.streaming-active .ctrl-btn,
+body.streaming-active .ctrl-trigger,
+body.streaming-active .ctrl-touchpad {
+  background: rgba(17,23,34,.48);
+}
+body.streaming-active .screen-stream.visible { opacity: .88; }
+
+/* --- Minimal control surfaces --- */
+/* Keep the controller quiet: no outlines, only solid surfaces and active fill. */
+.ctrl-btn,
+.ctrl-trigger,
+.ctrl-touchpad,
+.ctrl-slider,
+.slider-track,
+.analog-outer,
+.toolbar,
+.page-tabs,
+.cog-btn,
+.connection-badge,
+.device-info,
+.page-tab {
+  border: 0 !important;
+}
+
+.ctrl-btn,
+.ctrl-trigger,
+.ctrl-touchpad,
+.slider-track {
+  background: #252b34 !important;
+}
+
+.ctrl-btn.pressed,
+.ctrl-trigger.pressed,
+.ctrl-touchpad.active,
+.ctrl-slider.active .slider-track {
+  background: #ffffff !important;
+  color: #05070b !important;
+  box-shadow: none !important;
+}
+
+.ctrl-btn.pressed .btn-keybind,
+.ctrl-touchpad.active .touchpad-label,
+.ctrl-touchpad.active .touchpad-icon {
+  color: #05070b !important;
+}
+
+/* Joysticks stay visually blank until touched. The moving thumb becomes the
+   only visible circular affordance; the larger dynamic perimeter is hidden. */
+.ctrl-analog,
+.analog-outer {
+  background: transparent !important;
+  border: 0 !important;
+  backdrop-filter: none !important;
+}
+.analog-ring {
+  display: none !important;
+}
+.analog-dot {
+  width: 28% !important;
+  height: 28% !important;
+  background: transparent !important;
+  border: 2px solid #ffffff;
+  box-shadow: none !important;
+}
+.ctrl-analog:has(.analog-dot.visible) {
+  opacity: 1;
+}
+.ctrl-analog:has(.analog-dot.visible) .analog-dot {
+  display: block;
+}
+
+body.streaming-active .ctrl-btn,
+body.streaming-active .ctrl-trigger,
+body.streaming-active .ctrl-touchpad,
+body.streaming-active .slider-track {
+  background: #252b34 !important;
+  backdrop-filter: blur(30px);
+}
+body.streaming-active .ctrl-btn.pressed,
+body.streaming-active .ctrl-trigger.pressed,
+body.streaming-active .ctrl-touchpad.active,
+body.streaming-active .ctrl-slider.active .slider-track {
+  background: #ffffff !important;
+  color: #05070b !important;
+}
+
+/* --- Final joystick and streaming surface treatment --- */
+.ctrl-analog {
+  width: var(--joystick-size, 60px);
+  height: var(--joystick-size, 60px);
+  aspect-ratio: 1 / 1;
+  opacity: 1;
+  overflow: visible;
+}
+.ctrl-analog .analog-outer {
+  width: 100%;
+  height: 100%;
+  border: 0 !important;
+  border-radius: 50%;
+  background: #252b34 !important;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.04);
+}
+.ctrl-analog .analog-ring {
+  display: none !important;
+}
+.ctrl-analog .analog-dot {
+  width: 30% !important;
+  height: 30% !important;
+  background: transparent !important;
+  border: 2px solid #ffffff;
+  box-shadow: none !important;
+}
+.ctrl-analog:has(.analog-dot.visible) .analog-outer {
+  background: #252b34 !important;
+}
+
+body.streaming-active .toolbar,
+body.streaming-active .page-tabs,
+body.streaming-active .cog-btn,
+body.streaming-active .connection-badge,
+body.streaming-active .device-info,
+body.streaming-active .page-tab,
+body.streaming-active .ctrl-btn,
+body.streaming-active .ctrl-trigger,
+body.streaming-active .ctrl-touchpad,
+body.streaming-active .slider-track,
+body.streaming-active .ctrl-analog .analog-outer {
+  background: rgba(37,43,52,.24) !important;
+  backdrop-filter: blur(30px);
+}
+body.streaming-active .ctrl-analog .analog-outer {
+  box-shadow: none;
+}
+body.streaming-active .ctrl-btn.pressed,
+body.streaming-active .ctrl-trigger.pressed,
+body.streaming-active .ctrl-touchpad.active,
+body.streaming-active .ctrl-slider.active .slider-track {
+  background: #ffffff !important;
+  color: #05070b !important;
 }
 
 /* --- Scrollbar --- */

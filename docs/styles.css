@@ -93,7 +93,7 @@ code { color: var(--ink); font: 12px 'DM Mono', monospace; }
 .feature-grid { display: grid; grid-template-columns: repeat(3, 1fr); border-left: 1px solid var(--line); }
 .feature { min-height: 245px; padding: 25px 30px 25px 24px; border-right: 1px solid var(--line); border-bottom: 1px solid var(--line); }
 .feature:nth-child(-n+3) { border-top: 1px solid var(--line); }
-.feature-num { color: var(--lime); font: 11px 'DM Mono', monospace; }
+.feature-num { color: var(--ink); font: 11px 'DM Mono', monospace; }
 .feature h3 { font-size: 22px; letter-spacing: -.04em; margin: 65px 0 9px; }
 .feature p { margin: 0; color: var(--muted); font-size: 14px; max-width: 270px; }
 
@@ -134,7 +134,7 @@ code { color: var(--ink); font: 12px 'DM Mono', monospace; }
 .install { padding: 125px 0; display: grid; grid-template-columns: .8fr 1.2fr; gap: 90px; border-bottom: 1px solid var(--line); }
 .install-copy p { color: var(--muted); max-width: 370px; }
 .code-card { background: #090a09; border: 1px solid var(--line); border-radius: 8px; padding: 26px; font: 13px/1.8 'DM Mono', monospace; color: #cbcfc3; position: relative; }
-.code-card::before { content: 'QUICK START'; position: absolute; top: -10px; left: 20px; background: var(--lime); color: #10110e; padding: 2px 8px; font-size: 10px; }
+.code-card::before { content: 'QUICK START'; position: absolute; top: -10px; left: 20px; background: var(--ink); color: var(--paper); padding: 2px 8px; font-size: 10px; }
 .code-card .dim { color: #707070; }.code-card .accent { color: var(--ink); }
 
 footer { padding: 32px 0; display: flex; justify-content: space-between; color: var(--muted); font-size: 12px; }

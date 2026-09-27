@@ -9,7 +9,7 @@
   <meta name="theme-color" content="#000000">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <link rel="stylesheet" href="/static/css/main.css">
+  <link rel="stylesheet" href="/static/css/main.css?v=4">
 </head>
 <body>
   <div id="screen-gamepad" class="screen-gamepad">
@@ -32,6 +32,8 @@
     <button id="btn-cog" class="cog-btn">&#9881;</button>
 
     <main class="workspace-container">
+      <video id="screen-stream" class="screen-stream" autoplay playsinline muted></video>
+      <div id="stream-overlay" class="stream-overlay hidden"><span class="stream-live-dot"></span><span id="stream-overlay-label">DESKTOP STREAM</span></div>
       <div id="workspace" class="workspace play-mode"></div>
     </main>
 
@@ -41,6 +43,6 @@
 
   </div>
 
-  <script type="module" src="/static/js/app.js"></script>
+  <script type="module" src="/static/js/app.js?v=4"></script>
 </body>
 </html>

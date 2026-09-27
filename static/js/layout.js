@@ -116,6 +116,8 @@ export class LayoutManager {
     el.dataset.keybind = ctrl.keybind || '';
     el.dataset.controlType = 'analog_stick';
     el.dataset.deadzone = ctrl.deadzone ?? 0.15;
+    // Joysticks are always circles, even when an older layout stored unequal
+    // width/height values.
     const sz = Math.min(ctrl.width || 60, ctrl.height || 60);
     el.innerHTML = `
       <div class="analog-outer">
@@ -125,8 +127,8 @@ export class LayoutManager {
     `;
     el.style.left = `${ctrl.x * 100}%`;
     el.style.top = `${ctrl.y * 100}%`;
-    el.style.width = `${ctrl.width}px`;
-    el.style.height = `${ctrl.height}px`;
+    el.style.width = `${sz}px`;
+    el.style.height = `${sz}px`;
     el.style.opacity = ctrl.opacity ?? 1;
     el.style.zIndex = ctrl.layer || 1;
     this._workspace.appendChild(el);

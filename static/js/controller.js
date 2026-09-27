@@ -326,6 +326,7 @@ export class GamepadController {
       lastSentValue: null,
       lastSendTime: 0,
     });
+    el.classList.add('active');
 
     this._moveSlider(touchId, cx, cy);
   }
@@ -403,6 +404,7 @@ export class GamepadController {
       });
     }
 
+    slider.el.classList.remove('active');
     this._activeSliders.delete(touchId);
   }
 

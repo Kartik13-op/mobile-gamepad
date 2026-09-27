@@ -20,6 +20,7 @@ if str(PROJECT_DIR) not in sys.path:
     sys.path.insert(0, str(PROJECT_DIR))
 
 from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
+from fastapi.responses import Response
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import HTMLResponse
 
@@ -29,6 +30,7 @@ from controller.config import ConfigManager
 from controller.events import EventRouter
 from controller.storage import StorageManager
 from controller.network import ConnectionManager, get_local_ip
+from backend.streaming import stream_manager
 
 # ---------------------------------------------------------------------------
 # Logging
@@ -68,6 +70,13 @@ event_router = EventRouter(keyboard, layout_manager, config_manager, connections
 # ---------------------------------------------------------------------------
 
 _LOCK_FILE = DATA_DIR / ".server.lock"
+mobile_server_controller = None
+
+
+def set_mobile_server_controller(controller) -> None:
+    """Attach the GUI-owned on-demand mobile server controller."""
+    global mobile_server_controller
+    mobile_server_controller = controller
 
 
 def _acquire_lock() -> bool:
@@ -111,16 +120,9 @@ def _release_lock() -> None:
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
-    """Print the connection URL on startup and release keys on shutdown."""
-    if not _acquire_lock():
-        sys.exit(1)
-    ip = get_local_ip()
+    """Log server startup. Cleanup is owned by the GUI/standalone runner."""
     logger.info("TouchKeys server starting...")
-    logger.info("Open on your phone -> http://%s:8000", ip)
     yield
-    keyboard.release_all()
-    keyboard.shutdown()
-    _release_lock()
     logger.info("TouchKeys server stopped.")
 
 
@@ -152,6 +154,71 @@ async def monitor() -> HTMLResponse:
 async def get_ip() -> dict:
     """Return the LAN IP so the client can display it."""
     return {"ip": get_local_ip()}
+
+
+@app.get("/api/mobile-server")
+async def mobile_server_status() -> dict:
+    """Return the on-demand phone server state to the local monitor."""
+    if mobile_server_controller is None:
+        return {"running": False, "available": False}
+    return mobile_server_controller.status()
+
+
+@app.post("/api/mobile-server/start")
+async def mobile_server_start() -> dict:
+    if mobile_server_controller is None:
+        raise HTTPException(status_code=503, detail="The desktop launcher is not managing a mobile server")
+    return await mobile_server_controller.start()
+
+
+@app.post("/api/mobile-server/stop")
+async def mobile_server_stop() -> dict:
+    if mobile_server_controller is None:
+        raise HTTPException(status_code=503, detail="The desktop launcher is not managing a mobile server")
+    return await mobile_server_controller.stop()
+
+
+@app.get("/api/qr")
+async def qr_code(data: str) -> Response:
+    """Generate the phone QR locally so the monitor has no external dependency."""
+    try:
+        import qrcode
+        image = qrcode.make(data)
+        buffer = __import__("io").BytesIO()
+        image.save(buffer, format="PNG")
+        return Response(content=buffer.getvalue(), media_type="image/png")
+    except ImportError as exc:
+        raise HTTPException(status_code=503, detail="QR support is not installed") from exc
+
+
+@app.get("/api/stream/status")
+async def stream_status() -> dict:
+    return stream_manager.status()
+
+
+@app.put("/api/stream/settings")
+async def stream_settings(data: dict) -> dict:
+    return {"settings": stream_manager.update_settings(data)}
+
+
+@app.post("/api/stream/start")
+async def stream_start() -> dict:
+    if not stream_manager.status()["available"]:
+        raise HTTPException(status_code=503, detail="Install aiortc, mss, numpy, and Pillow to enable screen streaming")
+    return stream_manager.start()
+
+
+@app.post("/api/stream/stop")
+async def stream_stop() -> dict:
+    return await stream_manager.stop()
+
+
+@app.post("/api/webrtc/offer")
+async def webrtc_offer(data: dict) -> dict:
+    try:
+        return await stream_manager.create_answer(data)
+    except RuntimeError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
 
 
 @app.get("/api/keys")
@@ -292,11 +359,17 @@ async def websocket_endpoint(websocket: WebSocket) -> None:
 if __name__ == "__main__":
     import uvicorn
 
-    ip = get_local_ip()
     print()
     print("======================================================")
-    print("   TouchKeys Server")
-    print(f"   Open on your phone -> http://{ip}:8000")
+    print("   TouchKeys Local Monitor")
+    print("   Open locally -> http://localhost:8000/monitor")
     print("======================================================")
     print()
-    uvicorn.run(app, host="0.0.0.0", port=8000, log_level="info")
+    if not _acquire_lock():
+        raise SystemExit(1)
+    try:
+        uvicorn.run(app, host="127.0.0.1", port=8000, log_level="info")
+    finally:
+        keyboard.release_all()
+        keyboard.shutdown()
+        _release_lock()

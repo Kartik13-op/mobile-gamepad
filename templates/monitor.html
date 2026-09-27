@@ -9,15 +9,15 @@
 <style>
 *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
 :root {
-  --bg-base: #050505;
-  --bg-surface: #0a0a0a;
-  --bg-card: #121212;
-  --bg-elevated: #1a1a1a;
+  --bg-base: #05070b;
+  --bg-surface: #0b0f16;
+  --bg-card: #111722;
+  --bg-elevated: #182235;
   --text: #ffffff;
-  --text-dim: #888888;
-  --text-muted: #444444;
-  --border: #202020;
-  --accent: #00ff9d;
+  --text-dim: #9da8ba;
+  --text-muted: #536175;
+  --border: #263248;
+  --accent: #ffffff;
   --font: 'Inter', system-ui, sans-serif;
   --radius: 8px;
 }
@@ -28,9 +28,9 @@ html, body { height:100vh; overflow:hidden; background:var(--bg-base); color:var
 #sidebar { width:200px; flex-shrink:0; background:var(--bg-surface); border-right:1px solid var(--border); display:flex; flex-direction:column; }
 .sb-brand { padding:24px; font-size:14px; font-weight:900; letter-spacing:2px; color:var(--text); border-bottom:1px solid var(--border); }
 .sb-nav { flex:1; display:flex; flex-direction:column; padding:12px; gap:2px; }
-.sb-tab { padding:12px; font-size:12px; font-weight:600; color:var(--text-dim); background:none; border:none; cursor:pointer; text-align:left; border-radius:var(--radius); }
+.sb-tab { padding:12px; font-size:12px; font-weight:600; color:var(--text-dim); background:transparent; border:1px solid transparent; cursor:pointer; text-align:left; border-radius:var(--radius); transition:.15s ease; }
 .sb-tab:hover { color:var(--text); background:var(--bg-elevated); }
-.sb-tab.active { color:var(--text); background:var(--bg-elevated); }
+.sb-tab.active { color:var(--text); background:rgba(255,255,255,.08); border-color:rgba(255,255,255,.25); }
 .sb-conn { padding:20px; border-top:1px solid var(--border); font-size:11px; color:var(--text-dim); display:flex; align-items:center; gap:8px; }
 .conn-dot { width:8px; height:8px; flex-shrink:0; border-radius:50%; background:var(--text-muted); }
 .conn-dot.on { background:var(--accent); box-shadow:0 0 8px var(--accent); }
@@ -44,34 +44,35 @@ html, body { height:100vh; overflow:hidden; background:var(--bg-base); color:var
 .section-sub { font-size:13px; color:var(--text-dim); margin-bottom:32px; }
 
 /* ---------- Cards / Dashboard ---------- */
-.card { background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius); padding:24px; margin-bottom:24px; }
+.card { background:rgba(17,23,34,.82); border:1px solid var(--border); border-radius:var(--radius); padding:24px; margin-bottom:24px; backdrop-filter:blur(14px); }
 .card-title { font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:1px; color:var(--text-dim); margin-bottom:16px; }
 .card-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(200px, 1fr)); gap:16px; margin-bottom:24px; }
-.stat-card { background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius); padding:24px; text-align:center; }
+.stat-card { background:rgba(17,23,34,.82); border:1px solid var(--border); border-radius:var(--radius); padding:24px; text-align:center; backdrop-filter:blur(14px); }
 .stat-card .num { font-size:26px; font-weight:900; letter-spacing:1px; }
 .stat-card .num.green { color:var(--accent); }
 .stat-card .num.red { color:#ff4444; }
 .stat-card .lbl { font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:1px; color:var(--text-dim); margin-top:8px; }
 #qr-wrap { text-align:center; padding:8px 0 24px; }
+#qr-wrap.hidden { display:none; }
 #qr-wrap img { width:180px; height:180px; border:1px solid var(--border); border-radius:var(--radius); }
 #qr-wrap .url { font-size:14px; font-weight:700; letter-spacing:1px; margin-top:12px; color:var(--text-dim); }
 .qactions { display:flex; gap:8px; flex-wrap:wrap; }
 .qactions .btn { flex:1; min-width:120px; }
 
 /* ---------- Buttons ---------- */
-.btn { display:inline-flex; align-items:center; justify-content:center; gap:4px; padding:10px 16px; font-size:11px; font-weight:700; font-family:var(--font); letter-spacing:1px; border:1px solid var(--border); border-radius:var(--radius); cursor:pointer; color:var(--text); background:var(--bg-surface); transition:background 0.15s, color 0.15s, border-color 0.15s; }
-.btn:hover { background:var(--bg-elevated); }
-.btn:active { background:var(--text); color:var(--bg-base); }
-.btn-primary { color:var(--bg-base); background:var(--accent); border-color:var(--accent); }
-.btn-primary:hover { background:#00cc7d; }
-.btn-danger { color:#ff4444; background:#220000; border-color:#440000; }
+.btn { display:inline-flex; align-items:center; justify-content:center; gap:4px; padding:10px 16px; font-size:11px; font-weight:700; font-family:var(--font); letter-spacing:1px; border:1px solid rgba(157,168,186,.28); border-radius:var(--radius); cursor:pointer; color:var(--text); background:rgba(255,255,255,.06); backdrop-filter:blur(12px); transition:background 0.15s, color 0.15s, border-color 0.15s; }
+.btn:hover { background:rgba(255,255,255,.12); border-color:rgba(255,255,255,.55); }
+.btn:active { background:var(--accent); color:#06101f; }
+.btn-primary { color:#06101f; background:var(--accent); border-color:var(--accent); }
+.btn-primary:hover { background:#dddddd; }
+.btn-danger { color:#ff8d9b; background:rgba(255,76,96,.08); border-color:rgba(255,76,96,.35); }
 .btn-sm { padding:6px 10px; font-size:10px; }
 .btn-group { display:flex; gap:8px; flex-wrap:wrap; }
 
 /* ---------- Forms ---------- */
 .form-group { margin-bottom:12px; }
 .form-label { display:block; font-size:10px; font-weight:700; color:var(--text-dim); margin-bottom:6px; letter-spacing:1px; text-transform:uppercase; }
-.form-input, .form-select { width:100%; padding:10px; font-size:12px; font-family:var(--font); color:var(--text); background:var(--bg-surface); border:1px solid var(--border); border-radius:var(--radius); outline:none; }
+.form-input, .form-select { width:100%; padding:10px; font-size:12px; font-family:var(--font); color:var(--text); background:rgba(255,255,255,.05); border:1px solid var(--border); border-radius:var(--radius); outline:none; }
 .form-input:focus, .form-select:focus { border-color:var(--accent); }
 .form-row { display:flex; gap:8px; }
 .form-row .form-group { flex:1; }
@@ -85,6 +86,18 @@ html, body { height:100vh; overflow:hidden; background:var(--bg-base); color:var
 .tag-active { background:var(--accent); color:var(--bg-base); }
 .tag-monitor { background:var(--text-muted); color:var(--text); }
 .tag-connected { background:var(--bg-elevated); color:var(--text); }
+
+/* ---------- Server and streaming cards ---------- */
+.server-status { display:flex; align-items:center; justify-content:space-between; gap:16px; }
+.server-status strong { color:var(--text); }
+.status-copy { color:var(--text-dim); font-size:12px; line-height:1.7; }
+.status-pill { display:inline-flex; align-items:center; gap:7px; padding:7px 10px; border:1px solid var(--border); border-radius:999px; color:var(--text-dim); font-size:10px; font-weight:700; letter-spacing:1px; }
+.status-pill .dot { width:7px; height:7px; border-radius:50%; background:var(--text-muted); }
+.status-pill.on { color:var(--accent); border-color:rgba(255,255,255,.45); }
+.status-pill.on .dot { background:var(--accent); box-shadow:0 0 10px var(--accent); }
+.stream-grid { display:grid; grid-template-columns:repeat(3, 1fr); gap:12px; }
+.stream-actions { display:flex; align-items:center; gap:10px; margin-top:8px; }
+.stream-note { font-size:11px; color:var(--text-dim); line-height:1.6; }
 
 /* ---------- Layout Editor ---------- */
 #editor-layout { display:flex; gap:16px; height:calc(100vh - 280px); min-height:440px; }
@@ -204,20 +217,179 @@ html, body { height:100vh; overflow:hidden; background:var(--bg-base); color:var
   #editor-layout { display:flex; flex-direction:column; height:auto; min-height:0; }
   #editor-canvas-wrap { height:52vh; min-height:320px; }
   #editor-props { width:100%; max-height:none; }
+  .stream-grid { grid-template-columns:1fr; }
+  .server-status { align-items:flex-start; flex-direction:column; }
 }
 
 
 </style>
+<style>
+/* TouchKeys Monitor — refined control-room layout */
+:root {
+  --bg-base: #070b12;
+  --bg-surface: #0b111b;
+  --bg-card: #101824;
+  --bg-elevated: #172436;
+  --border: #202e42;
+  --text-dim: #8d9caf;
+  --text-muted: #506078;
+  --accent: #ffffff;
+  --accent-soft: rgba(255,255,255,.07);
+  --radius: 14px;
+}
+
+html, body { background:var(--bg-base); }
+#app { background:var(--bg-base); }
+.app-shell { min-height:0; }
+#sidebar { width:248px; padding:22px 14px 16px; background:#0a1019; border-right:1px solid #182537; }
+.sb-brand { display:flex; align-items:center; gap:11px; padding:4px 10px 26px; border-bottom:1px solid #182537; }
+.brand-mark { display:grid; place-items:center; width:34px; height:34px; border-radius:10px; color:#06101d; background:var(--accent); font-size:11px; font-weight:900; letter-spacing:-.5px; }
+.brand-copy { display:flex; flex-direction:column; color:#f7faff; font-size:13px; font-weight:900; letter-spacing:2px; line-height:1.1; }
+.brand-copy small { margin-top:5px; color:var(--text-muted); font-size:8px; font-weight:700; letter-spacing:1.2px; }
+.sb-label { padding:27px 12px 10px; color:#53647b; font-size:9px; font-weight:800; letter-spacing:1.5px; }
+.sb-nav { padding:0; gap:5px; }
+.sb-tab { display:flex; align-items:center; min-height:42px; padding:0 13px; border:1px solid transparent; border-radius:11px; color:#8291a6; font-size:11px; font-weight:700; letter-spacing:.6px; }
+.sb-tab::before { content:''; width:5px; height:5px; margin-right:12px; border-radius:50%; background:#3a4b62; }
+.sb-tab:hover { color:#eaf3ff; background:#111c2b; }
+.sb-tab.active { color:#f3f8ff; background:var(--accent-soft); border-color:rgba(255,255,255,.18); }
+.sb-tab.active::before { background:var(--accent); box-shadow:0 0 10px rgba(255,255,255,.5); }
+.sb-conn { margin:16px 4px 0; padding:13px 10px; border:1px solid #1c2a3c; border-radius:11px; background:#0d1622; font-size:10px; }
+.conn-dot { width:7px; height:7px; }
+#main { padding:30px 42px 42px; background:radial-gradient(circle at 88% 0%, rgba(48,103,171,.10), transparent 33%), var(--bg-base); }
+.monitor-topbar { display:flex; align-items:flex-start; justify-content:space-between; gap:20px; max-width:1160px; margin:0 auto 36px; padding-bottom:24px; border-bottom:1px solid #182537; }
+.topbar-eyebrow { margin-bottom:9px; color:var(--accent); font-size:9px; font-weight:800; letter-spacing:1.8px; }
+.monitor-topbar h1 { color:#f6f9ff; font-size:24px; font-weight:800; letter-spacing:-.7px; }
+.topbar-meta { display:flex; align-items:center; gap:12px; padding-top:3px; }
+.topbar-chip { display:inline-flex; align-items:center; gap:7px; padding:7px 10px; color:#a9b9cc; background:#0e1826; border:1px solid #1e3046; border-radius:999px; font-size:9px; font-weight:800; letter-spacing:1px; }
+.topbar-dot { width:6px; height:6px; border-radius:50%; background:#55d49a; box-shadow:0 0 9px rgba(85,212,154,.7); }
+.topbar-time { color:#62748a; font-size:11px; font-variant-numeric:tabular-nums; }
+.tab-page { width:100%; max-width:1160px; margin:0 auto; }
+.section-title { display:block; margin-bottom:7px; color:#f6f9ff; font-size:28px; font-weight:800; letter-spacing:-.8px; }
+.section-sub { margin-bottom:28px; color:#7f8da1; font-size:12px; }
+.card, .stat-card, .device-item, #editor-props, .ctrl-card { background:rgba(16,24,36,.92); border:1px solid #1c2b3e; border-radius:var(--radius); box-shadow:0 16px 35px rgba(0,0,0,.14); }
+.card { padding:24px; margin-bottom:16px; }
+.card-title { color:#7f91a8; font-size:9px; letter-spacing:1.5px; }
+.stat-card { padding:20px; text-align:left; }
+.stat-card .num { color:#eef5ff; font-size:25px; }
+.stat-card .lbl { color:#708198; font-size:9px; }
+.btn { min-height:38px; padding:9px 14px; border:1px solid #2b3c52; border-radius:10px; background:#121d2b; color:#dceaff; font-size:10px; letter-spacing:.8px; }
+.btn:hover { background:#202020; border-color:#777; }
+.btn-primary { background:var(--accent); border-color:var(--accent); color:#06101e; }
+.btn-danger { background:rgba(216,78,103,.10); border-color:rgba(216,78,103,.3); color:#ff9cae; }
+.form-input, .form-select { border-color:#26384e; border-radius:10px; background:#0c1521; }
+.status-pill { background:#0d1724; border-color:#26384e; }
+#qr-wrap { max-width:420px; margin:0 0 18px; padding:18px; border:1px solid #1c2b3e; border-radius:var(--radius); background:#0d1622; }
+#qr-wrap img { width:150px; height:150px; border:0; border-radius:10px; }
+#editor-layout { display:grid; grid-template-columns:minmax(0, 1fr) 290px; align-items:start; gap:20px; width:100%; height:auto; min-height:0; }
+#editor-canvas-wrap { width:100%; height:auto; min-height:0; aspect-ratio:16 / 9; background:#0a111b; border:1px solid #26384e; border-radius:var(--radius); box-shadow:0 18px 40px rgba(0,0,0,.22); }
+#editor-canvas { width:100%; height:100%; aspect-ratio:16 / 9; }
+#editor-props { width:100%; min-height:0; padding:18px; overflow:auto; }
+#editor-props .prop-section { border-bottom-color:#1d2c40; }
+.editor-pages { margin-bottom:14px; }
+.editor-page-tab { border-color:#26384e; border-radius:9px; background:#0e1825; }
+.editor-page-tab.active { color:#06101d; border-color:var(--accent); background:var(--accent); }
+#status-bar { margin:0; padding:11px 24px; background:#0a1019; border-top:1px solid #182537; color:#71829a; }
+#status-bar .val { color:#dce8f7; }
+.empty-state { color:#4c6079; }
+.test-grid { gap:16px; }
+.ctrl-card { padding:20px; }
+
+@media (max-width: 900px) {
+  #sidebar { width:210px; }
+  #main { padding:24px; }
+  #editor-layout { grid-template-columns:1fr; }
+  #editor-canvas-wrap { width:100%; max-width:850px; margin:0 auto; }
+  #editor-props { width:100%; }
+}
+@media (max-width: 680px) {
+  html, body { overflow:auto; }
+  .app-shell { display:block !important; }
+  #sidebar { width:100%; padding:12px 10px 0; border-right:0; border-bottom:1px solid #182537; }
+  .sb-brand { padding:3px 8px 14px; }
+  .sb-label { display:none; }
+  .sb-nav { flex-direction:row; overflow-x:auto; padding:10px 0; }
+  .sb-tab { min-height:36px; white-space:nowrap; padding:0 10px; }
+  .sb-tab::before { display:none; }
+  .sb-conn { display:none; }
+  #main { padding:22px 14px 28px; overflow:visible; }
+  .monitor-topbar { margin-bottom:26px; padding-bottom:18px; }
+  .monitor-topbar h1 { font-size:20px; }
+  .topbar-meta { gap:0; }
+  .topbar-time { display:none; }
+  .topbar-chip { font-size:8px; }
+  .section-title { font-size:23px; }
+  .card { padding:18px; }
+  #editor-canvas-wrap { width:100%; height:auto; aspect-ratio:16 / 9; min-height:0; }
+}
+<style>
+/* Final monochrome pass */
+:root { --accent:#ffffff; --accent-soft:rgba(255,255,255,.07); }
+#main { background:#080808; }
+#sidebar { background:#0a0a0a; border-right-color:#222; }
+.sb-brand, .monitor-topbar { border-color:#222; }
+.sb-conn, .topbar-chip, .card, .stat-card, .device-item, #editor-props, .ctrl-card { border-color:#282828; background:#111; }
+.topbar-chip { color:#bdbdbd; }
+.topbar-time, .section-sub, .status-copy, .stream-note { color:#888; }
+.form-input, .form-select, .status-pill, #qr-wrap, .editor-page-tab { border-color:#303030; background:#0e0e0e; }
+#editor-canvas-wrap { background:#0b0b0b; border-color:#303030; }
+#status-bar { background:#0a0a0a; border-color:#222; }
+.sb-label, .card-title, .stat-card .lbl { color:#777; }
+.sb-tab.active { background:rgba(255,255,255,.07); border-color:#303030; }
+.sb-tab.active::before { background:#ffffff; box-shadow:0 0 8px rgba(255,255,255,.5); }
+.topbar-chip { border-color:#303030; background:#111111; }
+.topbar-dot { background:#ffffff; box-shadow:0 0 8px rgba(255,255,255,.45); }
+.btn:hover { background:#202020; border-color:#777; }
+.btn-primary { background:#ffffff; border-color:#ffffff; color:#050505; }
+.btn-primary:hover { background:#dddddd; border-color:#dddddd; }
+.btn-danger { background:#171717; border-color:#4a4a4a; color:#eeeeee; }
+.editor-page-tab.active { background:#ffffff; border-color:#ffffff; color:#050505; }
+.status-pill.on { color:#ffffff; border-color:#666; }
+.status-pill.on .dot { background:#ffffff; box-shadow:0 0 8px rgba(255,255,255,.5); }
+select, .form-select, .form-input, #editor-props select, #editor-props input, #editor-props textarea {
+  color:#f2f2f2 !important;
+  background-color:#101010 !important;
+  border-color:#303030 !important;
+  color-scheme:dark;
+}
+select option, .form-select option, select optgroup {
+  color:#f2f2f2 !important;
+  background:#151515 !important;
+}
+.form-select:focus, .form-input:focus, #editor-props select:focus, #editor-props input:focus, #editor-props textarea:focus {
+  outline:none;
+  box-shadow:0 0 0 2px rgba(255,255,255,.12);
+}
+#editor-layout { display:grid !important; grid-template-columns:minmax(0,1fr) 290px; height:auto !important; min-height:0 !important; }
+#editor-canvas-wrap { width:100% !important; height:auto !important; min-height:0 !important; aspect-ratio:16 / 9 !important; }
+#editor-canvas-wrap { position:relative; overflow:hidden; }
+#editor-canvas { position:absolute !important; inset:0; width:100% !important; height:100% !important; aspect-ratio:16 / 9 !important; }
+#editor-empty { position:absolute; inset:0; }
+@media (max-width:900px) { #editor-layout { grid-template-columns:1fr; } }
+@media (max-width:680px) { #editor-canvas-wrap { width:100% !important; height:auto !important; aspect-ratio:16 / 9 !important; } }
+
+/* Monochrome click motion: the highlight travels from left to right. */
+.btn, .sb-tab, .editor-page-tab, .editor-page-add, .page-tab {
+  background-size:200% 100%;
+  transition:background-position .28s ease, background-color .18s ease, color .18s ease, border-color .18s ease;
+}
+.btn:active, .sb-tab:active, .editor-page-tab:active, .editor-page-add:active, .page-tab:active {
+  color:#ffffff !important;
+  background-image:linear-gradient(90deg,#171717 0%,#5b5b5b 48%,#171717 100%) !important;
+  background-position:100% 0;
+}
+</style>
 </head>
 <body>
 <div id="app">
-  <div style="display:flex;flex:1;min-height:0;">
+  <div class="app-shell" style="display:flex;flex:1;min-height:0;">
     <aside id="sidebar">
-      <div class="sb-brand">TOUCHKEYS</div>
+      <div class="sb-brand"><span class="brand-mark">TK</span><span class="brand-copy">TOUCHKEYS<small>DESKTOP CONTROL</small></span></div>
+      <div class="sb-label">WORKSPACE</div>
       <nav class="sb-nav">
         <button class="sb-tab active" data-tab="dashboard">DASHBOARD</button>
         <button class="sb-tab" data-tab="devices">DEVICES</button>
         <button class="sb-tab" data-tab="editor">LAYOUT</button>
+        <button class="sb-tab" data-tab="streaming">STREAMING</button>
         <button class="sb-tab" data-tab="test">TESTER</button>
       </nav>
       <div class="sb-conn">
@@ -226,13 +398,29 @@ html, body { height:100vh; overflow:hidden; background:var(--bg-base); color:var
       </div>
     </aside>
     <main id="main">
+      <header class="monitor-topbar">
+        <div><div class="topbar-eyebrow">LOCAL CONTROL CENTER</div><h1 id="view-title">TouchKeys Monitor</h1></div>
+        <div class="topbar-meta"><span class="topbar-chip"><span class="topbar-dot"></span>LOCALHOST ONLY</span><span class="topbar-time" id="topbar-time">--:--</span></div>
+      </header>
       <!-- Dashboard -->
       <section class="tab-page active" id="tab-dashboard">
         <div class="section-title">DASHBOARD</div>
-        <div class="section-sub">Server overview and quick actions</div>
-        <div id="qr-wrap">
+        <div class="section-sub">Local monitor and on-demand phone access</div>
+        <div class="card">
+          <div class="card-title">MOBILE PHONE SERVER</div>
+          <div class="server-status">
+            <div class="status-copy"><strong id="mobile-server-title">Phone access is off</strong><br><span id="mobile-server-copy">Start the Wi-Fi server when you want to connect a phone.</span></div>
+            <span class="status-pill" id="mobile-server-pill"><span class="dot"></span><span id="mobile-server-state">STOPPED</span></span>
+          </div>
+          <div class="qactions" style="margin-top:18px;">
+            <button class="btn btn-primary" id="btn-mobile-start">START PHONE SERVER</button>
+            <button class="btn btn-danger" id="btn-mobile-stop" disabled>STOP PHONE SERVER</button>
+          </div>
+        </div>
+        <div id="qr-wrap" class="hidden">
           <img id="qr-img" alt="QR Code">
           <div class="url" id="server-url">--</div>
+          <div class="stream-note" style="margin-top:8px;">Scan this code on a phone connected to the same Wi-Fi.</div>
         </div>
         <div class="card-grid" id="stat-cards">
           <div class="stat-card"><div class="num" id="stat-server">--</div><div class="lbl">SERVER</div></div>
@@ -243,7 +431,6 @@ html, body { height:100vh; overflow:hidden; background:var(--bg-base); color:var
         <div class="card">
           <div class="card-title">QUICK ACTIONS</div>
           <div class="qactions">
-            <button class="btn btn-primary" onclick="window.open('/monitor','_blank')">OPEN MONITOR</button>
             <button class="btn" onclick="fetch('/api/debug').then(r=>r.json()).then(d=>showToast('Server OK, connections: '+d.connections))">PING SERVER</button>
             <button class="btn btn-danger" id="btn-disconnect-all">DISCONNECT ALL</button>
           </div>
@@ -251,11 +438,27 @@ html, body { height:100vh; overflow:hidden; background:var(--bg-base); color:var
         <div class="card">
           <div class="card-title">HOW TO USE</div>
           <div style="font-size:11px;color:var(--text-dim);line-height:1.8;">
-            1. Open <strong style="color:var(--text);" id="url-hint">http://IP:8000</strong> on any mobile device<br>
+            1. Start the <strong style="color:var(--text);">PHONE SERVER</strong>, then scan the QR code<br>
             2. The first device to connect becomes the <strong style="color:var(--accent);">active controller</strong><br>
             3. Use <strong style="color:var(--text);">LAYOUT</strong> tab to edit button positions in real-time<br>
-            4. Use <strong style="color:var(--text);">INPUT</strong> tab to monitor live button presses
+            4. Use <strong style="color:var(--text);">STREAMING</strong> to send the desktop screen to phones
           </div>
+        </div>
+      </section>
+
+      <!-- Streaming -->
+      <section class="tab-page" id="tab-streaming">
+        <div class="section-title">STREAMING</div>
+        <div class="section-sub">Send the desktop screen to connected phones over WebRTC.</div>
+        <div class="card">
+          <div class="card-title">SCREEN STREAM SETTINGS</div>
+          <div class="stream-grid">
+            <div class="form-group"><label class="form-label" for="stream-resolution">Resolution</label><select class="form-select" id="stream-resolution"><option value="1280x720">1280 × 720</option><option value="1920x1080">1920 × 1080</option><option value="960x540">960 × 540</option><option value="0x0">Native display</option></select></div>
+            <div class="form-group"><label class="form-label" for="stream-fps">Frame rate</label><select class="form-select" id="stream-fps"><option value="15">15 FPS</option><option value="24">24 FPS</option><option value="30" selected>30 FPS</option><option value="60">60 FPS</option></select></div>
+            <div class="form-group"><label class="form-label" for="stream-quality">Quality</label><select class="form-select" id="stream-quality"><option value="economy">Economy</option><option value="balanced" selected>Balanced</option><option value="high">High</option></select></div>
+          </div>
+          <div class="stream-actions"><button class="btn btn-primary" id="btn-stream-start">START STREAM</button><button class="btn btn-danger" id="btn-stream-stop" disabled>STOP STREAM</button><span class="status-pill" id="stream-status-pill"><span class="dot"></span><span id="stream-state">STOPPED</span></span></div>
+          <p class="stream-note" id="stream-dependency-note" style="margin-top:16px;">The phone will show the stream behind the frosted controller controls.</p>
         </div>
       </section>
 
@@ -441,6 +644,7 @@ html, body { height:100vh; overflow:hidden; background:var(--bg-base); color:var
   window.closeModal = function(id) { document.getElementById(id).classList.remove('open'); };
 
   // --- Tab switching ---
+  const tabTitles = { dashboard: 'Overview', devices: 'Connected devices', editor: 'Layout editor', streaming: 'Screen streaming', test: 'Input tester' };
   document.querySelectorAll('.sb-tab').forEach(btn => {
     btn.addEventListener('click', () => {
       document.querySelectorAll('.sb-tab').forEach(b => b.classList.remove('active'));
@@ -448,6 +652,7 @@ html, body { height:100vh; overflow:hidden; background:var(--bg-base); color:var
       btn.classList.add('active');
       const tab = document.getElementById('tab-' + btn.dataset.tab);
       if (tab) tab.classList.add('active');
+      $('view-title').textContent = tabTitles[btn.dataset.tab] || 'TouchKeys Monitor';
       if (btn.dataset.tab === 'editor') renderEditor();
     });
   });
@@ -595,20 +800,92 @@ html, body { height:100vh; overflow:hidden; background:var(--bg-base); color:var
   // --- Server info ---
   async function loadServerInfo() {
     try {
-      const ip = await (await fetch('/api/ip')).json();
-      const url = `http://${ip.ip}:8000`;
-      $('server-url').textContent = url;
-      $('url-hint').textContent = url;
-      $('qr-img').src = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(url)}`;
+      await fetch('/api/ip');
       $('server-info').innerHTML = `
-        <strong>IP:</strong> ${ip.ip}<br>
-        <strong>Port:</strong> 8000<br>
-        <strong>URL:</strong> <a href="${url}" style="color:var(--text);" target="_blank">${url}</a><br>
-        <strong>Server:</strong> TouchKeys v2.0<br>
-        <strong>Monitor:</strong> <a href="/monitor" style="color:var(--text);" target="_blank">/monitor</a>
+        <strong>Monitor:</strong> localhost only<br>
+        <strong>Monitor port:</strong> 8000<br>
+        <strong>LAN interface:</strong> phone server is stopped
       `;
-    } catch(e) {}
+    } catch(e) { showToast('Unable to load server information'); }
   }
+
+  async function refreshMobileServer() {
+    try {
+      const state = await (await fetch('/api/mobile-server')).json();
+      const running = Boolean(state.running);
+      $('mobile-server-title').textContent = running ? 'Phone access is ready' : 'Phone access is off';
+      $('mobile-server-copy').textContent = running ? `Open ${state.url} on a phone, or scan the QR code below.` : 'Start the Wi-Fi server when you want to connect a phone.';
+      $('mobile-server-state').textContent = running ? 'RUNNING' : 'STOPPED';
+      $('mobile-server-pill').classList.toggle('on', running);
+      $('btn-mobile-start').disabled = running;
+      $('btn-mobile-stop').disabled = !running;
+      $('qr-wrap').classList.toggle('hidden', !running);
+      if (running) {
+        $('server-url').textContent = state.url;
+        $('qr-img').src = `/api/qr?data=${encodeURIComponent(state.url)}`;
+        $('server-info').innerHTML = `
+          <strong>Monitor:</strong> localhost:8000<br>
+          <strong>Phone URL:</strong> <a href="${state.url}" style="color:var(--accent);" target="_blank">${state.url}</a><br>
+          <strong>Phone server:</strong> ${state.host}:${state.port}
+        `;
+      }
+    } catch(e) { showToast('Unable to read phone server state'); }
+  }
+
+  async function setMobileServer(action) {
+    const button = action === 'start' ? $('btn-mobile-start') : $('btn-mobile-stop');
+    button.disabled = true;
+    try {
+      const response = await fetch(`/api/mobile-server/${action}`, { method: 'POST' });
+      if (!response.ok) throw new Error(await response.text());
+      await refreshMobileServer();
+      showToast(action === 'start' ? 'Phone server started' : 'Phone server stopped');
+    } catch(e) {
+      showToast(`Could not ${action} phone server`);
+      await refreshMobileServer();
+    }
+  }
+
+  async function refreshStream() {
+    try {
+      const state = await (await fetch('/api/stream/status')).json();
+      const settings = state.settings || {};
+      if (settings.width != null && settings.height != null) $('stream-resolution').value = `${settings.width}x${settings.height}`;
+      if (settings.fps) $('stream-fps').value = String(settings.fps);
+      if (settings.quality) $('stream-quality').value = settings.quality;
+      const active = Boolean(state.active);
+      $('stream-state').textContent = active ? 'LIVE' : 'STOPPED';
+      $('stream-status-pill').classList.toggle('on', active);
+      $('btn-stream-start').disabled = active;
+      $('btn-stream-stop').disabled = !active;
+      $('stream-dependency-note').textContent = state.available ? 'The phone will show the stream behind the frosted controller controls.' : 'Install the streaming dependencies from requirements.txt to enable WebRTC capture.';
+    } catch(e) { showToast('Unable to read streaming state'); }
+  }
+
+  async function saveStreamSettings() {
+    const [width, height] = $('stream-resolution').value.split('x').map(Number);
+    await fetch('/api/stream/settings', { method: 'PUT', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ width, height, fps: Number($('stream-fps').value), quality: $('stream-quality').value }) });
+  }
+
+  async function setStream(action) {
+    const button = action === 'start' ? $('btn-stream-start') : $('btn-stream-stop');
+    button.disabled = true;
+    try {
+      await saveStreamSettings();
+      const response = await fetch(`/api/stream/${action}`, { method: 'POST' });
+      if (!response.ok) throw new Error(await response.text());
+      await refreshStream();
+      showToast(action === 'start' ? 'Screen stream started' : 'Screen stream stopped');
+    } catch(e) {
+      showToast('Could not change screen stream');
+      await refreshStream();
+    }
+  }
+
+  $('btn-mobile-start').addEventListener('click', () => setMobileServer('start'));
+  $('btn-mobile-stop').addEventListener('click', () => setMobileServer('stop'));
+  $('btn-stream-start').addEventListener('click', () => setStream('start'));
+  $('btn-stream-stop').addEventListener('click', () => setStream('stop'));
 
   // --- Load keys ---
   async function loadKeys() {
@@ -699,10 +976,16 @@ html, body { height:100vh; overflow:hidden; background:var(--bg-base); color:var
         
         const sel = ctrl.id === selectedCtrlId ? ' selected' : '';
         const label = esc(ctrl.name || '');
-        const pw = ctrl.width < 1 ? Math.round(ctrl.width * cw) : Math.round(ctrl.width);
-        const ph = ctrl.height < 1 ? Math.round(ctrl.height * ch) : Math.round(ctrl.height);
-        const px = Math.round(ctrl.x * cw);
-        const py = Math.round(ctrl.y * ch);
+        const pw = ctrl.width < 1 ? ctrl.width * cw : ctrl.width;
+        const ph = ctrl.height < 1 ? ctrl.height * ch : ctrl.height;
+        const px = ctrl.x * cw;
+        const py = ctrl.y * ch;
+        // Render dimensions proportionally so the editor preview and the
+        // 16:9 mobile stage keep the same relative control geometry.
+        const leftPct = ctrl.x * 100;
+        const topPct = ctrl.y * 100;
+        const widthPct = (pw / cw) * 100;
+        const heightPct = (ph / ch) * 100;
         
         let sliderExtras = '';
         if (ctrl.type === 'slider') {
@@ -712,7 +995,7 @@ html, body { height:100vh; overflow:hidden; background:var(--bg-base); color:var
           </div>`;
         }
 
-        return `<div class="ctrl-el ${cls}${sel}" data-id="${ctrl.id}" style="left:${px}px;top:${py}px;width:${pw}px;height:${ph}px;opacity:${ctrl.opacity};z-index:${ctrl.layer||0};">
+        return `<div class="ctrl-el ${cls}${sel}" data-id="${ctrl.id}" style="left:${leftPct}%;top:${topPct}%;width:${widthPct}%;height:${heightPct}%;opacity:${ctrl.opacity};z-index:${ctrl.layer||0};">
           ${sliderExtras}
           <span style="font-size:${ctrl.fontSize||12}px;z-index:2;">${label}</span>
           <span class="resize-h nw"></span><span class="resize-h ne"></span>
@@ -1236,7 +1519,12 @@ html, body { height:100vh; overflow:hidden; background:var(--bg-base); color:var
 
   // --- INIT ---
   function init() {
+    const updateClock = () => { $('topbar-time').textContent = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }); };
+    updateClock();
+    setInterval(updateClock, 30000);
     loadServerInfo();
+    refreshMobileServer();
+    refreshStream();
     loadKeys();
     connectWS();
     startStats();

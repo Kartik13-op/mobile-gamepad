@@ -32,7 +32,7 @@ except ImportError:
     webview = None
 
 # Import the FastAPI app from server.py
-from backend.server import app, get_local_ip
+from backend.server import app, get_local_ip, set_mobile_server_controller, keyboard, stream_manager
 
 logging.basicConfig(
     level=logging.INFO,
@@ -40,8 +40,10 @@ logging.basicConfig(
 )
 logger = logging.getLogger("touchkeys.gui")
 
-HOST = "0.0.0.0"
+HOST = "127.0.0.1"
 PORT = 8000
+MOBILE_HOST = "0.0.0.0"
+MOBILE_PORT = 8001
 
 # Clean up any stale lock file from a previous run
 if getattr(sys, "frozen", False):
@@ -59,6 +61,11 @@ class ServerThread:
         self._server: uvicorn.Server | None = None
         self._thread: threading.Thread | None = None
         self._loop: asyncio.AbstractEventLoop | None = None
+        self._mobile_controller = MobileServerController(self)
+
+    @property
+    def mobile_controller(self) -> "MobileServerController":
+        return self._mobile_controller
 
     def start(self) -> None:
         self._thread = threading.Thread(target=self._run, daemon=True)
@@ -72,14 +79,21 @@ class ServerThread:
         self._loop.run_until_complete(self._server.serve())
 
     def stop(self) -> None:
+        if self._loop and self._mobile_controller.running:
+            future = asyncio.run_coroutine_threadsafe(self._mobile_controller.stop(), self._loop)
+            try:
+                future.result(timeout=4)
+            except Exception:
+                logger.debug("Mobile server did not stop cleanly", exc_info=True)
         if self._server:
             self._server.should_exit = True
         if self._thread:
             self._thread.join(timeout=3)
+        keyboard.release_all()
+        keyboard.shutdown()
 
     def wait_until_ready(self, timeout: float = 10.0) -> bool:
         import urllib.request
-        import urllib.error
         deadline = time.monotonic() + timeout
         while time.monotonic() < deadline:
             try:
@@ -90,8 +104,58 @@ class ServerThread:
         return False
 
 
+class MobileServerController:
+    """Start/stop the LAN server on the local monitor's event loop."""
+
+    def __init__(self, owner: ServerThread) -> None:
+        self.owner = owner
+        self._server: uvicorn.Server | None = None
+        self._task: asyncio.Task | None = None
+
+    @property
+    def running(self) -> bool:
+        return bool(self._server and self._task and not self._task.done())
+
+    def status(self) -> dict:
+        ip = get_local_ip()
+        return {
+            "running": self.running,
+            "host": ip,
+            "port": MOBILE_PORT,
+            "url": f"http://{ip}:{MOBILE_PORT}",
+            "available": True,
+        }
+
+    async def start(self) -> dict:
+        if self.running:
+            return self.status()
+        config = uvicorn.Config(app, host=MOBILE_HOST, port=MOBILE_PORT, log_level="warning")
+        self._server = uvicorn.Server(config)
+        self._task = asyncio.create_task(self._server.serve())
+        for _ in range(20):
+            if self._server.started:
+                break
+            await asyncio.sleep(0.05)
+        logger.info("Mobile server started at %s", self.status()["url"])
+        return self.status()
+
+    async def stop(self) -> dict:
+        if self._server:
+            self._server.should_exit = True
+        if self._task:
+            try:
+                await asyncio.wait_for(asyncio.shield(self._task), timeout=4)
+            except (asyncio.TimeoutError, asyncio.CancelledError):
+                logger.warning("Mobile server shutdown timed out")
+        self._server = None
+        self._task = None
+        await stream_manager.stop()
+        logger.info("Mobile server stopped")
+        return self.status()
+
 def main() -> None:
     server = ServerThread()
+    set_mobile_server_controller(server.mobile_controller)
 
     print()
     print("==============================================")
@@ -103,9 +167,9 @@ def main() -> None:
 
     if server.wait_until_ready():
         ip = get_local_ip()
-        print(f"  Server running at http://{ip}:{PORT}")
+        print(f"  Monitor server running at http://localhost:{PORT}")
         print(f"  Monitor page  -> http://localhost:{PORT}/monitor")
-        print(f"  Phone URL     -> http://{ip}:{PORT}")
+        print("  Phone server  -> started from the monitor")
         print()
         monitor_url = f"http://localhost:{PORT}/monitor"
         monitor_in_native_window = open_monitor(monitor_url)

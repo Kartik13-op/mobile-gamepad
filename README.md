@@ -33,9 +33,9 @@ TouchKeys is designed to keep the entire control path inside your home or office
 
 ```text
 Windows PC
-  ├─ TouchKeys starts a local FastAPI web server on port 8000
-  ├─ `/monitor` shows the desktop dashboard and connection QR code
-  └─ `/` serves the mobile controller webpage
+  ├─ TouchKeys starts a localhost-only monitor on port 8000
+  ├─ `/monitor` opens in a native pywebview control center
+  └─ The monitor starts/stops the phone server on port 8001 on demand
           ▲                         │
           │ HTTP loads the page     │ WebSocket sends live input
           │                         ▼
@@ -51,12 +51,14 @@ Windows input layer
 
 Here is what happens after launch:
 
-1. TouchKeys starts a small web server on the PC and binds it to the local network. It displays the PC's local address, such as `http://192.168.1.20:8000`, and provides the same address as a QR code.
-2. The phone and PC connect to the same Wi-Fi network. Scanning the QR code, or entering the address manually, loads the controller webpage from the PC. No cloud account, internet connection, or mobile installation is required for the controller itself.
-3. The webpage renders the current layout and opens a persistent WebSocket connection back to the PC. This keeps the connection open for fast, two-way communication instead of submitting a new web request for every button press.
-4. Every touch is translated in the browser into a small event: a button press/release, an analog-stick position, a trigger value, a mouse gesture, or a keyboard binding. The server identifies the connected device and assigns it one of controller slots `0`–`3`.
-5. The PC processes the event locally. Gamepad events are sent through `vgamepad` to the ViGEmBus driver, which exposes a virtual Xbox 360 controller to Windows and games. Mouse and keyboard events are sent to Windows through the configured input handler.
-6. The desktop monitor stays connected as another WebSocket client. It receives connection status, layout changes, input activity, and latency information, so the PC can manage connected phones and edit the shared control layout while the controller is in use.
+1. TouchKeys starts the monitor locally at `http://localhost:8000/monitor`; the monitor is not exposed to the Wi-Fi network.
+2. Click **START PHONE SERVER** in the monitor to open the LAN server on port `8001`. Only then are the phone URL and locally generated QR code shown.
+3. The phone and PC connect to the same Wi-Fi network. Scanning the QR code, or entering the displayed `http://<PC-LAN-IP>:8001` address, loads the controller webpage. No cloud account or mobile installation is required.
+4. The webpage renders the current layout and opens a persistent WebSocket connection back to the PC. This keeps the connection open for fast, two-way communication instead of submitting a new web request for every button press.
+5. Every touch is translated in the browser into a small event: a button press/release, an analog-stick position, a trigger value, a mouse gesture, or a keyboard binding. The server identifies the connected device and assigns it one of controller slots `0`–`3`.
+6. The PC processes the event locally. Gamepad events are sent through `vgamepad` to the ViGEmBus driver, which exposes a virtual Xbox 360 controller to Windows and games. Mouse and keyboard events are sent to Windows through the configured input handler.
+7. The optional Streaming tab captures the desktop with `mss`, sends frames over WebRTC using `aiortc`, and fits the full frame inside the phone display without cropping. Stream resolution, FPS, and quality are configurable.
+8. The desktop monitor stays connected as another WebSocket client. It receives connection status, layout changes, input activity, and latency information, so the PC can manage connected phones and edit the shared control layout while the controller is in use.
 
 The result is a direct **phone → local Wi-Fi → PC → Windows input** pipeline. Touch data is not routed through a remote server, and the project does not require a database, login system, companion mobile app, or separate backend service. The only Windows-level prerequisite is the one-time ViGEmBus driver installation for virtual Xbox controller output.
 
@@ -107,7 +109,8 @@ TouchKeys is useful for couch co-op, custom controls, accessibility setups, medi
 - **🎨 Visual Layout Editor**: Full drag-and-drop layout customization (add, move, resize, rename, keybind, undo/redo, import, and export).
 - **⚡ Ultra-Low Latency**: Built on FastAPI and WebSockets with automated heartbeats, minimal latency overhead, and auto-reconnect logic.
 - **📱 Zero App Installation**: Runs directly inside Chrome, Safari, Firefox, or Edge on iOS, Android, or tablet devices.
-- **🖥️ Desktop Control Center**: Dedicated `/monitor` view with QR code generator, client status roster, and integrated gamepad tester.
+- **🖥️ Desktop Control Center**: Native pywebview `/monitor` view with on-demand phone server controls, QR generation, client status, layout editing, and an integrated gamepad tester.
+- **📺 Optional WebRTC Streaming**: Stream the PC screen to connected phones with configurable resolution, FPS, and quality using `aiortc`.
 
 ---
 
@@ -120,7 +123,7 @@ Choose the standalone executable for the quickest setup, or use the source packa
 1. Download `TouchKeys.exe` from the GitHub release and place it in a new folder.
 2. Install the **ViGEmBus** driver as Administrator. The driver installer is in the source ZIP under `installers\`; maintainers may also attach it as a separate release asset.
 3. Double-click `TouchKeys.exe`. Allow Windows Firewall access on Private networks if prompted.
-4. Connect the phone and PC to the same Wi-Fi network, then scan the displayed QR code or open the displayed `http://192.168.x.x:8000` address.
+4. From the monitor, click **START PHONE SERVER**. Connect the phone and PC to the same Wi-Fi network, then scan the displayed QR code or open the displayed `http://192.168.x.x:8001` address.
 
 The standalone executable already contains Python, TouchKeys, the controller code, templates, static assets, and Python dependencies. Python and `.venv` are not required. ViGEmBus remains a separate Windows driver required for virtual Xbox controller output.
 
@@ -134,7 +137,7 @@ The standalone executable already contains Python, TouchKeys, the controller cod
    .\setup.ps1
    ```
 4. Approve the administrator prompt for ViGEmBus. Setup provisions Python 3.12, creates `.venv`, installs dependencies, builds a local standalone `TouchKeys.exe`, and creates a desktop shortcut.
-5. Launch the generated `TouchKeys.exe`, then connect your phone using the displayed URL or QR code.
+5. Launch the generated `TouchKeys.exe`, start the phone server from the monitor, then connect your phone using the displayed URL or QR code.
 
 To run the source directly after setup:
 
@@ -173,7 +176,8 @@ TouchKeys/
 ├── backend/
 │   ├── gui.py                    # Starts Uvicorn server & opens monitor window
 │   ├── main.py                   # Server application wrapper
-│   └── server.py                 # FastAPI routes & WebSocket event handler
+│   ├── server.py                 # FastAPI routes & WebSocket event handler
+│   └── streaming.py              # aiortc WebRTC desktop screen track
 ├── controller/                   # Virtual XInput handler, layout manager, storage
 ├── static/                       # Frontend JS ES modules, styles, and assets
 │   ├── favicon.png               # Application icon asset
@@ -226,7 +230,7 @@ Run <code>.\setup.ps1</code> again in PowerShell and verify that <code>.venv\Scr
 
 <details>
 <summary><b>2. Mobile phone cannot connect to the server page</b></summary>
-Ensure both PC and phone are connected to the exact same Wi-Fi network (not guest Wi-Fi). Verify that Windows Firewall permits traffic on private networks for Python / TouchKeys on port <code>8000</code>.
+Ensure both PC and phone are connected to the exact same Wi-Fi network (not guest Wi-Fi). Start the phone server from the monitor and verify that Windows Firewall permits Python / TouchKeys on private networks for port <code>8001</code>. Port <code>8000</code> is intentionally localhost-only.
 </details>
 
 <details>
@@ -241,7 +245,7 @@ Some PC games with aggressive anti-cheat engines (e.g., Vanguard, Easy Anti-Chea
 
 <details>
 <summary><b>5. QR code image does not render on PC monitor</b></summary>
-The QR code is generated via <code>api.qrserver.com</code>. If your PC lacks active internet access, simply type the displayed local IP address (e.g., <code>http://192.168.1.X:8000</code>) directly into your phone browser.
+The QR code is generated locally by TouchKeys after the phone server starts. If it does not render, type the displayed LAN address (for example, <code>http://192.168.1.X:8001</code>) directly into your phone browser.
 </details>
 
 ---
@@ -266,7 +270,7 @@ The QR code is generated via <code>api.qrserver.com</code>. If your PC lacks act
 - [ ] Signed Windows release builds and a guided installer package
 - [ ] Release packaging that bundles or streamlines ViGEmBus driver installation
 - [ ] Automatic update and version-reporting flow
-- [ ] Low-latency WebRTC live PC screen streaming to mobile device
+- [x] Low-latency WebRTC live PC screen streaming to mobile device
 
 ---
 

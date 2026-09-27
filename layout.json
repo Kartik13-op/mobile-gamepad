@@ -1,6 +1,6 @@
 {
   "version": "2.0",
-  "activePageIndex": 3,
+  "activePageIndex": 6,
   "pages": [
     {
       "id": "p1",
@@ -1399,10 +1399,10 @@
           "name": "Cursor",
           "type": "touchpad",
           "keybind": "gamepad_rs",
-          "x": 0.044490324161718824,
-          "y": 0.025584196006803707,
-          "width": 906,
-          "height": 501,
+          "x": 0,
+          "y": 0.2549826856409336,
+          "width": 567,
+          "height": 355,
           "opacity": 0.4,
           "fontSize": 19,
           "layer": 0,
@@ -1411,9 +1411,9 @@
           "orientation": "horizontal",
           "mappedAxis": "left_stick_x",
           "mappedTo": "gamepad_rs",
-          "sensitivity": 0.75,
+          "sensitivity": 2.25,
           "mode": "mouse",
-          "smoothness": 0.09
+          "smoothness": 0.21
         }
       ]
     },

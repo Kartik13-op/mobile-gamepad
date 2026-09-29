@@ -33,6 +33,7 @@ except ImportError:
 
 # Import the FastAPI app from server.py
 from backend.server import app, get_local_ip, set_mobile_server_controller, keyboard, stream_manager
+from backend.tls import ensure_certificate, certificate_paths
 
 logging.basicConfig(
     level=logging.INFO,
@@ -118,18 +119,35 @@ class MobileServerController:
 
     def status(self) -> dict:
         ip = get_local_ip()
+        cert_path, _ = certificate_paths(DATA_DIR)
         return {
             "running": self.running,
             "host": ip,
             "port": MOBILE_PORT,
-            "url": f"http://{ip}:{MOBILE_PORT}",
+            "url": f"https://{ip}:{MOBILE_PORT}",
+            "http_url": f"http://{ip}:{MOBILE_PORT}",
+            "certificate_url": f"https://{ip}:{MOBILE_PORT}/api/certificate",
+            "certificate_ready": cert_path.exists(),
             "available": True,
         }
 
     async def start(self) -> dict:
         if self.running:
             return self.status()
-        config = uvicorn.Config(app, host=MOBILE_HOST, port=MOBILE_PORT, log_level="warning")
+        lan_ip = get_local_ip()
+        try:
+            cert_path, key_path = ensure_certificate(DATA_DIR, lan_ip)
+        except RuntimeError as exc:
+            logger.error("Could not prepare HTTPS phone server: %s", exc)
+            raise
+        config = uvicorn.Config(
+            app,
+            host=MOBILE_HOST,
+            port=MOBILE_PORT,
+            log_level="warning",
+            ssl_certfile=str(cert_path),
+            ssl_keyfile=str(key_path),
+        )
         self._server = uvicorn.Server(config)
         self._task = asyncio.create_task(self._server.serve())
         for _ in range(20):

@@ -110,6 +110,7 @@ html, body { height:100vh; overflow:hidden; background:var(--bg-base); color:var
 #editor-canvas .ctrl-el.ctrl-stick { background:transparent; border:3px solid var(--border); border-radius:50%; }
 #editor-canvas .ctrl-el.ctrl-trigger { background:var(--bg-elevated); }
 #editor-canvas .ctrl-el.ctrl-touchpad { border:1px dashed rgba(255,255,255,0.3); background:var(--bg-elevated); }
+#editor-canvas .ctrl-el.ctrl-sensor { border:1px solid var(--accent); background:var(--bg-elevated); }
 .resize-h { position:absolute; width:10px; height:10px; z-index:20; opacity:0; pointer-events:none; background:var(--accent); border-radius:50%; }
 .ctrl-el.selected .resize-h { opacity:1; pointer-events:auto; }
 .resize-h.nw { top:-5px; left:-5px; cursor:nwse-resize; }
@@ -559,6 +560,7 @@ select option, .form-select option, select optgroup {
             <option value="trigger">Trigger</option>
             <option value="slider">Slider</option>
             <option value="touchpad">Touchpad</option>
+            <option value="sensor">Sensor / Gyro</option>
           </select>
         </div>
         <div class="form-row">
@@ -826,7 +828,8 @@ select option, .form-select option, select optgroup {
         $('server-info').innerHTML = `
           <strong>Monitor:</strong> localhost:8000<br>
           <strong>Phone URL:</strong> <a href="${state.url}" style="color:var(--accent);" target="_blank">${state.url}</a><br>
-          <strong>Phone server:</strong> ${state.host}:${state.port}
+          <strong>Phone server:</strong> ${state.host}:${state.port}<br>
+          <strong>Certificate:</strong> <a href="${state.certificate_url}" style="color:var(--accent);" target="_blank">download public certificate</a>
         `;
       }
     } catch(e) { showToast('Unable to read phone server state'); }
@@ -973,6 +976,7 @@ select option, .form-select option, select optgroup {
         else if (ctrl.type === 'trigger') cls = 'ctrl-trigger';
         else if (ctrl.type === 'touchpad') cls = 'ctrl-touchpad';
         else if (ctrl.type === 'slider') cls = 'ctrl-slider-edit';
+        else if (ctrl.type === 'sensor') cls = 'ctrl-sensor';
         
         const sel = ctrl.id === selectedCtrlId ? ' selected' : '';
         const label = esc(ctrl.name || '');
@@ -1133,6 +1137,7 @@ select option, .form-select option, select optgroup {
           <option value="trigger" ${ctrl.type === 'trigger' ? 'selected' : ''}>Trigger</option>
           <option value="slider" ${ctrl.type === 'slider' ? 'selected' : ''}>Slider</option>
           <option value="touchpad" ${ctrl.type === 'touchpad' ? 'selected' : ''}>Touchpad</option>
+          <option value="sensor" ${ctrl.type === 'sensor' ? 'selected' : ''}>Sensor / Gyro</option>
         </select>
       </div>
     `;
@@ -1294,6 +1299,58 @@ select option, .form-select option, select optgroup {
       });
     }
 
+    // Sensor-specific properties
+    if (ctrl.type === 'sensor') {
+      const sensorSection = document.createElement('div');
+      sensorSection.style.marginTop = '12px';
+      sensorSection.style.borderTop = '2px solid var(--border)';
+      sensorSection.style.paddingTop = '12px';
+      const targetOptions = (selected) => `
+        <option value="none" ${(!selected || selected === 'none') ? 'selected' : ''}>Disabled</option>
+        <option value="left_stick_x" ${selected === 'left_stick_x' ? 'selected' : ''}>Left Stick X</option>
+        <option value="left_stick_y" ${selected === 'left_stick_y' ? 'selected' : ''}>Left Stick Y</option>
+        <option value="right_stick_x" ${selected === 'right_stick_x' ? 'selected' : ''}>Right Stick X</option>
+        <option value="right_stick_y" ${selected === 'right_stick_y' ? 'selected' : ''}>Right Stick Y</option>
+        <option value="left_trigger" ${selected === 'left_trigger' ? 'selected' : ''}>Left Trigger</option>
+        <option value="right_trigger" ${selected === 'right_trigger' ? 'selected' : ''}>Right Trigger</option>`;
+      const axisFields = [
+        ['x', 'Tilting phone’s long edges', ctrl.sensorX || {}],
+        ['y', 'Rolling phone left / right', ctrl.sensorY || {}],
+        ['z', 'Turning phone like a compass', ctrl.sensorZ || {}],
+      ];
+      sensorSection.innerHTML = `<div style="font-size:10px;color:var(--text-dim);line-height:1.6;margin-bottom:10px;">Sensor input is idle until the player taps ENABLE on this control.</div>` + axisFields.map(([axis, label, value]) => `
+        <div style="border-top:1px solid var(--border);padding-top:9px;margin-top:9px;">
+          <div class="form-label">${axis.toUpperCase()} — ${label}</div>
+          <div class="form-group"><label class="form-label">Xbox output</label><select class="form-select sensor-target" data-axis="${axis}">${targetOptions(value.target)}</select></div>
+          <div class="form-group"><label class="form-label sensor-mode-label">Input mode</label><select class="form-select sensor-mode" data-axis="${axis}">
+            <option value="orientation" ${(value.mode || 'orientation') === 'orientation' ? 'selected' : ''}>Orientation / angle</option>
+            <option value="velocity" ${value.mode === 'velocity' ? 'selected' : ''}>Angular velocity / movement</option>
+          </select></div>
+          <div class="form-group"><label class="form-label sensor-sensitivity-label">Sensitivity (${value.sensitivity ?? 1})</label><input class="form-input sensor-sensitivity" data-axis="${axis}" type="range" min="0.1" max="3" step="0.1" value="${value.sensitivity ?? 1}"></div>
+          <div class="form-group"><label class="form-label sensor-smoothing-label">Smoothing (${Math.round((value.smoothing ?? 0) * 100)}%)</label><input class="form-input sensor-smoothing" data-axis="${axis}" type="range" min="0" max="0.95" step="0.05" value="${value.smoothing ?? 0}"></div>
+          <label style="display:flex;gap:7px;align-items:center;font-size:10px;color:var(--text-dim);"><input type="checkbox" class="sensor-invert" data-axis="${axis}" ${value.invert ? 'checked' : ''}> Invert axis</label>
+        </div>`).join('');
+      propsContent.appendChild(sensorSection);
+      const setting = (axis) => ({ ...(ctrl[`sensor${axis.toUpperCase()}`] || {}) });
+      const saveSensor = (axis, updates) => {
+        const key = `sensor${axis.toUpperCase()}`;
+        const next = { ...setting(axis), ...updates };
+        ctrl[key] = next;
+        debounceUpdate(selectedCtrlId, { [key]: next });
+      };
+      sensorSection.querySelectorAll('.sensor-target').forEach(input => input.addEventListener('change', e => saveSensor(e.target.dataset.axis, { target: e.target.value })));
+      sensorSection.querySelectorAll('.sensor-mode').forEach(input => input.addEventListener('change', e => saveSensor(e.target.dataset.axis, { mode: e.target.value })));
+      sensorSection.querySelectorAll('.sensor-sensitivity').forEach(input => input.addEventListener('input', e => {
+        e.target.previousElementSibling.textContent = `Sensitivity (${e.target.value})`;
+        saveSensor(e.target.dataset.axis, { sensitivity: parseFloat(e.target.value) });
+      }));
+      sensorSection.querySelectorAll('.sensor-smoothing').forEach(input => input.addEventListener('input', e => {
+        e.target.previousElementSibling.textContent = `Smoothing (${Math.round(parseFloat(e.target.value) * 100)}%)`;
+        saveSensor(e.target.dataset.axis, { smoothing: parseFloat(e.target.value) });
+      }));
+      sensorSection.querySelectorAll('.sensor-invert').forEach(input => input.addEventListener('change', e => saveSensor(e.target.dataset.axis, { invert: e.target.checked })));
+    }
+
     // Duplicate / Delete
     $('btn-duplicate').onclick = () => {
       const page = getCurrentPage();
@@ -1418,6 +1475,15 @@ select option, .form-select option, select optgroup {
       data.sensitivity = 1;
       data.mode = 'joystick';
       data.smoothness = 0;
+    }
+    if (type === 'sensor') {
+      data.name = $('add-name').value || 'Sensor';
+      data.width = Math.max(120, data.width);
+      data.height = Math.max(90, data.height);
+      const axis = { target: 'none', mode: 'orientation', sensitivity: 1, smoothing: 0, invert: false };
+      data.sensorX = { ...axis, target: 'right_stick_x' };
+      data.sensorY = { ...axis, target: 'right_stick_y' };
+      data.sensorZ = { ...axis };
     }
     if (type === 'trigger') {
       data.triggerMode = 'analog';

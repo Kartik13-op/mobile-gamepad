@@ -48,7 +48,7 @@ exe = EXE(
     a.binaries,
     a.datas,
     [],
-    name="TouchKeys-V4",
+    name="TouchKeys-V5",
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,

@@ -52,8 +52,8 @@ Windows input layer
 Here is what happens after launch:
 
 1. TouchKeys starts the monitor locally at `http://localhost:8000/monitor`; the monitor is not exposed to the Wi-Fi network.
-2. Click **START PHONE SERVER** in the monitor to open the LAN server on port `8001`. Only then are the phone URL and locally generated QR code shown.
-3. The phone and PC connect to the same Wi-Fi network. Scanning the QR code, or entering the displayed `http://<PC-LAN-IP>:8001` address, loads the controller webpage. No cloud account or mobile installation is required.
+2. Click **START PHONE SERVER** in the monitor to open the HTTPS LAN server on port `8001`. Only then are the phone URL and locally generated QR code shown.
+3. The phone and PC connect to the same Wi-Fi network. Scanning the QR code, or entering the displayed `https://<PC-LAN-IP>:8001` address, loads the controller webpage. Trust the downloaded `touchkeys-phone.crt` certificate if the mobile browser does not accept it automatically. No cloud account or mobile installation is required.
 4. The webpage renders the current layout and opens a persistent WebSocket connection back to the PC. This keeps the connection open for fast, two-way communication instead of submitting a new web request for every button press.
 5. Every touch is translated in the browser into a small event: a button press/release, an analog-stick position, a trigger value, a mouse gesture, or a keyboard binding. The server identifies the connected device and assigns it one of controller slots `0`–`3`.
 6. The PC processes the event locally. Gamepad events are sent through `vgamepad` to the ViGEmBus driver, which exposes a virtual Xbox 360 controller to Windows and games. Mouse and keyboard events are sent to Windows through the configured input handler.
@@ -120,10 +120,10 @@ Choose the standalone executable for the quickest setup, or use the source packa
 
 ### Option A — Standalone executable
 
-1. Download `TouchKeys.exe` from the GitHub release and place it in a new folder.
+1. Download `TouchKeys-V5.exe` from the GitHub release and place it in a new folder.
 2. Install the **ViGEmBus** driver as Administrator. The driver installer is in the source ZIP under `installers\`; maintainers may also attach it as a separate release asset.
-3. Double-click `TouchKeys.exe`. Allow Windows Firewall access on Private networks if prompted.
-4. From the monitor, click **START PHONE SERVER**. Connect the phone and PC to the same Wi-Fi network, then scan the displayed QR code or open the displayed `http://192.168.x.x:8001` address.
+3. Double-click `TouchKeys-V5.exe`. Allow Windows Firewall access on Private networks if prompted.
+4. From the monitor, click **START PHONE SERVER**. Connect the phone and PC to the same Wi-Fi network, then scan the displayed QR code or open the displayed `https://192.168.x.x:8001` address.
 
 The standalone executable already contains Python, TouchKeys, the controller code, templates, static assets, and Python dependencies. Python and `.venv` are not required. ViGEmBus remains a separate Windows driver required for virtual Xbox controller output.
 
@@ -245,15 +245,20 @@ Some PC games with aggressive anti-cheat engines (e.g., Vanguard, Easy Anti-Chea
 
 <details>
 <summary><b>5. QR code image does not render on PC monitor</b></summary>
-The QR code is generated locally by TouchKeys after the phone server starts. If it does not render, type the displayed LAN address (for example, <code>http://192.168.1.X:8001</code>) directly into your phone browser.
+The QR code is generated locally by TouchKeys after the phone server starts. If it does not render, type the displayed LAN address (for example, <code>https://192.168.1.X:8001</code>) directly into your phone browser.
 </details>
 
 ---
 
-## 🌐 Gyroscope & Sensor Note
+## 🌐 HTTPS, browser compatibility, and motion controls
 
-> [!NOTE]
-> **Why Gyro and Motion Sensor Integration was Dropped**: Modern mobile web browsers (Safari, Chrome) restrict access to hardware sensors (gyroscope, accelerometer) over insecure HTTP (`http://`). While HTTPS experiments with self-signed SSL certificates were evaluated, browser security policies created friction for local LAN usage. Motion controls remain disabled in the current HTTP pipeline for maximum compatibility.
+The phone server uses HTTPS and secure WebSockets (`wss://`) so browsers can expose motion sensors. It creates a self-signed local certificate in `.tls/`; download `/api/certificate` and install/trust it on the phone, or replace it with a locally trusted `mkcert` certificate.
+
+Because this is a local certificate, a browser may flag the page as unsafe. Continue through the browser’s **Learn More**, **Advanced Options**, and **Visit Website / Continue** prompts. Chrome accepted the explicit Sensor permission flow during testing. Safari may still block the native motion permission prompt or report different secure-context behavior after the warning because Safari and Chrome handle self-signed LAN certificates differently. This is a browser compatibility limitation, not a TouchKeys input protocol difference.
+
+Add a **Sensor / Gyro** control in the desktop editor, configure each axis, then tap its **ENABLE** button on the phone. The phone calculates orientation/angular velocity into normalized analog values locally; only ordinary analog stick/trigger values are sent to the PC. No sensor data is collected before the player explicitly enables the control. Orientation mode is useful for held-angle steering, while angular-velocity mode is useful for FPS-style camera movement.
+
+When a physical analog stick is being touched, it has priority over mapped Sensor output. Sensor output resumes after the physical stick is released.
 
 ---
 

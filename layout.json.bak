@@ -1,6 +1,6 @@
 {
   "version": "2.0",
-  "activePageIndex": 6,
+  "activePageIndex": 0,
   "pages": [
     {
       "id": "p1",
@@ -245,6 +245,44 @@
           "layer": 5,
           "visible": true,
           "deadzone": 0
+        },
+        {
+          "id": "97e528aec505",
+          "name": "Gyro",
+          "type": "sensor",
+          "keybind": "",
+          "x": 0.4447908977050089,
+          "y": 0.24260197583963386,
+          "width": 78,
+          "height": 72,
+          "opacity": 1,
+          "fontSize": 16,
+          "layer": 0,
+          "visible": true,
+          "deadzone": 0.15,
+          "orientation": "horizontal",
+          "mappedAxis": "left_stick_x",
+          "sensorX": {
+            "target": "right_stick_y",
+            "mode": "velocity",
+            "sensitivity": 0.7,
+            "smoothing": 0.65,
+            "invert": false
+          },
+          "sensorY": {
+            "target": "none",
+            "mode": "velocity",
+            "sensitivity": 0.8,
+            "smoothing": 0.5,
+            "invert": false
+          },
+          "sensorZ": {
+            "target": "none",
+            "mode": "velocity",
+            "sensitivity": 1,
+            "smoothing": 0.4,
+            "invert": false
+          }
         }
       ]
     },
@@ -1400,9 +1438,9 @@
           "type": "touchpad",
           "keybind": "gamepad_rs",
           "x": 0,
-          "y": 0.7271767581220321,
-          "width": 286,
-          "height": 130,
+          "y": 0.2549826856409336,
+          "width": 567,
+          "height": 355,
           "opacity": 0.4,
           "fontSize": 19,
           "layer": 0,
@@ -1429,7 +1467,7 @@
           "y": 0.62,
           "width": 54,
           "height": 54,
-          "opacity": 1.0,
+          "opacity": 1,
           "fontSize": 16,
           "layer": 1,
           "visible": true,
@@ -1443,7 +1481,7 @@
           "y": 0.55,
           "width": 54,
           "height": 54,
-          "opacity": 1.0,
+          "opacity": 1,
           "fontSize": 16,
           "layer": 1,
           "visible": true,
@@ -1457,7 +1495,7 @@
           "y": 0.55,
           "width": 54,
           "height": 54,
-          "opacity": 1.0,
+          "opacity": 1,
           "fontSize": 16,
           "layer": 1,
           "visible": true,
@@ -1471,7 +1509,7 @@
           "y": 0.48,
           "width": 54,
           "height": 54,
-          "opacity": 1.0,
+          "opacity": 1,
           "fontSize": 16,
           "layer": 1,
           "visible": true,

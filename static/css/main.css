@@ -104,6 +104,14 @@ input, textarea, select {
   backdrop-filter: blur(12px);
 }
 
+.ctrl-sensor { position:absolute; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:5px; cursor:pointer; user-select:none; -webkit-user-select:none; touch-action:none; border:1px solid var(--border); border-radius:14px; background:rgba(23,34,53,.88); color:var(--text-primary); text-align:center; z-index:1; overflow:hidden; }
+.sensor-icon { font-size:24px; line-height:1; color:var(--text-secondary); }
+.sensor-label { font-size:11px; font-weight:700; letter-spacing:1px; }
+.sensor-toggle { padding:4px 7px; border:1px solid var(--border); border-radius:999px; background:var(--bg-card); color:var(--text-secondary); font:inherit; font-size:9px; font-weight:700; letter-spacing:.8px; }
+.sensor-status { min-height:10px; color:var(--text-muted); font-size:8px; letter-spacing:.5px; }
+.ctrl-sensor.active { border-color:var(--text-primary); box-shadow:0 0 18px rgba(255,255,255,.14); }
+.ctrl-sensor.active .sensor-toggle { background:var(--text-primary); color:var(--bg-base); border-color:var(--text-primary); }
+
 .connection-badge.disconnected {
   color: var(--text-muted);
 }

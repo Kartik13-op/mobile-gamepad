@@ -34,11 +34,13 @@ class EventRouter:
         self.connections = connections
         self._pressed_by_client: Dict[str, set[str]] = {}
         self._analog_by_client: Dict[str, Dict[str, tuple[float, float, float]]] = {}
+        self._motion_by_client: Dict[str, Dict[str, list[float]]] = {}
 
         self._handlers: Dict[str, Handler] = {
             "keydown": self._on_keydown,
             "keyup": self._on_keyup,
             "analog": self._on_analog,
+            "motion": self._on_motion,
             "mouse": self._on_mouse,
             "ping": self._on_ping,
             "save_layout": self._on_save_layout,
@@ -64,6 +66,7 @@ class EventRouter:
         """Forget per-client de-duplication state after disconnect/removal."""
         self._pressed_by_client.pop(client_id, None)
         self._analog_by_client.pop(client_id, None)
+        self._motion_by_client.pop(client_id, None)
 
     async def route(self, client_id: str, message: Dict[str, Any]) -> None:
         """Dispatch a message to its handler based on the ``type`` field."""
@@ -155,6 +158,27 @@ class EventRouter:
         if not action:
             return
         self.keyboard.mouse.handle(action, msg)
+
+    async def _on_motion(self, client_id: str, msg: Dict[str, Any]) -> None:
+        """Apply one opt-in sensor axis to a virtual stick or trigger."""
+        slot = self.connections.get_gamepad_slot(client_id)
+        if slot is None:
+            return
+        try:
+            value = max(-1.0, min(1.0, float(msg.get("value", 0))))
+        except (TypeError, ValueError):
+            return
+        target = str(msg.get("target", "")).lower().strip()
+        if target not in {"gamepad_ls", "gamepad_rs", "gamepad_lt", "gamepad_rt"}:
+            return
+        component = str(msg.get("component", "x")).lower().strip()
+        if component not in {"x", "y"}:
+            component = "x"
+        states = self._motion_by_client.setdefault(client_id, {})
+        state = states.setdefault(target, [0.0, 0.0])
+        state[0 if component == "x" else 1] = value
+        self.keyboard.ensure_controller(slot)
+        self.keyboard.move_analog(slot, target, state[0], state[1])
 
     # ------------------------------------------------------------------
     # Heartbeat

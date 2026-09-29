@@ -17,7 +17,7 @@ TouchKeys is designed as a **local network utility** for low-latency gamepad emu
 
 - **Local Network Scope**: The FastAPI server binds to `0.0.0.0:8000` to allow phones on the same Wi-Fi/LAN to send input events.
 - **Authentication**: There is no built-in authentication or password protection on the web endpoints (`/` and `/monitor`).
-- **Encryption**: Communication uses standard HTTP and unencrypted WebSockets (`ws://`). TLS/HTTPS is intentionally omitted to avoid self-signed certificate prompts on mobile browsers.
+- **Encryption**: The phone server uses HTTPS and encrypted WebSockets (`wss://`) with a locally generated self-signed certificate. The monitor stays localhost-only HTTP. Phones must trust the public certificate (available at `/api/certificate`) or a locally trusted replacement before motion APIs will work.
 - **Input Injection**: TouchKeys interacts directly with virtual XInput drivers (`vgamepad` / ViGEmBus) and synthetic mouse/keyboard input generators (`pyautogui`).
 
 > [!IMPORTANT]

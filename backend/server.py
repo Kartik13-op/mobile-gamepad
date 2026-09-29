@@ -20,7 +20,7 @@ if str(PROJECT_DIR) not in sys.path:
     sys.path.insert(0, str(PROJECT_DIR))
 
 from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
-from fastapi.responses import Response
+from fastapi.responses import Response, FileResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import HTMLResponse
 
@@ -189,6 +189,16 @@ async def qr_code(data: str) -> Response:
         return Response(content=buffer.getvalue(), media_type="image/png")
     except ImportError as exc:
         raise HTTPException(status_code=503, detail="QR support is not installed") from exc
+
+
+@app.get("/api/certificate")
+async def certificate() -> FileResponse:
+    """Download the public certificate so it can be trusted on a phone."""
+    from backend.tls import certificate_paths
+    cert_path, _ = certificate_paths(DATA_DIR)
+    if not cert_path.exists():
+        raise HTTPException(status_code=404, detail="HTTPS certificate is not ready")
+    return FileResponse(cert_path, media_type="application/x-x509-ca-cert", filename="touchkeys-phone.crt")
 
 
 @app.get("/api/stream/status")

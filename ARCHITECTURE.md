@@ -56,7 +56,7 @@ Creates the shared `StorageManager`, `ConfigManager`, `KeyboardController`, `Lay
 | `GET /api/debug` | Returns controller count, connection count, and currently pressed keys. |
 | `GET /static/...` | Serves CSS, JavaScript, and the favicon. |
 
-The server is bound to all interfaces for LAN access. The default protocol is unencrypted HTTP and WebSocket; the JavaScript selects `wss://` only if the page itself was loaded over HTTPS.
+The monitor remains localhost HTTP, while the on-demand phone server is bound to all interfaces with HTTPS and TLS WebSockets. The JavaScript selects `wss://` automatically when the phone page is loaded over HTTPS.
 
 ### `controller/network.py`
 
@@ -148,7 +148,7 @@ EventRouter identifies client → assigned slot
    └─ MouseController → pyautogui → Windows keyboard/cursor
 ```
 
-Analog values are touch/pointer-derived; there is no implemented gyroscope or motion-sensor pipeline. Browser haptic feedback is a short local `navigator.vibrate()` call when available and is not sent to the PC.
+Analog values are touch/pointer-derived, with an opt-in Sensor control that maps phone orientation or angular velocity to independently configured Xbox stick/trigger axes. The mobile page requests sensor permission only after the Sensor control’s physical ENABLE button is tapped. Browser haptic feedback is a short local `navigator.vibrate()` call when available and is not sent to the PC.
 
 ## Packaging and operational boundaries
 

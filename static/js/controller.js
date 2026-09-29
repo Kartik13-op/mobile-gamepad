@@ -221,6 +221,8 @@ export class GamepadController {
       lastSendTime: 0,
     });
 
+    eventBus.emit('physical-stick:start', el.dataset.keybind || 'gamepad_ls');
+
     this._updateStickPosition(touchId, cx, cy);
   }
 
@@ -304,6 +306,8 @@ export class GamepadController {
     }
 
     this._activeSticks.delete(touchId);
+    const stillHeld = [...this._activeSticks.values()].some(candidate => candidate.el.dataset.keybind === stick.el.dataset.keybind);
+    if (!stillHeld) eventBus.emit('physical-stick:end', stick.el.dataset.keybind || 'gamepad_ls');
   }
 
   // -----------------------------------------------------------------

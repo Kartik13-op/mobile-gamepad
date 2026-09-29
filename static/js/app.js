@@ -1,9 +1,10 @@
 import { eventBus } from './utils.js';
 import { ui } from './ui.js';
 import { ws } from './websocket.js';
-import { layout } from './layout.js';
+import { layout } from './layout.js?v=8';
 import { gamepadController } from './controller.js';
 import { screenStream } from './streaming.js';
+import { motion } from './motion.js?v=8';
 
 class App {
   constructor() {
@@ -18,6 +19,7 @@ class App {
     layout.init();
     gamepadController.init();
     screenStream.init();
+    motion.init();
 
     document.getElementById('screen-gamepad')?.classList.remove('hidden');
 

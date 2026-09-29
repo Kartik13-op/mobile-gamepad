@@ -53,7 +53,7 @@ export class LayoutManager {
 
   _renderControls() {
     if (!this._workspace) return;
-    this._workspace.querySelectorAll('.ctrl-btn, .ctrl-analog, .ctrl-trigger, .ctrl-touchpad, .ctrl-slider').forEach(el => el.remove());
+    this._workspace.querySelectorAll('.ctrl-btn, .ctrl-analog, .ctrl-trigger, .ctrl-touchpad, .ctrl-slider, .ctrl-sensor').forEach(el => el.remove());
 
     let emptyState = this._workspace.querySelector('.empty-state');
     const controls = this.activeControls;
@@ -90,6 +90,8 @@ export class LayoutManager {
       this._createSlider(ctrl);
     } else if (type === 'touchpad') {
       this._createTouchpad(ctrl);
+    } else if (type === 'sensor') {
+      this._createSensor(ctrl);
     } else {
       this._createButton(ctrl);
     }
@@ -197,6 +199,28 @@ export class LayoutManager {
       <span class="touchpad-icon">${(ctrl.mode || 'joystick') === 'mouse' ? '&#9794;' : '&#9678;'}</span>
       <span class="touchpad-label">${ctrl.name || 'TOUCHPAD'}</span>
     `;
+    this._applyBaseStyles(el, ctrl);
+    this._workspace.appendChild(el);
+  }
+
+  _createSensor(ctrl) {
+    const el = document.createElement('div');
+    el.className = 'ctrl-sensor';
+    el.dataset.id = ctrl.id;
+    el.dataset.controlType = 'sensor';
+    el.dataset.sensorConfig = JSON.stringify({ x: ctrl.sensorX || {}, y: ctrl.sensorY || {}, z: ctrl.sensorZ || {} });
+    el.innerHTML = `<span class="sensor-icon">⌁</span><span class="sensor-label">${ctrl.name || 'SENSOR'}</span><button type="button" class="sensor-toggle" aria-pressed="false">ENABLE</button><span class="sensor-status" aria-live="polite">tap to start</span>`;
+    const sensorButton = el.querySelector('.sensor-toggle');
+    const activate = (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      sensorButton.textContent = 'REQUESTING';
+      el.querySelector('.sensor-status').textContent = 'button detected';
+      document.dispatchEvent(new CustomEvent('touchkeys:sensor-toggle', { detail: el }));
+    };
+    sensorButton.addEventListener('touchstart', activate, { passive: false });
+    sensorButton.addEventListener('pointerdown', activate, { passive: false });
+    sensorButton.addEventListener('click', activate);
     this._applyBaseStyles(el, ctrl);
     this._workspace.appendChild(el);
   }

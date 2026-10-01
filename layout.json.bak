@@ -1,6 +1,6 @@
 {
   "version": "2.0",
-  "activePageIndex": 0,
+  "activePageIndex": 1,
   "pages": [
     {
       "id": "p1",
@@ -120,68 +120,12 @@
           "deadzone": 0
         },
         {
-          "id": "b10",
-          "name": "▲",
-          "type": "button",
-          "keybind": "gamepad_dpad_up",
-          "x": 0.09451728143112686,
-          "y": 0.2538522711798288,
-          "width": 48,
-          "height": 48,
-          "opacity": 0.85,
-          "fontSize": 16,
-          "layer": 1,
-          "visible": true
-        },
-        {
-          "id": "b11",
-          "name": "◄",
-          "type": "button",
-          "keybind": "gamepad_dpad_left",
-          "x": 0.041430273838677756,
-          "y": 0.33501626235856097,
-          "width": 48,
-          "height": 48,
-          "opacity": 0.85,
-          "fontSize": 16,
-          "layer": 1,
-          "visible": true
-        },
-        {
-          "id": "b12",
-          "name": "►",
-          "type": "button",
-          "keybind": "gamepad_dpad_right",
-          "x": 0.14662693501508534,
-          "y": 0.3291255898110492,
-          "width": 48,
-          "height": 48,
-          "opacity": 0.85,
-          "fontSize": 16,
-          "layer": 1,
-          "visible": true
-        },
-        {
-          "id": "b13",
-          "name": "▼",
-          "type": "button",
-          "keybind": "gamepad_dpad_down",
-          "x": 0.09940405147358011,
-          "y": 0.4102895809897814,
-          "width": 48,
-          "height": 48,
-          "opacity": 0.85,
-          "fontSize": 16,
-          "layer": 1,
-          "visible": true
-        },
-        {
           "id": "b14",
           "name": "Y",
           "type": "button",
           "keybind": "gamepad_y",
-          "x": 0.563979849018874,
-          "y": 0.25670340319563356,
+          "x": 0.6040559153865136,
+          "y": 0.21053331610859283,
           "width": 205,
           "height": 101,
           "opacity": 0.9,
@@ -251,8 +195,8 @@
           "name": "Gyro",
           "type": "sensor",
           "keybind": "",
-          "x": 0.4447908977050089,
-          "y": 0.24260197583963386,
+          "x": 0.4247528645211891,
+          "y": 0.17334684520907276,
           "width": 78,
           "height": 72,
           "opacity": 1,
@@ -264,14 +208,14 @@
           "mappedAxis": "left_stick_x",
           "sensorX": {
             "target": "right_stick_y",
-            "mode": "velocity",
+            "mode": "orientation",
             "sensitivity": 0.7,
             "smoothing": 0.65,
             "invert": false
           },
           "sensorY": {
-            "target": "none",
-            "mode": "velocity",
+            "target": "right_stick_x",
+            "mode": "orientation",
             "sensitivity": 0.8,
             "smoothing": 0.5,
             "invert": false
@@ -282,6 +226,29 @@
             "sensitivity": 1,
             "smoothing": 0.4,
             "invert": false
+          }
+        },
+        {
+          "id": "d5a82fe63417",
+          "name": "Dpad",
+          "type": "dpad",
+          "keybind": "gamepad_dpad_up",
+          "x": 0.07307988572922511,
+          "y": 0.204826450041146,
+          "width": 183,
+          "height": 165,
+          "opacity": 1,
+          "fontSize": 16,
+          "layer": 0,
+          "visible": true,
+          "deadzone": 0.15,
+          "orientation": "horizontal",
+          "mappedAxis": "left_stick_x",
+          "directionBindings": {
+            "up": "gamepad_dpad_up",
+            "down": "gamepad_dpad_down",
+            "left": "gamepad_dpad_left",
+            "right": "gamepad_dpad_right"
           }
         }
       ]
@@ -461,6 +428,44 @@
           "deadzone": 0.15,
           "orientation": "horizontal",
           "mappedAxis": "left_stick_x"
+        },
+        {
+          "id": "97693f97c2d8",
+          "name": "Steering",
+          "type": "sensor",
+          "keybind": "",
+          "x": 0.43300381936158555,
+          "y": 0.1523604419876906,
+          "width": 120,
+          "height": 90,
+          "opacity": 1.0,
+          "fontSize": 16,
+          "layer": 0,
+          "visible": true,
+          "deadzone": 0.15,
+          "orientation": "horizontal",
+          "mappedAxis": "left_stick_x",
+          "sensorX": {
+            "target": "right_stick_x",
+            "mode": "orientation",
+            "sensitivity": 1,
+            "smoothing": 0,
+            "invert": false
+          },
+          "sensorY": {
+            "target": "left_stick_x",
+            "mode": "orientation",
+            "sensitivity": 1.4,
+            "smoothing": 0.15,
+            "invert": false
+          },
+          "sensorZ": {
+            "target": "none",
+            "mode": "orientation",
+            "sensitivity": 1,
+            "smoothing": 0,
+            "invert": false
+          }
         }
       ]
     },
@@ -1438,7 +1443,7 @@
           "type": "touchpad",
           "keybind": "gamepad_rs",
           "x": 0,
-          "y": 0.2549826856409336,
+          "y": 0.20671395823175465,
           "width": 567,
           "height": 355,
           "opacity": 0.4,
@@ -1452,6 +1457,78 @@
           "sensitivity": 2.25,
           "mode": "mouse",
           "smoothness": 0.21
+        },
+        {
+          "id": "cb95bb30249d",
+          "name": "Left Click",
+          "type": "button",
+          "keybind": "mouse_left",
+          "x": 0.6958556664199276,
+          "y": 0.27408158067170707,
+          "width": 238,
+          "height": 120,
+          "opacity": 1,
+          "fontSize": 16,
+          "layer": 0,
+          "visible": true,
+          "deadzone": 0.15,
+          "orientation": "horizontal",
+          "mappedAxis": "left_stick_x"
+        },
+        {
+          "id": "0ba7b87477ac",
+          "name": "Right Click",
+          "type": "button",
+          "keybind": "mouse_right",
+          "x": 0.6918382726016543,
+          "y": 0.5458478813679001,
+          "width": 238,
+          "height": 120,
+          "opacity": 1,
+          "fontSize": 16,
+          "layer": 0,
+          "visible": true,
+          "deadzone": 0.15,
+          "orientation": "horizontal",
+          "mappedAxis": "left_stick_x"
+        },
+        {
+          "id": "6aaa2f3b7f1c",
+          "name": "Gyro",
+          "type": "sensor",
+          "keybind": "",
+          "x": 0.5449810636241079,
+          "y": 0.28247614196026,
+          "width": 120,
+          "height": 90,
+          "opacity": 1,
+          "fontSize": 16,
+          "layer": 0,
+          "visible": true,
+          "deadzone": 0.15,
+          "orientation": "horizontal",
+          "mappedAxis": "left_stick_x",
+          "sensorX": {
+            "target": "mouse_y",
+            "mode": "orientation",
+            "sensitivity": 1,
+            "smoothing": 0,
+            "invert": false
+          },
+          "sensorY": {
+            "target": "right_stick_y",
+            "mode": "orientation",
+            "sensitivity": 1,
+            "smoothing": 0,
+            "invert": false
+          },
+          "sensorZ": {
+            "target": "mouse_x",
+            "mode": "orientation",
+            "sensitivity": 1,
+            "smoothing": 0,
+            "invert": false
+          }
         }
       ]
     },

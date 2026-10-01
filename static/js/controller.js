@@ -219,6 +219,10 @@ export class GamepadController {
       lastSentX: 0,
       lastSentY: 0,
       lastSendTime: 0,
+      outputMode: el.dataset.outputMode || 'analog',
+      mouseSensitivity: parseFloat(el.dataset.mouseSensitivity) || 12,
+      directionBindings: this._parseDirectionBindings(el.dataset.directionBindings),
+      digitalKeys: new Set(),
     });
 
     eventBus.emit('physical-stick:start', el.dataset.keybind || 'gamepad_ls');
@@ -285,6 +289,19 @@ export class GamepadController {
     stick.lastSentX = finalX;
     stick.lastSentY = finalY;
 
+    if (stick.outputMode === 'mouse') {
+      ws.send({
+        type: 'mouse', action: 'move',
+        dx: Math.round(finalX * stick.mouseSensitivity),
+        dy: Math.round(finalY * stick.mouseSensitivity),
+      });
+      return;
+    }
+    if (stick.outputMode === 'digital') {
+      this._sendStickDigital(stick, finalX, finalY);
+      return;
+    }
+
     ws.send({
       type: 'analog',
       key: stick.el.dataset.keybind || 'ls',
@@ -301,13 +318,32 @@ export class GamepadController {
     stick.ring?.remove();
     stick.dot?.remove();
 
-    if (stick.lastSentX !== 0 || stick.lastSentY !== 0) {
+    if (stick.outputMode === 'digital') {
+      for (const key of stick.digitalKeys) ws.send({ type: 'keyup', key });
+      stick.digitalKeys.clear();
+    } else if (stick.outputMode === 'analog' && (stick.lastSentX !== 0 || stick.lastSentY !== 0)) {
       ws.send({ type: 'analog', key: stick.el.dataset.keybind || 'ls', x: 0, y: 0 });
     }
 
     this._activeSticks.delete(touchId);
     const stillHeld = [...this._activeSticks.values()].some(candidate => candidate.el.dataset.keybind === stick.el.dataset.keybind);
     if (!stillHeld) eventBus.emit('physical-stick:end', stick.el.dataset.keybind || 'gamepad_ls');
+  }
+
+  _parseDirectionBindings(value) {
+    try { return JSON.parse(value || '{}') || {}; } catch (_) { return {}; }
+  }
+
+  _sendStickDigital(stick, x, y) {
+    const bindings = stick.directionBindings || {};
+    const desired = new Set();
+    if (y < -0.35 && bindings.up) desired.add(bindings.up);
+    if (y > 0.35 && bindings.down) desired.add(bindings.down);
+    if (x < -0.35 && bindings.left) desired.add(bindings.left);
+    if (x > 0.35 && bindings.right) desired.add(bindings.right);
+    for (const key of stick.digitalKeys) if (!desired.has(key)) ws.send({ type: 'keyup', key });
+    for (const key of desired) if (!stick.digitalKeys.has(key)) ws.send({ type: 'keydown', key });
+    stick.digitalKeys = desired;
   }
 
   // -----------------------------------------------------------------
@@ -853,11 +889,13 @@ export class GamepadController {
       if (el.classList.contains('ctrl-trigger')) return el;
       if (el.classList.contains('ctrl-analog')) return el;
       if (el.classList.contains('ctrl-touchpad')) return el;
+      if (el.classList.contains('dpad-part')) return el;
       if (el.classList.contains('ctrl-slider')) return el;
       if (el.closest('.ctrl-btn')) return el.closest('.ctrl-btn');
       if (el.closest('.ctrl-trigger')) return el.closest('.ctrl-trigger');
       if (el.closest('.ctrl-analog')) return el.closest('.ctrl-analog');
       if (el.closest('.ctrl-touchpad')) return el.closest('.ctrl-touchpad');
+      if (el.closest('.ctrl-dpad')) return el.closest('.dpad-part') || el.closest('.ctrl-dpad');
       if (el.closest('.ctrl-slider')) return el.closest('.ctrl-slider');
     }
     return null;
@@ -871,7 +909,7 @@ export class GamepadController {
     for (const trig of this._activeTriggers.values()) {
       activeKeybinds.add(trig.keybind);
     }
-    this._workspace.querySelectorAll('.ctrl-btn, .ctrl-trigger').forEach(el => {
+    this._workspace.querySelectorAll('.ctrl-btn, .ctrl-trigger, .dpad-part').forEach(el => {
       const kb = el.dataset.keybind;
       el.classList.toggle('pressed', activeKeybinds.has(kb));
     });

@@ -120,9 +120,9 @@ Choose the standalone executable for the quickest setup, or use the source packa
 
 ### Option A — Standalone executable
 
-1. Download `TouchKeys-V5.exe` from the GitHub release and place it in a new folder.
+1. Download `TouchKeys-V5.1.exe` from the GitHub release and place it in a new folder.
 2. Install the **ViGEmBus** driver as Administrator. The driver installer is in the source ZIP under `installers\`; maintainers may also attach it as a separate release asset.
-3. Double-click `TouchKeys-V5.exe`. Allow Windows Firewall access on Private networks if prompted.
+3. Double-click `TouchKeys-V5.1.exe`. Allow Windows Firewall access on Private networks if prompted.
 4. From the monitor, click **START PHONE SERVER**. Connect the phone and PC to the same Wi-Fi network, then scan the displayed QR code or open the displayed `https://192.168.x.x:8001` address.
 
 The standalone executable already contains Python, TouchKeys, the controller code, templates, static assets, and Python dependencies. Python and `.venv` are not required. ViGEmBus remains a separate Windows driver required for virtual Xbox controller output.

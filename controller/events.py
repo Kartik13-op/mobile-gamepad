@@ -169,6 +169,10 @@ class EventRouter:
         except (TypeError, ValueError):
             return
         target = str(msg.get("target", "")).lower().strip()
+        if target in {"mouse_x", "mouse_y"}:
+            delta = int(max(-200, min(200, value * 24)))
+            self.keyboard.mouse.handle("move", {"dx": delta if target == "mouse_x" else 0, "dy": delta if target == "mouse_y" else 0})
+            return
         if target not in {"gamepad_ls", "gamepad_rs", "gamepad_lt", "gamepad_rt"}:
             return
         component = str(msg.get("component", "x")).lower().strip()

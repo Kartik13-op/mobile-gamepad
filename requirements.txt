@@ -7,5 +7,6 @@ aiortc>=1.9.0
 mss>=9.0.0
 numpy>=1.26.0
 Pillow>=10.0.0
+soundcard>=0.4.3
 qrcode[pil]>=7.4.0
 cryptography>=42.0.0

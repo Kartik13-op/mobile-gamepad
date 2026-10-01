@@ -214,7 +214,7 @@ async def stream_settings(data: dict) -> dict:
 @app.post("/api/stream/start")
 async def stream_start() -> dict:
     if not stream_manager.status()["available"]:
-        raise HTTPException(status_code=503, detail="Install aiortc, mss, numpy, and Pillow to enable screen streaming")
+        raise HTTPException(status_code=503, detail="Install the streaming dependencies from requirements.txt to enable screen streaming")
     return stream_manager.start()
 
 

@@ -30,9 +30,10 @@ XUSB_MAP: Dict[str, int] = {
 }
 
 _TRIGGER_KEYS = frozenset({"gamepad_lt", "gamepad_rt"})
+_MOUSE_BUTTONS = frozenset({"mouse_left", "mouse_right", "mouse_middle"})
 
 _ALL_KEYS: Set[str] = set()
-_ALL_KEYS.update(XUSB_MAP.keys(), _TRIGGER_KEYS, KEYBOARD_MAP.keys())
+_ALL_KEYS.update(XUSB_MAP.keys(), _TRIGGER_KEYS, KEYBOARD_MAP.keys(), _MOUSE_BUTTONS)
 
 _STICK_RANGE = 32767
 _TRIGGER_RANGE = 255
@@ -103,6 +104,10 @@ class KeyboardController:
                 logger.info("[Slot %d] PRESS keyboard %s", slot, normalized)
                 return True
             return False
+        if normalized in _MOUSE_BUTTONS:
+            self.mouse.handle(f"{normalized[6:]}down", {})
+            pressed.add(normalized)
+            return True
         btn = XUSB_MAP.get(normalized)
         if btn is not None:
             dev.press_button(button=btn)
@@ -133,6 +138,10 @@ class KeyboardController:
                 logger.info("[Slot %d] RELEASE keyboard %s", slot, normalized)
                 return True
             return False
+        if normalized in _MOUSE_BUTTONS:
+            self.mouse.handle(f"{normalized[6:]}up", {})
+            pressed.discard(normalized)
+            return True
         btn = XUSB_MAP.get(normalized)
         if btn is not None:
             dev.release_button(button=btn)
@@ -206,6 +215,8 @@ class KeyboardController:
         for key in list(pressed):
             if key.startswith("key_"):
                 self.mouse.release_keyboard(key)
+            elif key in _MOUSE_BUTTONS:
+                self.mouse.handle(f"{key[6:]}up", {})
         pressed.clear()
 
     def shutdown(self) -> None:

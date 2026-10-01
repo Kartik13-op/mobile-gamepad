@@ -107,6 +107,10 @@ class MouseController:
             if action == "move":
                 if dx or dy:
                     pyautogui.moveRel(dx, dy)
+            elif action in {"leftdown", "rightdown", "middledown"}:
+                pyautogui.mouseDown(button=action[:-4])
+            elif action in {"leftup", "rightup", "middleup"}:
+                pyautogui.mouseUp(button=action[:-2])
             elif action == "scroll":
                 if dy:
                     pyautogui.vscroll(int(dy))

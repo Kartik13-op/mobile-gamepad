@@ -98,6 +98,11 @@ html, body { height:100vh; overflow:hidden; background:var(--bg-base); color:var
 .stream-grid { display:grid; grid-template-columns:repeat(3, 1fr); gap:12px; }
 .stream-actions { display:flex; align-items:center; gap:10px; margin-top:8px; }
 .stream-note { font-size:11px; color:var(--text-dim); line-height:1.6; }
+.layout-share-panel { margin-top:20px; padding:18px; background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius); }
+.share-pages-list { display:flex; gap:8px; flex-wrap:wrap; margin-top:12px; }
+.share-page-option { display:flex; align-items:center; gap:6px; padding:7px 10px; border:1px solid var(--border); border-radius:var(--radius); color:var(--text-dim); font-size:10px; }
+.layout-drop-zone { margin-top:10px; padding:14px; border:1px dashed var(--border); border-radius:var(--radius); color:var(--text-muted); font-size:10px; text-align:center; }
+.layout-drop-zone.dragover { border-color:var(--accent); color:var(--text); background:rgba(255,255,255,.05); }
 
 /* ---------- Layout Editor ---------- */
 #editor-layout { display:flex; gap:16px; height:calc(100vh - 280px); min-height:440px; }
@@ -107,6 +112,13 @@ html, body { height:100vh; overflow:hidden; background:var(--bg-base); color:var
 #editor-canvas .ctrl-el:hover { outline:1px solid rgba(255,255,255,0.3); }
 #editor-canvas .ctrl-el.selected { outline:2px solid var(--accent); outline-offset:2px; z-index:10; }
 #editor-canvas .ctrl-el.ctrl-button { background:var(--bg-elevated); }
+#editor-canvas .ctrl-el.ctrl-dpad-edit { background:var(--bg-elevated); }
+#editor-canvas .dpad-preview { display:grid; grid-template-columns:repeat(3,1fr); grid-template-rows:repeat(3,1fr); width:80%; height:80%; text-align:center; align-items:center; font-size:10px; opacity:.7; }
+#editor-canvas .dpad-preview span:nth-child(1) { grid-column:2; grid-row:1; }
+#editor-canvas .dpad-preview span:nth-child(2) { grid-column:1; grid-row:2; }
+#editor-canvas .dpad-preview span:nth-child(3) { grid-column:2; grid-row:2; }
+#editor-canvas .dpad-preview span:nth-child(4) { grid-column:3; grid-row:2; }
+#editor-canvas .dpad-preview span:nth-child(5) { grid-column:2; grid-row:3; }
 #editor-canvas .ctrl-el.ctrl-stick { background:transparent; border:3px solid var(--border); border-radius:50%; }
 #editor-canvas .ctrl-el.ctrl-trigger { background:var(--bg-elevated); }
 #editor-canvas .ctrl-el.ctrl-touchpad { border:1px dashed rgba(255,255,255,0.3); background:var(--bg-elevated); }
@@ -514,6 +526,19 @@ select option, .form-select option, select optgroup {
             </div>
           </div>
         </div>
+        <div class="layout-share-panel">
+          <div class="section-title" style="font-size:12px;margin-top:20px;">SHARE / LOAD LAYOUT PRESETS</div>
+          <div class="section-sub">Choose pages to share, or add pages from a TouchKeys JSON file without replacing this layout.</div>
+          <div id="share-pages-list" class="share-pages-list"></div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;">
+            <button class="btn btn-sm btn-primary" id="btn-share-layout">SHARE SELECTED</button>
+            <label class="btn btn-sm" for="layout-file-input">CHOOSE JSON FILE</label>
+            <input id="layout-file-input" type="file" accept="application/json,.json" style="display:none;">
+          </div>
+          <textarea id="layout-paste-input" class="form-input" style="width:100%;min-height:90px;margin-top:10px;resize:vertical;" placeholder="Or paste a layout JSON file here…"></textarea>
+          <button class="btn btn-sm" id="btn-load-pasted-layout" style="margin-top:8px;">ADD PASTED LAYOUT</button>
+          <div id="layout-drop-zone" class="layout-drop-zone">Drop a TouchKeys JSON file here</div>
+        </div>
         </section>
 
         <!-- Test Page -->
@@ -556,6 +581,7 @@ select option, .form-select option, select optgroup {
           <label class="form-label">Type</label>
           <select class="form-select" id="add-type">
             <option value="button">Button</option>
+            <option value="dpad">D-pad</option>
             <option value="analog_stick">Analog Stick</option>
             <option value="trigger">Trigger</option>
             <option value="slider">Slider</option>
@@ -693,6 +719,7 @@ select option, .form-select option, select optgroup {
     const refW = 800, refH = 600;
     for (const page of data.pages) {
       for (const btn of (page.buttons || [])) {
+        if (!btn.id) btn.id = makeLayoutId();
         if (btn.x > 1) btn.x = btn.x / refW;
         if (btn.y > 1) btn.y = btn.y / refH;
         if (btn.width > 0 && btn.width < 1) btn.width = Math.round(btn.width * refW);
@@ -700,7 +727,69 @@ select option, .form-select option, select optgroup {
         if (btn.width < 20) btn.width = 60;
         if (btn.height < 20) btn.height = 60;
       }
+      if (!page.id) page.id = makeLayoutId();
     }
+  }
+
+  function makeLayoutId() {
+    if (window.crypto?.randomUUID) return window.crypto.randomUUID();
+    return 'layout_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2);
+  }
+
+  function renderSharePresets() {
+    const list = $('share-pages-list');
+    if (!list) return;
+    list.innerHTML = (layoutData?.pages || []).map((page, index) => `
+      <label class="share-page-option"><input type="checkbox" class="share-page-check" data-index="${index}" checked> ${esc(page.name || `Page ${index + 1}`)}</label>
+    `).join('') || '<span style="font-size:10px;color:var(--text-muted);">No pages loaded</span>';
+  }
+
+  function downloadLayoutPack() {
+    const selected = [...document.querySelectorAll('.share-page-check:checked')].map(input => Number(input.dataset.index));
+    const pages = selected.map(index => layoutData?.pages?.[index]).filter(Boolean);
+    if (!pages.length) { showToast('Select at least one page'); return; }
+    const pack = { format: 'touchkeys-layout-pack', version: 1, presets: JSON.parse(JSON.stringify(pages)) };
+    const blob = new Blob([JSON.stringify(pack, null, 2)], { type: 'application/json' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = 'touchkeys-layout-presets.json';
+    link.click();
+    URL.revokeObjectURL(link.href);
+    showToast('Layout presets shared');
+  }
+
+  function uniquePageName(base, used) {
+    const original = String(base || 'Imported Layout').trim() || 'Imported Layout';
+    let name = original;
+    let suffix = 2;
+    while (used.has(name.toLowerCase())) name = `${original} (${suffix++})`;
+    used.add(name.toLowerCase());
+    return name;
+  }
+
+  function addImportedLayout(raw) {
+    let data;
+    try { data = typeof raw === 'string' ? JSON.parse(raw) : raw; } catch (_) { showToast('Invalid JSON file'); return; }
+    const importedPages = Array.isArray(data?.presets) ? data.presets : (Array.isArray(data?.pages) ? data.pages : null);
+    if (!importedPages?.length) { showToast('No layout pages found'); return; }
+    if (!layoutData) { showToast('Layout is not ready'); return; }
+    const usedNames = new Set((layoutData.pages || []).map(page => String(page.name || '').toLowerCase()));
+    const usedIds = new Set((layoutData.pages || []).map(page => page.id));
+    const pages = importedPages.map(source => {
+      const page = JSON.parse(JSON.stringify(source));
+      page.id = makeLayoutId();
+      while (usedIds.has(page.id)) page.id = makeLayoutId();
+      usedIds.add(page.id);
+      page.name = uniquePageName(page.name, usedNames);
+      page.buttons = (page.buttons || []).map(control => ({ ...control, id: makeLayoutId() }));
+      return page;
+    });
+    layoutData.pages.push(...pages);
+    normalizeLayout(layoutData);
+    sendWS({ type: 'update_layout', data: layoutData });
+    renderEditor();
+    renderSharePresets();
+    showToast(`${pages.length} layout preset${pages.length === 1 ? '' : 's'} added`);
   }
 
   function handleMessage(msg) {
@@ -713,6 +802,7 @@ select option, .form-select option, select optgroup {
         normalizeLayout(layoutData);
         activePageIdx = (layoutData && layoutData.activePageIndex != null) ? layoutData.activePageIndex : 0;
         renderEditor();
+        renderSharePresets();
         updateStatusBar();
         break;
       case 'controller_changed':
@@ -861,7 +951,9 @@ select option, .form-select option, select optgroup {
       $('stream-status-pill').classList.toggle('on', active);
       $('btn-stream-start').disabled = active;
       $('btn-stream-stop').disabled = !active;
-      $('stream-dependency-note').textContent = state.available ? 'The phone will show the stream behind the frosted controller controls.' : 'Install the streaming dependencies from requirements.txt to enable WebRTC capture.';
+      $('stream-dependency-note').textContent = state.available
+        ? (state.audio_available ? 'The phone will receive the desktop screen and PC speaker audio on one synchronized stream.' : 'Screen streaming is ready; install soundcard from requirements.txt to include PC speaker audio.')
+        : 'Install the streaming dependencies from requirements.txt to enable WebRTC capture.';
     } catch(e) { showToast('Unable to read streaming state'); }
   }
 
@@ -903,12 +995,16 @@ select option, .form-select option, select optgroup {
   function keyOptionsHtml(selected) {
     const gamepad = keysList.filter(k => k.startsWith('gamepad_'));
     const keyboard = keysList.filter(k => k.startsWith('key_'));
+    const mouse = keysList.filter(k => k.startsWith('mouse_'));
     let html = '<option value="">None</option>';
     if (gamepad.length) {
       html += `<optgroup label="Gamepad">${gamepad.map(k => `<option value="${k}" ${k === selected ? 'selected' : ''}>${k}</option>`).join('')}</optgroup>`;
     }
     if (keyboard.length) {
       html += `<optgroup label="Keyboard">${keyboard.map(k => `<option value="${k}" ${k === selected ? 'selected' : ''}>${k}</option>`).join('')}</optgroup>`;
+    }
+    if (mouse.length) {
+      html += `<optgroup label="Mouse buttons">${mouse.map(k => `<option value="${k}" ${k === selected ? 'selected' : ''}>${k}</option>`).join('')}</optgroup>`;
     }
     return html;
   }
@@ -972,7 +1068,8 @@ select option, .form-select option, select optgroup {
       editorEmpty.classList.add('hidden');
       canvasEl.innerHTML = controls.map(ctrl => {
         let cls = 'ctrl-button';
-        if (ctrl.type === 'analog_stick') cls = 'ctrl-stick';
+        if (ctrl.type === 'dpad') cls = 'ctrl-dpad-edit';
+        else if (ctrl.type === 'analog_stick') cls = 'ctrl-stick';
         else if (ctrl.type === 'trigger') cls = 'ctrl-trigger';
         else if (ctrl.type === 'touchpad') cls = 'ctrl-touchpad';
         else if (ctrl.type === 'slider') cls = 'ctrl-slider-edit';
@@ -992,6 +1089,9 @@ select option, .form-select option, select optgroup {
         const heightPct = (ph / ch) * 100;
         
         let sliderExtras = '';
+        if (ctrl.type === 'dpad') {
+          sliderExtras = '<div class="dpad-preview"><span>▲</span><span>◀</span><span>●</span><span>▶</span><span>▼</span></div>';
+        }
         if (ctrl.type === 'slider') {
           const isVert = ctrl.orientation === 'vertical';
           sliderExtras = `<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;opacity:0.3;">
@@ -1133,6 +1233,7 @@ select option, .form-select option, select optgroup {
         <label class="form-label">Type</label>
         <select class="form-select" id="prop-type" disabled>
           <option value="button" ${ctrl.type === 'button' ? 'selected' : ''}>Button</option>
+          <option value="dpad" ${ctrl.type === 'dpad' ? 'selected' : ''}>D-pad</option>
           <option value="analog_stick" ${ctrl.type === 'analog_stick' ? 'selected' : ''}>Analog Stick</option>
           <option value="trigger" ${ctrl.type === 'trigger' ? 'selected' : ''}>Trigger</option>
           <option value="slider" ${ctrl.type === 'slider' ? 'selected' : ''}>Slider</option>
@@ -1189,6 +1290,59 @@ select option, .form-select option, select optgroup {
         e.target.previousElementSibling.textContent = `Dead Zone (${val.toFixed(2)})`;
         debounceUpdate(selectedCtrlId, { deadzone: val });
       });
+      const bindings = { up: '', down: '', left: '', right: '', ...(ctrl.directionBindings || {}) };
+      const directionOptions = (direction) => keyOptionsHtml(bindings[direction]);
+      stickSection.insertAdjacentHTML('beforeend', `
+        <div class="form-group"><label class="form-label">Output Mode</label>
+          <select class="form-select" id="prop-stick-mode">
+            <option value="analog" ${(ctrl.outputMode || 'analog') === 'analog' ? 'selected' : ''}>Xbox analog stick</option>
+            <option value="digital" ${ctrl.outputMode === 'digital' ? 'selected' : ''}>Static keys by direction</option>
+            <option value="mouse" ${ctrl.outputMode === 'mouse' ? 'selected' : ''}>Mouse cursor</option>
+          </select>
+        </div>
+        <div class="form-group" id="stick-mouse-sensitivity" style="${ctrl.outputMode === 'mouse' ? '' : 'display:none;'}">
+          <label class="form-label">Mouse Sensitivity (${ctrl.mouseSensitivity ?? 12})</label>
+          <input class="form-input" id="prop-stick-mouse-sensitivity" type="range" min="1" max="40" step="1" value="${ctrl.mouseSensitivity ?? 12}">
+        </div>
+        <div id="stick-direction-bindings" style="${ctrl.outputMode === 'analog' ? 'display:none;' : ''}">
+          <div class="form-label">Direction bindings</div>
+          ${['up','down','left','right'].map(direction => `<div class="form-group"><label class="form-label">${direction.toUpperCase()}</label><select class="form-select stick-direction" data-direction="${direction}">${directionOptions(direction)}</select></div>`).join('')}
+        </div>`);
+      const saveStickBinding = (direction, value) => {
+        const next = { ...(ctrl.directionBindings || {}), [direction]: value };
+        ctrl.directionBindings = next;
+        debounceUpdate(selectedCtrlId, { directionBindings: next });
+      };
+      stickSection.querySelector('#prop-stick-mode')?.addEventListener('change', (e) => {
+        const mode = e.target.value;
+        ctrl.outputMode = mode;
+        stickSection.querySelector('#stick-direction-bindings').style.display = mode === 'analog' ? 'none' : '';
+        stickSection.querySelector('#stick-mouse-sensitivity').style.display = mode === 'mouse' ? '' : 'none';
+        debounceUpdate(selectedCtrlId, { outputMode: mode });
+      });
+      stickSection.querySelectorAll('.stick-direction').forEach(input => input.addEventListener('change', e => saveStickBinding(e.target.dataset.direction, e.target.value)));
+      stickSection.querySelector('#prop-stick-mouse-sensitivity')?.addEventListener('input', e => {
+        const value = parseInt(e.target.value, 10) || 12;
+        e.target.previousElementSibling.textContent = `Mouse Sensitivity (${value})`;
+        debounceUpdate(selectedCtrlId, { mouseSensitivity: value });
+      });
+    }
+
+    // D-pad-specific directional bindings. Older four-button layouts remain
+    // untouched and continue to work as ordinary button controls.
+    if (ctrl.type === 'dpad') {
+      const dpadSection = document.createElement('div');
+      dpadSection.style.marginTop = '12px';
+      dpadSection.style.borderTop = '2px solid var(--border)';
+      dpadSection.style.paddingTop = '12px';
+      const bindings = { up: 'gamepad_dpad_up', down: 'gamepad_dpad_down', left: 'gamepad_dpad_left', right: 'gamepad_dpad_right', ...(ctrl.directionBindings || {}) };
+      dpadSection.innerHTML = `<div class="form-label">D-pad direction bindings</div>${['up','down','left','right'].map(direction => `<div class="form-group"><label class="form-label">${direction.toUpperCase()}</label><select class="form-select dpad-direction" data-direction="${direction}">${keyOptionsHtml(bindings[direction])}</select></div>`).join('')}`;
+      propsContent.appendChild(dpadSection);
+      dpadSection.querySelectorAll('.dpad-direction').forEach(input => input.addEventListener('change', e => {
+        const next = { ...(ctrl.directionBindings || {}), [e.target.dataset.direction]: e.target.value };
+        ctrl.directionBindings = next;
+        debounceUpdate(selectedCtrlId, { directionBindings: next });
+      }));
     }
 
     // Slider-specific properties
@@ -1312,7 +1466,9 @@ select option, .form-select option, select optgroup {
         <option value="right_stick_x" ${selected === 'right_stick_x' ? 'selected' : ''}>Right Stick X</option>
         <option value="right_stick_y" ${selected === 'right_stick_y' ? 'selected' : ''}>Right Stick Y</option>
         <option value="left_trigger" ${selected === 'left_trigger' ? 'selected' : ''}>Left Trigger</option>
-        <option value="right_trigger" ${selected === 'right_trigger' ? 'selected' : ''}>Right Trigger</option>`;
+        <option value="right_trigger" ${selected === 'right_trigger' ? 'selected' : ''}>Right Trigger</option>
+        <option value="mouse_x" ${selected === 'mouse_x' ? 'selected' : ''}>Mouse Cursor X</option>
+        <option value="mouse_y" ${selected === 'mouse_y' ? 'selected' : ''}>Mouse Cursor Y</option>`;
       const axisFields = [
         ['x', 'Tilting phone’s long edges', ctrl.sensorX || {}],
         ['y', 'Rolling phone left / right', ctrl.sensorY || {}],
@@ -1464,12 +1620,18 @@ select option, .form-select option, select optgroup {
     const type = $('add-type').value;
     const data = {
       name: $('add-name').value,
-      keybind: type === 'touchpad' ? 'gamepad_rs' : ($('add-key').value || ''),
+      keybind: type === 'touchpad' ? 'gamepad_rs' : (type === 'dpad' ? 'gamepad_dpad_up' : ($('add-key').value || '')),
       type,
       width: parseInt($('add-w').value) || 60,
       height: parseInt($('add-h').value) || 60,
       x: 0.4, y: 0.4,
     };
+    if (type === 'dpad') {
+      data.name = $('add-name').value || 'D-pad';
+      data.width = Math.max(120, data.width);
+      data.height = Math.max(120, data.height);
+      data.directionBindings = { up: 'gamepad_dpad_up', down: 'gamepad_dpad_down', left: 'gamepad_dpad_left', right: 'gamepad_dpad_right' };
+    }
     if (type === 'touchpad') {
       data.mappedTo = 'gamepad_rs';
       data.sensitivity = 1;
@@ -1503,6 +1665,30 @@ select option, .form-select option, select optgroup {
   $('btn-undo').onclick = () => sendWS({ type: 'undo' });
   $('btn-redo').onclick = () => sendWS({ type: 'redo' });
   $('btn-save-layout').onclick = () => sendWS({ type: 'save_layout', data: layoutData });
+  $('btn-share-layout').onclick = downloadLayoutPack;
+  $('btn-load-pasted-layout').onclick = () => {
+    const value = $('layout-paste-input').value.trim();
+    if (value) addImportedLayout(value);
+  };
+  $('layout-file-input').addEventListener('change', async (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    addImportedLayout(await file.text());
+    event.target.value = '';
+  });
+  const dropZone = $('layout-drop-zone');
+  ['dragenter', 'dragover'].forEach(type => dropZone.addEventListener(type, event => {
+    event.preventDefault();
+    dropZone.classList.add('dragover');
+  }));
+  ['dragleave', 'drop'].forEach(type => dropZone.addEventListener(type, event => {
+    event.preventDefault();
+    dropZone.classList.remove('dragover');
+  }));
+  dropZone.addEventListener('drop', async event => {
+    const file = event.dataTransfer.files?.[0];
+    if (file) addImportedLayout(await file.text());
+  });
 
   // --- Status bar ---
   function updateStatusBar() {

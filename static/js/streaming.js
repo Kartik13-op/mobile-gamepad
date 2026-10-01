@@ -5,12 +5,18 @@ export class ScreenStream {
   constructor() {
     this.video = null;
     this.peer = null;
+    this.mediaStream = null;
+    this._tracks = new Map();
+    this._audioResumeArmed = false;
     this.pollTimer = 0;
     this.starting = false;
   }
 
   init() {
     this.video = document.getElementById('screen-stream');
+    // Safari only allows an unmuted MediaStream after a user gesture. Arm
+    // this before negotiation so an early tap on the controller is not lost.
+    this._armAudioResume();
     this.poll();
     this.pollTimer = window.setInterval(() => this.poll(), 4000);
     eventBus.on('ws:disconnected', () => this.stop());
@@ -38,14 +44,22 @@ export class ScreenStream {
     try {
       this.peer = new RTCPeerConnection();
       this.peer.addTransceiver('video', { direction: 'recvonly' });
+      this.peer.addTransceiver('audio', { direction: 'recvonly' });
       this.peer.ontrack = (event) => {
-        // Some WebView builds omit event.streams even though the track is valid.
-        // Build a stream from the track so playback is reliable there too.
-        this.video.srcObject = event.streams?.[0] || new MediaStream([event.track]);
-        this.video.classList.add('visible');
-        document.body.classList.add('streaming-active');
-        this._setOverlay('DESKTOP STREAM');
-        this.video.play().catch(() => {});
+        // Keep both tracks in one stream. The server timestamps them from one
+        // clock, and sharing the stream prevents independent media drift.
+        this._tracks.set(event.track.kind, event.track);
+        // Always rebuild from both tracks. Some WebViews expose a different
+        // one-track stream for each ontrack event.
+        this.mediaStream = new MediaStream([...this._tracks.values()]);
+        if (this.video) this.video.srcObject = this.mediaStream;
+        if (event.track.kind === 'video') {
+          this.video?.classList.add('visible');
+          document.body.classList.add('streaming-active');
+          this._setOverlay('DESKTOP STREAM');
+        }
+        this.video?.play().catch(() => this._armAudioResume());
+        this._armAudioResume();
       };
       this.video.onplaying = () => this.video.classList.add('visible');
       this.peer.onconnectionstatechange = () => {
@@ -81,8 +95,31 @@ export class ScreenStream {
         resolve();
       };
       peer.addEventListener('icegatheringstatechange', finish);
-      window.setTimeout(finish, 2500);
+      // Non-trickle signaling still needs the LAN candidate, but should not
+      // add seconds of startup delay.
+      window.setTimeout(finish, 1000);
     });
+  }
+
+  _armAudioResume() {
+    if (this._audioResumeArmed) return;
+    this._audioResumeArmed = true;
+    const resume = () => {
+      if (this.video) {
+        this.video.muted = false;
+        this.video.defaultMuted = false;
+        this.video.removeAttribute('muted');
+      }
+      this.video?.play().catch(() => {});
+      if (this.video && !this.video.paused && !this.video.muted) {
+        this._setOverlay('DESKTOP STREAM');
+        window.removeEventListener('pointerdown', resume, true);
+        window.removeEventListener('touchstart', resume, true);
+        this._audioResumeArmed = false;
+      }
+    };
+    window.addEventListener('pointerdown', resume, true);
+    window.addEventListener('touchstart', resume, true);
   }
 
   _setOverlay(label) {
@@ -98,6 +135,10 @@ export class ScreenStream {
       this.peer.close();
       this.peer = null;
     }
+    this._tracks.clear();
+    this._audioResumeArmed = false;
+    this.mediaStream?.getTracks().forEach((track) => track.stop());
+    this.mediaStream = null;
     if (this.video) {
       this.video.pause();
       this.video.srcObject = null;

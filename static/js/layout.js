@@ -53,7 +53,7 @@ export class LayoutManager {
 
   _renderControls() {
     if (!this._workspace) return;
-    this._workspace.querySelectorAll('.ctrl-btn, .ctrl-analog, .ctrl-trigger, .ctrl-touchpad, .ctrl-slider, .ctrl-sensor').forEach(el => el.remove());
+    this._workspace.querySelectorAll('.ctrl-btn, .ctrl-dpad, .ctrl-analog, .ctrl-trigger, .ctrl-touchpad, .ctrl-slider, .ctrl-sensor').forEach(el => el.remove());
 
     let emptyState = this._workspace.querySelector('.empty-state');
     const controls = this.activeControls;
@@ -84,6 +84,8 @@ export class LayoutManager {
     const type = ctrl.type || 'button';
     if (type === 'analog_stick') {
       this._createAnalogStick(ctrl);
+    } else if (type === 'dpad') {
+      this._createDpad(ctrl);
     } else if (type === 'trigger') {
       this._createTrigger(ctrl);
     } else if (type === 'slider') {
@@ -118,6 +120,9 @@ export class LayoutManager {
     el.dataset.keybind = ctrl.keybind || '';
     el.dataset.controlType = 'analog_stick';
     el.dataset.deadzone = ctrl.deadzone ?? 0.15;
+    el.dataset.outputMode = ctrl.outputMode || 'analog';
+    el.dataset.directionBindings = JSON.stringify(ctrl.directionBindings || {});
+    el.dataset.mouseSensitivity = String(ctrl.mouseSensitivity ?? 12);
     // Joysticks are always circles, even when an older layout stored unequal
     // width/height values.
     const sz = Math.min(ctrl.width || 60, ctrl.height || 60);
@@ -199,6 +204,21 @@ export class LayoutManager {
       <span class="touchpad-icon">${(ctrl.mode || 'joystick') === 'mouse' ? '&#9794;' : '&#9678;'}</span>
       <span class="touchpad-label">${ctrl.name || 'TOUCHPAD'}</span>
     `;
+    this._applyBaseStyles(el, ctrl);
+    this._workspace.appendChild(el);
+  }
+
+  _createDpad(ctrl) {
+    const el = document.createElement('div');
+    const bindings = { up: 'gamepad_dpad_up', down: 'gamepad_dpad_down', left: 'gamepad_dpad_left', right: 'gamepad_dpad_right', ...(ctrl.directionBindings || {}) };
+    el.className = 'ctrl-dpad';
+    el.dataset.id = ctrl.id;
+    el.dataset.controlType = 'dpad';
+    el.innerHTML = ['up', 'left', 'center', 'right', 'down'].map(direction => {
+      if (direction === 'center') return '<div class="dpad-center" aria-hidden="true"></div>';
+      const glyph = { up: '▲', down: '▼', left: '◀', right: '▶' }[direction];
+      return `<div class="dpad-part dpad-${direction}" data-keybind="${bindings[direction] || ''}" data-direction="${direction}" aria-label="${direction}">${glyph}</div>`;
+    }).join('');
     this._applyBaseStyles(el, ctrl);
     this._workspace.appendChild(el);
   }

@@ -1,10 +1,10 @@
 import { eventBus } from './utils.js';
 import { ui } from './ui.js';
 import { ws } from './websocket.js';
-import { layout } from './layout.js?v=8';
-import { gamepadController } from './controller.js';
-import { screenStream } from './streaming.js';
-import { motion } from './motion.js?v=8';
+import { layout } from './layout.js?v=9';
+import { gamepadController } from './controller.js?v=9';
+import { screenStream } from './streaming.js?v=9';
+import { motion } from './motion.js?v=9';
 
 class App {
   constructor() {

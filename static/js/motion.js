@@ -123,6 +123,10 @@ export class MotionController {
   }
 
   _sendAxis(target, value) {
+    if (target === 'mouse_x' || target === 'mouse_y') {
+      ws.send({ type: 'mouse', action: 'move', dx: target === 'mouse_x' ? Math.round(value * 24) : 0, dy: target === 'mouse_y' ? Math.round(value * 24) : 0 });
+      return;
+    }
     const component = target.endsWith('_y') ? 'y' : 'x';
     const gamepadTarget = target.includes('left_stick') ? 'gamepad_ls' : target.includes('right_stick') ? 'gamepad_rs' : target === 'left_trigger' ? 'gamepad_lt' : 'gamepad_rt';
     const state = this._outputs.get(this._currentElement) || {};

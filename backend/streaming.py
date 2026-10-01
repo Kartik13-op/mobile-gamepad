@@ -18,8 +18,14 @@ from typing import Any
 logger = logging.getLogger(__name__)
 
 try:
-    from aiortc import VideoStreamTrack
+    from aiortc import AudioStreamTrack, VideoStreamTrack
 except ImportError:  # Keep the controller usable until optional stream deps are installed.
+    class AudioStreamTrack:  # type: ignore[no-redef]
+        readyState = "live"
+
+        def stop(self) -> None:
+            self.readyState = "ended"
+
     class VideoStreamTrack:  # type: ignore[no-redef]
         readyState = "live"
 
@@ -55,7 +61,6 @@ class ScreenVideoTrack(VideoStreamTrack):
         self._manager = manager
         self._capture = None
         self._last_frame_at = 0.0
-        self._timestamp = 0
         self._cursor_patch = self._build_cursor_patch()
 
     def stop(self) -> None:
@@ -97,8 +102,9 @@ class ScreenVideoTrack(VideoStreamTrack):
             frame = np.asarray(Image.fromarray(frame).resize(target, resampling))
 
         video = VideoFrame.from_ndarray(frame, format="bgr24")
-        self._timestamp += max(1, int(90000 / max(1, settings.fps)))
-        video.pts = self._timestamp
+        # Use the same monotonic stream clock as audio.  Independent counters
+        # make a newly connected phone start with an arbitrary A/V offset.
+        video.pts = max(0, int((time.monotonic() - self._manager.clock_start) * 90000))
         video.time_base = Fraction(1, 90000)
         return video
 
@@ -164,6 +170,7 @@ class StreamManager:
         self.settings = StreamSettings()
         self.active = False
         self._peer_connections: set[Any] = set()
+        self.clock_start = time.monotonic()
 
     @staticmethod
     def _int_setting(value: Any, allowed: set[int], fallback: int) -> int:
@@ -189,6 +196,7 @@ class StreamManager:
             "settings": self.settings.as_dict(),
             "peers": len(self._peer_connections),
             "available": self._dependencies_available(),
+            "audio_available": self._audio_dependencies_available(),
         }
 
     @staticmethod
@@ -202,8 +210,18 @@ class StreamManager:
         except ImportError:
             return False
 
+    @staticmethod
+    def _audio_dependencies_available() -> bool:
+        try:
+            import soundcard  # noqa: F401 - Windows WASAPI loopback
+            import numpy  # noqa: F401
+            return True
+        except ImportError:
+            return False
+
     def start(self) -> dict[str, Any]:
         self.active = True
+        self.clock_start = time.monotonic()
         return self.status()
 
     async def stop(self) -> dict[str, Any]:
@@ -229,12 +247,18 @@ class StreamManager:
         self._peer_connections.add(peer)
         track = ScreenVideoTrack(self)
         peer.addTrack(track)
+        audio_track = None
+        if self._audio_dependencies_available():
+            audio_track = DesktopAudioTrack(self)
+            peer.addTrack(audio_track)
 
         @peer.on("connectionstatechange")
         async def on_connectionstatechange() -> None:
             if peer.connectionState in {"failed", "closed", "disconnected"}:
                 self._peer_connections.discard(peer)
                 track.stop()
+                if audio_track is not None:
+                    audio_track.stop()
                 await peer.close()
 
         await peer.setRemoteDescription(
@@ -253,6 +277,66 @@ class StreamManager:
         answer = await peer.createAnswer()
         await peer.setLocalDescription(answer)
         return {"sdp": peer.localDescription.sdp, "type": peer.localDescription.type}
+
+
+class DesktopAudioTrack(AudioStreamTrack):
+    """Low-latency Windows speaker loopback track, clocked with the video."""
+
+    kind = "audio"
+
+    def __init__(self, manager: "StreamManager") -> None:
+        super().__init__()
+        self._manager = manager
+        self._recorder = None
+        self._sample_count = 0
+        self._sample_rate = 48000
+        self._channels = 2
+
+    def stop(self) -> None:
+        if self._recorder is not None:
+            try:
+                self._recorder.__exit__(None, None, None)
+            except Exception:
+                logger.debug("Audio recorder close failed", exc_info=True)
+            self._recorder = None
+        super().stop()
+
+    async def recv(self):
+        import numpy as np
+        from av import AudioFrame
+
+        if self._recorder is None:
+            import soundcard as sc
+            speaker = sc.default_speaker()
+            # SoundCard exposes loopback capture through a microphone object
+            # associated with the current speaker, not on the Speaker itself.
+            loopback = sc.get_microphone(speaker.id, include_loopback=True)
+            self._recorder = loopback.recorder(
+                samplerate=self._sample_rate,
+                channels=self._channels,
+                blocksize=960,
+            )
+            self._recorder.__enter__()
+
+        # Keep capture off the asyncio event loop; WASAPI can occasionally
+        # block while a device changes state.
+        samples = await asyncio.to_thread(self._recorder.record, numframes=960)
+        samples = np.asarray(samples, dtype=np.float32)
+        if samples.ndim == 1:
+            samples = np.repeat(samples[:, None], self._channels, axis=1)
+        samples = np.clip(samples, -1.0, 1.0)
+        # ``fltp`` is planar float audio: one row per channel, which matches
+        # SoundCard's interleaved input after the transpose and avoids an
+        # implicit channel reshape in PyAV.
+        frame = AudioFrame.from_ndarray(np.ascontiguousarray(samples.T), format="fltp", layout="stereo")
+        frame.sample_rate = self._sample_rate
+        frame.pts = max(
+            self._sample_count,
+            int((time.monotonic() - self._manager.clock_start) * self._sample_rate),
+        )
+        frame.time_base = Fraction(1, self._sample_rate)
+        self._sample_count = frame.pts + samples.shape[0]
+        return frame
 
 
 stream_manager = StreamManager()

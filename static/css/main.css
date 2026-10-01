@@ -300,6 +300,40 @@ input, textarea, select {
   opacity: .58;
   transition: opacity .15s ease;
 }
+
+/* --- Controls: Plus-shaped D-pad --- */
+.ctrl-dpad {
+  position:absolute;
+  display:grid;
+  grid-template-columns:repeat(3, 1fr);
+  grid-template-rows:repeat(3, 1fr);
+  gap:2px;
+  user-select:none;
+  -webkit-user-select:none;
+  touch-action:none;
+  z-index:1;
+}
+.dpad-part {
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  min-width:0;
+  min-height:0;
+  border:1px solid rgba(166,176,192,.25);
+  border-radius:8px;
+  background:rgba(17,23,34,.72);
+  color:var(--text-primary);
+  font-size:clamp(12px, 2.6vw, 22px);
+  font-weight:700;
+  cursor:pointer;
+  touch-action:none;
+}
+.dpad-up { grid-column:2; grid-row:1; }
+.dpad-left { grid-column:1; grid-row:2; }
+.dpad-center { grid-column:2; grid-row:2; background:transparent; border:0; pointer-events:none; }
+.dpad-right { grid-column:3; grid-row:2; }
+.dpad-down { grid-column:2; grid-row:3; }
+.dpad-part.pressed { background:rgba(255,255,255,.9); color:#06101f; border-color:var(--accent); }
 .ctrl-analog:has(.analog-ring.visible) { opacity: 1; }
 
 .analog-outer {
@@ -594,6 +628,7 @@ input, textarea, select {
 /* --- Interaction states --- */
 /* Idle controller: crisp white outlines and solid white pressed states. */
 body:not(.streaming-active) .ctrl-btn,
+body:not(.streaming-active) .ctrl-dpad,
 body:not(.streaming-active) .ctrl-trigger,
 body:not(.streaming-active) .ctrl-touchpad,
 body:not(.streaming-active) .ctrl-slider,
@@ -622,6 +657,7 @@ body:not(.streaming-active) .slider-track {
 }
 
 body:not(.streaming-active) .ctrl-btn.pressed,
+body:not(.streaming-active) .dpad-part.pressed,
 body:not(.streaming-active) .ctrl-trigger.pressed,
 body:not(.streaming-active) .ctrl-touchpad.active {
   background: #ffffff !important;
@@ -666,6 +702,7 @@ body.streaming-active .toolbar,
 body.streaming-active .page-tabs,
 body.streaming-active .cog-btn,
 body.streaming-active .ctrl-btn,
+body.streaming-active .ctrl-dpad,
 body.streaming-active .ctrl-trigger,
 body.streaming-active .ctrl-touchpad,
 body.streaming-active .analog-outer,
@@ -673,6 +710,7 @@ body.streaming-active .slider-track {
   backdrop-filter: blur(30px);
 }
 body.streaming-active .ctrl-btn,
+body.streaming-active .ctrl-dpad,
 body.streaming-active .ctrl-trigger,
 body.streaming-active .ctrl-touchpad,
 body.streaming-active .ctrl-slider,

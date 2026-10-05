@@ -49,7 +49,7 @@ exe = EXE(
     a.binaries,
     a.datas,
     [],
-    name="TouchKeys-V5.1",
+    name="TouchKeys-V5.2",
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,

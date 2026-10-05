@@ -9,8 +9,7 @@ $projectRoot = (Resolve-Path $PSScriptRoot).Path
 $venvPython = Join-Path $projectRoot '.venv\Scripts\python.exe'
 $specPath = Join-Path $projectRoot 'main.spec'
 $executablesPath = Join-Path $projectRoot 'Executables'
-$exePath = Join-Path $executablesPath 'TouchKeys-V5.1.exe'
-$docsPath = Join-Path $projectRoot 'docs'
+$exePath = Join-Path $executablesPath 'TouchKeys-V5.2.exe'
 $buildPath = Join-Path $projectRoot 'build'
 $distPath = Join-Path $projectRoot 'dist'
 $driverPath = Join-Path $projectRoot 'installers\ViGEmBus_1.22.0_x64_x86_arm64.exe'
@@ -38,7 +37,7 @@ Remove-Item -LiteralPath $exePath -Force -ErrorAction SilentlyContinue
 Remove-Item -LiteralPath $buildPath -Recurse -Force -ErrorAction SilentlyContinue
 Remove-Item -LiteralPath $distPath -Recurse -Force -ErrorAction SilentlyContinue
 
-Write-Host '[TouchKeys] Building standalone TouchKeys-V5.1.exe.' -ForegroundColor Cyan
+Write-Host '[TouchKeys] Building standalone TouchKeys-V5.2.exe.' -ForegroundColor Cyan
 & $venvPython -m PyInstaller $specPath --clean --noconfirm `
     --distpath $executablesPath --workpath $buildPath
 if ($LASTEXITCODE -ne 0) {
@@ -53,11 +52,6 @@ if (-not (Test-Path -LiteralPath $exePath -PathType Leaf)) {
 $releaseDriverPath = Join-Path $executablesPath 'ViGEmBus_1.22.0_x64_x86_arm64.exe'
 Copy-Item -LiteralPath $driverPath -Destination $releaseDriverPath -Force
 
-# Publish the same release pair to the static documentation website.
-New-Item -ItemType Directory -Path $docsPath -Force | Out-Null
-Copy-Item -LiteralPath $exePath -Destination (Join-Path $docsPath 'TouchKeys-V5.1.exe') -Force
-Copy-Item -LiteralPath $driverPath -Destination (Join-Path $docsPath 'ViGEmBus_1.22.0_x64_x86_arm64.exe') -Force
-
 # Do not leave generated PyInstaller work folders in the project tree.
 Remove-Item -LiteralPath $buildPath -Recurse -Force -ErrorAction SilentlyContinue
 Remove-Item -LiteralPath $distPath -Recurse -Force -ErrorAction SilentlyContinue
@@ -65,4 +59,4 @@ Remove-Item -LiteralPath $distPath -Recurse -Force -ErrorAction SilentlyContinue
 $sizeMb = [math]::Round((Get-Item -LiteralPath $exePath).Length / 1MB, 1)
 Write-Host "[TouchKeys] Created $exePath ($sizeMb MB)" -ForegroundColor Green
 Write-Host "[TouchKeys] Driver installer copied to $releaseDriverPath" -ForegroundColor Green
-Write-Host "[TouchKeys] Release pair copied to $docsPath" -ForegroundColor Green
+Write-Host '[TouchKeys] Release artifacts are in Executables.' -ForegroundColor Green

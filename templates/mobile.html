@@ -3,21 +3,19 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>GamePad &mdash; Virtual Controller</title>
+  <title>TouchKeys &mdash; Virtual Controller</title>
   <link rel="icon" type="image/png" href="/static/favicon.png">
   <meta name="description" content="Turn any mobile device into a gamepad controller.">
   <meta name="theme-color" content="#000000">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <link rel="stylesheet" href="/static/css/main.css?v=9">
+  <link rel="stylesheet" href="/static/css/main.css?v=10">
 </head>
 <body>
-  <div id="screen-gamepad" class="screen-gamepad">
-
-    <header class="toolbar">
-      <div class="toolbar-brand">
-        <span class="logo">GAMEPAD</span>
-      </div>
+  <section id="mobile-home" class="mobile-home">
+    <div class="mobile-home-brand">TouchKeys</div>
+    <div class="mobile-home-panel">
+      <div id="mobile-home-status" class="mobile-home-status">Connecting…</div>
       <div id="device-info" class="device-info hidden">
         <span id="device-name-display" class="device-name-text"></span>
         <span id="device-status" class="device-status"></span>
@@ -26,10 +24,15 @@
         <span class="connection-text">OFF</span>
         <span id="latency-value" class="latency-badge">--</span>
       </div>
-      <div class="toolbar-spacer"></div>
-    </header>
+      <div id="page-tabs" class="page-tabs mobile-home-pages">
+        <div id="page-tabs-list"></div>
+      </div>
+      <button id="mobile-start" class="mobile-start" type="button" disabled>Start</button>
+    </div>
+  </section>
+  <div id="screen-gamepad" class="screen-gamepad">
 
-    <button id="btn-cog" class="cog-btn">&#9881;</button>
+    <button id="btn-cog" class="cog-btn" aria-label="Controller settings"><span class="material-symbols-rounded">settings</span></button>
 
     <main class="workspace-container">
       <video id="screen-stream" class="screen-stream" autoplay playsinline muted></video>
@@ -37,12 +40,8 @@
       <div id="workspace" class="workspace play-mode"></div>
     </main>
 
-    <footer id="page-tabs" class="page-tabs">
-      <div id="page-tabs-list"></div>
-    </footer>
-
   </div>
 
-  <script type="module" src="/static/js/app.js?v=9"></script>
+  <script type="module" src="/static/js/app.js?v=10"></script>
 </body>
 </html>

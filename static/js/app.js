@@ -22,6 +22,7 @@ class App {
     motion.init();
 
     document.getElementById('screen-gamepad')?.classList.remove('hidden');
+    this._setupMobileHome();
 
     this._preventBrowserDefaults();
     this._setupWebSocketHandlers();
@@ -107,10 +108,18 @@ class App {
     const btn = document.getElementById('btn-cog');
     if (!btn) return;
     btn.addEventListener('click', () => {
-      const toolbar = document.querySelector('.toolbar');
-      const pageTabs = document.getElementById('page-tabs');
-      if (toolbar) toolbar.classList.toggle('hidden');
-      if (pageTabs) pageTabs.classList.toggle('hidden');
+      document.getElementById('mobile-home')?.classList.remove('hidden');
+      document.getElementById('screen-gamepad')?.classList.add('hidden');
+    });
+  }
+
+  _setupMobileHome() {
+    const home = document.getElementById('mobile-home');
+    const start = document.getElementById('mobile-start');
+    if (!home || !start) return;
+    start.addEventListener('click', () => {
+      home.classList.add('hidden');
+      document.getElementById('screen-gamepad')?.classList.remove('hidden');
     });
   }
 }

@@ -201,7 +201,7 @@ export class LayoutManager {
       el.classList.add('mouse-mode');
     }
     el.innerHTML = `
-      <span class="touchpad-icon">${(ctrl.mode || 'joystick') === 'mouse' ? '&#9794;' : '&#9678;'}</span>
+      <span class="touchpad-icon" aria-hidden="true"></span>
       <span class="touchpad-label">${ctrl.name || 'TOUCHPAD'}</span>
     `;
     this._applyBaseStyles(el, ctrl);
@@ -216,7 +216,7 @@ export class LayoutManager {
     el.dataset.controlType = 'dpad';
     el.innerHTML = ['up', 'left', 'center', 'right', 'down'].map(direction => {
       if (direction === 'center') return '<div class="dpad-center" aria-hidden="true"></div>';
-      const glyph = { up: '▲', down: '▼', left: '◀', right: '▶' }[direction];
+      const glyph = { up: 'U', down: 'D', left: 'L', right: 'R' }[direction];
       return `<div class="dpad-part dpad-${direction}" data-keybind="${bindings[direction] || ''}" data-direction="${direction}" aria-label="${direction}">${glyph}</div>`;
     }).join('');
     this._applyBaseStyles(el, ctrl);
@@ -229,7 +229,7 @@ export class LayoutManager {
     el.dataset.id = ctrl.id;
     el.dataset.controlType = 'sensor';
     el.dataset.sensorConfig = JSON.stringify({ x: ctrl.sensorX || {}, y: ctrl.sensorY || {}, z: ctrl.sensorZ || {} });
-    el.innerHTML = `<span class="sensor-icon">⌁</span><span class="sensor-label">${ctrl.name || 'SENSOR'}</span><button type="button" class="sensor-toggle" aria-pressed="false">ENABLE</button><span class="sensor-status" aria-live="polite">tap to start</span>`;
+    el.innerHTML = `<span class="sensor-label">${ctrl.name || 'SENSOR'}</span><button type="button" class="sensor-toggle" aria-pressed="false">ENABLE</button><span class="sensor-status" aria-live="polite">tap to start</span>`;
     const sensorButton = el.querySelector('.sensor-toggle');
     const activate = (event) => {
       event.preventDefault();

@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>TouchKeys — Desktop Control Center</title>
   <link rel="icon" type="image/png" href="/static/favicon.png">
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@500;700;900&display=swap">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;500;600;700&family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,400,0,0&display=swap">
 <style>
 *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
 :root {
@@ -391,6 +391,148 @@ select option, .form-select option, select optgroup {
   background-position:100% 0;
 }
 </style>
+<style>
+/* Agent design system: quiet white monitor with lime actions. */
+:root { --bg-base:#fff; --bg-surface:#f7f8f5; --bg-card:#f3f5f1; --bg-elevated:#fff; --text:#20241f; --text-dim:#667064; --text-muted:#9aa399; --border:transparent; --accent:#b8f500; --accent-ink:#172000; --font:'Lexend',system-ui,sans-serif; --radius:18px; }
+html,body { background:var(--bg-base); color:var(--text); font-family:var(--font); }
+#sidebar { background:#f7f8f5; border:0; width:230px; padding:24px 16px; }
+.sb-brand { border:0; padding:4px 10px 30px; color:var(--text); }
+.brand-mark { background:var(--accent); color:var(--accent-ink); }
+.brand-copy { color:var(--text); }
+.sb-nav { padding:0; gap:4px; }
+.sb-tab { color:var(--text-dim); border:0; border-radius:999px; padding:12px 14px; }
+.sb-tab:hover,.sb-tab.active { color:var(--text); background:var(--accent); }
+.sb-conn { border:0; color:var(--text-dim); padding:20px 10px 0; }
+.conn-dot.on { background:#6ea000; box-shadow:none; }
+.conn-dot.off { background:#c0c8bd; }
+#main { padding:44px clamp(24px,5vw,72px); background:#fff; }
+.monitor-topbar { border:0 !important; padding-bottom:26px !important; }
+.monitor-topbar h1 { color:var(--text) !important; }
+.topbar-chip { background:#f1f4ed; border:0; color:var(--text-dim); }
+.topbar-time { color:var(--text-dim); }
+.topbar-eyebrow,.card-title,.form-label { color:var(--text-dim) !important; }
+.section-title { font-weight:600; letter-spacing:-.8px; }
+.section-sub { color:var(--text-dim); }
+.card,.stat-card,.device-item,#editor-props,.ctrl-card { background:var(--bg-card) !important; border:0 !important; box-shadow:none !important; border-radius:var(--radius) !important; }
+.btn { border:0 !important; background:#e9ede6; color:var(--text); border-radius:999px; backdrop-filter:none; }
+.btn:hover,.btn:active { background:var(--accent); color:var(--accent-ink); }
+.btn-primary { background:var(--accent); color:var(--accent-ink); }
+.btn-danger { background:#ecefeb; color:#687066; }
+.form-input,.form-select { border:0 !important; background:#fff; color:var(--text); border-radius:12px; }
+.status-pill,.tag { border:0 !important; background:#e6ebe2; color:var(--text); }
+.status-pill.on,.tag-active { background:var(--accent); color:var(--accent-ink); }
+#qr-wrap { background:var(--bg-card); border-radius:var(--radius); padding:24px; }
+#qr-wrap img { border:0; border-radius:12px; }
+#editor-canvas-wrap { border:0; background:#f0f3ed; border-radius:var(--radius); }
+#editor-canvas .ctrl-el { border:0; background:#fff; color:var(--text); border-radius:12px; }
+#editor-canvas .ctrl-el.selected { outline:2px solid var(--accent); }
+#editor-canvas .ctrl-el.ctrl-stick { border:4px solid #cbd2c6; }
+.editor-page-tab,.editor-page-add { border:0; background:#eef1eb; border-radius:999px; color:var(--text-dim); }
+.editor-page-tab.active { background:var(--accent); color:var(--accent-ink); }
+.layout-share-panel { border:0; background:#f3f5f1; border-radius:var(--radius); }
+.modal-overlay { background:rgba(24,30,22,.28); backdrop-filter:blur(10px); }
+.modal { background:rgba(255,255,255,.82); border:0; border-radius:24px; box-shadow:none; backdrop-filter:blur(24px); }
+.modal-header,.modal-footer { border:0; }
+.modal-close { color:var(--text-dim); border-radius:999px; }
+.modal-close:hover { background:var(--accent); color:var(--accent-ink); }
+#status-bar { background:#f7f8f5; border:0; color:var(--text-dim); }
+#status-bar .val { color:var(--text); }
+.trigger-bar,.stick-vis { background:#e3e9df; border:0; }
+.trigger-fill,.stick-dot { background:var(--accent); box-shadow:none; }
+.btn-vis { border:0; background:#e4e9e1; color:var(--text); border-radius:12px; }
+.btn-vis.pressed { background:var(--accent); color:var(--accent-ink); }
+.hover-lower-radius:hover { border-radius:8px; }
+.btn,.sb-tab,.editor-page-tab,.editor-page-add,.page-tab { background-image:none !important; box-shadow:none !important; }
+.sb-tab::before { display:none; }
+.topbar-dot,.sb-tab.active::before,.status-pill.on .dot { box-shadow:none !important; }
+.dashboard-welcome { text-align:center; margin:10vh 0 28px; }
+.dashboard-welcome .section-title { font-size:clamp(34px,5vw,58px); }
+.dashboard-welcome .section-sub { margin-bottom:0; }
+@media (min-width:901px) {
+  #tab-dashboard .card:first-of-type { max-width:700px; }
+  #tab-dashboard #qr-wrap { position:absolute; top:140px; right:clamp(24px,5vw,72px); }
+  #tab-dashboard #stat-cards,#tab-dashboard .card:not(:first-of-type) { max-width:700px; }
+}
+@media (max-width:680px) { #sidebar { background:#f7f8f5; } #main { padding:24px 16px; } }
+</style>
+<style>
+/* Monitor rehaul: command bar + dark workspace shell. */
+:root { --bg-base:#050505; --bg-surface:#0b0b0b; --bg-card:#111; --bg-elevated:#181818; --text:#f5f7f2; --text-dim:#9ba39a; --text-muted:#5d665d; --border:transparent; --accent:#b8f500; --accent-ink:#152000; --radius:18px; }
+html,body { background:#050505 !important; color:var(--text) !important; height:auto !important; min-height:100%; overflow-y:auto !important; overflow-x:hidden !important; }
+#app { background:#050505 !important; height:auto !important; min-height:100vh; }
+.app-shell { display:block !important; min-height:0; }
+#sidebar { width:100% !important; height:76px; padding:0 28px !important; display:flex; flex-direction:row; align-items:center; gap:28px; background:#0b0b0b !important; border:0 !important; }
+.sb-brand { flex:0 0 auto; padding:0 !important; border:0 !important; }
+.brand-mark { width:36px; height:36px; border-radius:12px; background:var(--accent); color:var(--accent-ink); }
+.brand-copy { color:var(--text) !important; }
+.sb-label { display:none; }
+.sb-nav { flex:1; flex-direction:row; align-items:center; justify-content:center; gap:6px; padding:0 !important; }
+.sb-tab { min-height:38px; padding:0 16px; border:0 !important; border-radius:999px !important; color:var(--text-dim) !important; background:transparent !important; }
+.sb-tab:hover { color:var(--text) !important; background:#191919 !important; }
+.sb-tab.active { color:var(--accent) !important; background:#1b2605 !important; }
+.sb-conn { flex:0 0 auto; margin:0 !important; padding:0 !important; border:0 !important; background:transparent !important; color:var(--text-dim); }
+#main { min-height:calc(100vh - 76px); height:auto !important; padding:42px clamp(22px,6vw,96px) 64px !important; overflow:visible !important; background:#050505 !important; }
+.monitor-topbar { max-width:1280px; margin:0 auto 34px !important; padding:0 0 22px !important; border-bottom:1px solid #1b1b1b !important; }
+.monitor-topbar h1 { color:var(--text) !important; font-size:18px !important; font-weight:600 !important; letter-spacing:-.4px; }
+.topbar-eyebrow { color:var(--accent) !important; }
+.topbar-chip { color:var(--text-dim) !important; background:#111 !important; }
+.tab-page { max-width:1280px !important; }
+.section-title { color:var(--text) !important; font-size:22px !important; font-weight:600 !important; }
+.section-sub { color:var(--text-dim) !important; }
+.card,.stat-card,.device-item,#editor-props,.ctrl-card { background:#111 !important; border:0 !important; box-shadow:none !important; }
+.card { padding:24px !important; }
+.btn { min-height:40px; border:0 !important; border-radius:999px !important; background:#202020 !important; color:var(--text) !important; }
+.btn:hover,.btn:active,.btn-primary { background:var(--accent) !important; color:var(--accent-ink) !important; }
+.btn-danger { background:#202020 !important; color:#afb7ac !important; }
+.form-input,.form-select { background:#1a1a1a !important; color:var(--text) !important; border:0 !important; }
+.status-pill { border:0 !important; background:#1d1d1d !important; color:var(--text-dim) !important; }
+.status-pill.on { background:#1b2605 !important; color:var(--accent) !important; }
+.tab-page#tab-dashboard { display:none !important; }
+.tab-page#tab-dashboard.active { display:grid !important; grid-template-columns:minmax(0,1.2fr) minmax(280px,.8fr); grid-template-areas:'welcome welcome' 'server qr' 'stats stats' 'quick how'; gap:16px; align-items:stretch; }
+#tab-dashboard .dashboard-welcome { grid-area:welcome; margin:12px 0 18px; text-align:left; }
+#tab-dashboard .dashboard-welcome .section-title { font-size:clamp(42px,7vw,82px) !important; letter-spacing:-3px; }
+#tab-dashboard .dashboard-welcome .section-sub { margin:0; max-width:500px; }
+#tab-dashboard .dashboard-welcome + .card { grid-area:server; margin:0; min-height:220px; display:flex; flex-direction:column; justify-content:space-between; }
+#tab-dashboard #qr-wrap { grid-area:qr; position:static !important; max-width:none; min-height:220px; margin:0; padding:24px; display:flex; flex-direction:column; align-items:center; justify-content:center; background:#111; border:0; }
+#tab-dashboard #qr-wrap img { width:150px; height:150px; background:#fff; padding:8px; }
+#tab-dashboard #stat-cards { grid-area:stats; display:grid; grid-template-columns:repeat(4,1fr); gap:16px; margin:0; }
+#tab-dashboard #stat-cards .stat-card { min-height:112px; display:flex; flex-direction:column; justify-content:space-between; }
+#tab-dashboard #stat-cards .num { color:var(--accent); }
+#tab-dashboard #stat-cards + .card { grid-area:quick; margin:0; }
+#tab-dashboard #stat-cards + .card + .card { grid-area:how; margin:0; }
+#editor-layout { grid-template-columns:minmax(0,1fr) 300px !important; gap:16px; }
+#editor-canvas-wrap { background:#0d0d0d !important; border:0 !important; }
+#editor-props { background:#111 !important; }
+.layout-share-panel { background:#111 !important; border:0 !important; }
+.modal-overlay { background:rgba(0,0,0,.72) !important; backdrop-filter:blur(12px); }
+.modal { background:rgba(24,24,24,.92) !important; color:var(--text); border:0 !important; box-shadow:none !important; }
+.modal-header,.modal-footer { border:0 !important; }
+.modal-close:hover { background:var(--accent); color:var(--accent-ink); }
+#status-bar { background:#0b0b0b !important; border:0 !important; color:var(--text-dim); }
+.editor-page-tab,.editor-page-add { background:#202020 !important; color:#f5f7f2 !important; }
+.editor-page-tab:hover,.editor-page-add:hover { background:#2b2b2b !important; color:#fff !important; }
+.editor-page-tab.active { background:var(--accent) !important; color:var(--accent-ink) !important; }
+.device-item .name { color:#f5f7f2 !important; }
+.device-item .meta { color:#9ba39a !important; }
+.device-item .tag { color:#101510 !important; }
+.device-item .tag-connected,.device-item .tag-monitor { background:#2a2a2a !important; color:#f5f7f2 !important; }
+.device-item .btn-danger { color:#f5f7f2 !important; background:#242424 !important; }
+.test-btns-grid .btn-vis { background:#202020 !important; color:#f5f7f2 !important; }
+.test-btns-grid .btn-vis.pressed { background:var(--accent) !important; color:var(--accent-ink) !important; }
+@media (max-width:900px) {
+  #sidebar { height:auto; min-height:70px; padding:14px 16px !important; gap:12px; flex-wrap:wrap; }
+  .sb-nav { order:3; flex-basis:100%; overflow-x:auto; justify-content:flex-start; }
+  #main { min-height:calc(100vh - 70px); padding:28px 18px 46px !important; }
+  #tab-dashboard { grid-template-columns:1fr; grid-template-areas:'welcome' 'server' 'qr' 'stats' 'quick' 'how'; }
+  #tab-dashboard #stat-cards { grid-template-columns:repeat(2,1fr); }
+}
+@media (max-width:560px) {
+  .sb-brand .brand-copy { display:none; }
+  .sb-conn { margin-left:auto !important; }
+  #tab-dashboard #stat-cards { grid-template-columns:1fr 1fr; gap:8px; }
+  #tab-dashboard .dashboard-welcome .section-title { font-size:46px !important; }
+}
+</style>
 </head>
 <body>
 <div id="app">
@@ -401,8 +543,8 @@ select option, .form-select option, select optgroup {
       <nav class="sb-nav">
         <button class="sb-tab active" data-tab="dashboard">DASHBOARD</button>
         <button class="sb-tab" data-tab="devices">DEVICES</button>
-        <button class="sb-tab" data-tab="editor">LAYOUT</button>
-        <button class="sb-tab" data-tab="streaming">STREAMING</button>
+        <button class="sb-tab" data-tab="editor">EDIT</button>
+        <button class="sb-tab" data-tab="streaming">STREAM</button>
         <button class="sb-tab" data-tab="test">TESTER</button>
       </nav>
       <div class="sb-conn">
@@ -417,8 +559,7 @@ select option, .form-select option, select optgroup {
       </header>
       <!-- Dashboard -->
       <section class="tab-page active" id="tab-dashboard">
-        <div class="section-title">DASHBOARD</div>
-        <div class="section-sub">Local monitor and on-demand phone access</div>
+        <div class="dashboard-welcome"><div class="section-title">TouchKeys</div><div class="section-sub">Local monitor and on-demand phone access</div></div>
         <div class="card">
           <div class="card-title">MOBILE PHONE SERVER</div>
           <div class="server-status">
@@ -504,7 +645,7 @@ select option, .form-select option, select optgroup {
           <div id="editor-canvas-wrap">
             <div id="editor-canvas"></div>
             <div class="empty-state" id="editor-empty">
-              <div class="ico">&#9881;</div>
+              <div class="ico">—</div>
               <div class="txt">No controls on this page</div>
               <div style="font-size:10px;color:var(--text-muted);">Add controls using the + button above</div>
             </div>
@@ -570,7 +711,7 @@ select option, .form-select option, select optgroup {
     <form id="form-add-ctrl">
       <div class="modal-body">
         <div class="form-group">
-          <label class="form-label">Label</label>
+          <label class="form-label">Name</label>
           <input class="form-input" id="add-name" value="Button" required>
         </div>
         <div class="form-group">
@@ -611,19 +752,19 @@ select option, .form-select option, select optgroup {
 <div class="modal-overlay" id="modal-rename-page">
   <div class="modal modal-sm">
     <div class="modal-header">
-      <span class="modal-title">RENAME PAGE</span>
+      <span class="modal-title">NEW LAYOUT</span>
       <button class="modal-close" onclick="closeModal('modal-rename-page')">X</button>
     </div>
     <form id="form-rename-page">
       <div class="modal-body">
         <div class="form-group">
-          <label class="form-label">New Name</label>
+          <label class="form-label">Name</label>
           <input class="form-input" id="rename-name" required>
         </div>
       </div>
       <div class="modal-footer">
         <button type="button" class="btn" onclick="closeModal('modal-rename-page')">CANCEL</button>
-        <button type="submit" class="btn btn-primary">RENAME</button>
+        <button type="submit" class="btn btn-primary">+ ADD</button>
       </div>
     </form>
   </div>
@@ -1018,7 +1159,7 @@ select option, .form-select option, select optgroup {
   function renderEditor() {
     const page = getCurrentPage();
     if (!page) {
-      canvasEl.innerHTML = '<div class="empty-state"><div class="ico">&#9881;</div><div class="txt">No layout data</div></div>';
+      canvasEl.innerHTML = '<div class="empty-state"><div class="ico">—</div><div class="txt">No layout data</div></div>';
       editorEmpty.classList.add('hidden');
       return;
     }
@@ -1052,8 +1193,9 @@ select option, .form-select option, select optgroup {
     });
 
     $('btn-add-page').onclick = () => {
-      const name = prompt('Page name:', 'Page ' + (layoutData.pages.length + 1));
-      if (name) sendWS({ type: 'add_page', name });
+      $('rename-name').value = 'Layout ' + (layoutData.pages.length + 1);
+      openModal('modal-rename-page');
+      setTimeout(() => $('rename-name').focus(), 30);
     };
 
     // Render controls — normalize coords: x/y = fraction, w/h = pixels
@@ -1670,6 +1812,13 @@ select option, .form-select option, select optgroup {
     const value = $('layout-paste-input').value.trim();
     if (value) addImportedLayout(value);
   };
+
+  $('form-rename-page').onsubmit = e => {
+    e.preventDefault();
+    const name = $('rename-name').value.trim();
+    if (name) sendWS({ type: 'add_page', name });
+    closeModal('modal-rename-page');
+  };
   $('layout-file-input').addEventListener('change', async (event) => {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -1763,7 +1912,7 @@ select option, .form-select option, select optgroup {
     }
     
     if (!hasGamepad) {
-      html = '<div class="empty-state"><div class="ico">&#9728;</div><div class="txt">No gamepads detected.</div><div style="font-size:10px;color:var(--text-muted);">Press any button on a connected controller.</div></div>';
+      html = '<div class="empty-state"><div class="ico">—</div><div class="txt">No gamepads detected.</div><div style="font-size:10px;color:var(--text-muted);">Press any button on a connected controller.</div></div>';
     }
     
     container.innerHTML = html;

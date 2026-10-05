@@ -20,6 +20,10 @@ export class UIManager {
     badge.classList.toggle('disconnected', !connected);
     const text = badge.querySelector('.connection-text');
     if (text) text.textContent = connected ? 'ON' : 'OFF';
+    const homeStatus = document.getElementById('mobile-home-status');
+    const homeStart = document.getElementById('mobile-start');
+    if (homeStatus) homeStatus.textContent = connected ? 'Connected' : 'Reconnecting…';
+    if (homeStart) homeStart.disabled = !connected;
   }
 
   _setDeviceName(deviceName) {

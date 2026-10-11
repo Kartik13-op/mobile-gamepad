@@ -1,6 +1,6 @@
 {
   "version": "2.0",
-  "activePageIndex": 6,
+  "activePageIndex": 2,
   "pages": [
     {
       "id": "p1",
@@ -438,7 +438,7 @@
           "y": 0.1523604419876906,
           "width": 120,
           "height": 90,
-          "opacity": 1.0,
+          "opacity": 1,
           "fontSize": 16,
           "layer": 0,
           "visible": true,
